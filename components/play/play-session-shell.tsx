@@ -101,6 +101,9 @@ export function PlaySessionShell({
         throw new Error(data.error || "The session could not generate the next turn.");
       }
 
+      const nextTurn = data.turn;
+      const nextSummary = data.summary;
+
       if (isDevelopment) {
         setDebugInputMessages(data.debug?.inputMessages ?? null);
         setDebugThreadState({
@@ -109,17 +112,17 @@ export function PlaySessionShell({
           storedPreviousResponseId: data.previousResponseId ?? data.debug?.responseId ?? "",
         });
         setDebugRawResponse(data.debug?.rawResponse ?? null);
-        setDebugNormalizedTurn(data.turn);
+        setDebugNormalizedTurn(nextTurn);
       }
 
       setSession((current) =>
         current
           ? {
               ...current,
-              turnCount: data.turn?.turnNumber ?? current.turnCount,
+              turnCount: nextTurn.turnNumber,
               previousResponseId: data.previousResponseId ?? current.previousResponseId,
-              summary: data.summary ?? current.summary,
-              turns: [...current.turns, data.turn].slice(-5),
+              summary: nextSummary,
+              turns: [...current.turns, nextTurn].slice(-5),
             }
           : current,
       );

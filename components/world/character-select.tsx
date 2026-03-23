@@ -32,6 +32,10 @@ export function CharacterSelect({
     let isMounted = true;
 
     async function loadLatestWorld() {
+      if (!initialWorld) {
+        return;
+      }
+
       try {
         const response = await fetch(`${apiBasePath}/${initialWorld.id}`, {
           cache: "no-store",

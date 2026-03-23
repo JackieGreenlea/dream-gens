@@ -145,23 +145,25 @@ function readCastMembers(value: Prisma.JsonValue): WorldCastMember[] {
     return [];
   }
 
-  return value
-    .map((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) {
-        return null;
-      }
+  const members: WorldCastMember[] = [];
 
-      const name = typeof item.name === "string" ? item.name.trim() : "";
-      const description = typeof item.description === "string" ? item.description.trim() : "";
-      const role = typeof item.role === "string" ? item.role.trim() : "";
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      continue;
+    }
 
-      if (!name || !description) {
-        return null;
-      }
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+    const description = typeof item.description === "string" ? item.description.trim() : "";
+    const role = typeof item.role === "string" ? item.role.trim() : "";
 
-      return { name, description, role };
-    })
-    .filter((item): item is WorldCastMember => Boolean(item));
+    if (!name || !description) {
+      continue;
+    }
+
+    members.push({ name, description, role });
+  }
+
+  return members;
 }
 
 function mapCharacter(record: {
