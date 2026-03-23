@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply min-h-screen bg-night text-white antialiased;
+  background-image:
+    radial-gradient(circle at top, rgba(214, 185, 122, 0.18), transparent 30%),
+    radial-gradient(circle at 20% 20%, rgba(223, 139, 85, 0.08), transparent 25%),
+    linear-gradient(180deg, #07101d 0%, #02060d 100%);
+}
+
+* {
+  scrollbar-color: rgba(159, 176, 199, 0.3) transparent;
+}
+
+::selection {
+  background: rgba(214, 185, 122, 0.35);
+  color: white;
+}
+
+.bg-grid {
+  background-size: auto, 44px 44px, 44px 44px;
+}

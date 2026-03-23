@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StoryPov {
+  second_person
+  first_person
+  third_person
+}
+
+enum WorldKind {
+  legacy_playable
+  canon
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String?   @unique
+  name      String?
+  worlds    World[]
+  stories   Story[]
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model World {
+  id                String            @id @default(cuid())
+  userId            String?
+  kind              WorldKind         @default(legacy_playable)
+  setting           String?
+  lore              String?
+  history           String?
+  rules             String?
+  longDescription   String?
+  cast              Json?
+  // Legacy standalone-story fields retained for compatibility with the current flow.
+  title             String
+  summary           String
+  background        String
+  firstAction       String
+  objective         String
+  pov               StoryPov          @default(second_person)
+  instructions      String
+  authorStyle       String
+  victoryCondition  String
+  victoryEnabled    Boolean           @default(true)
+  defeatCondition   String
+  defeatEnabled     Boolean           @default(true)
+  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  playerCharacters  PlayerCharacter[]
+  stories           Story[]
+  sessions          Session[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([userId])
+}
+
+model PlayerCharacter {
+  id          String    @id @default(cuid())
+  worldId      String
+  name         String
+  description  String
+  strengths    Json
+  weaknesses   Json
+  world        World     @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([worldId])
+}
+
+model Story {
+  id                String           @id @default(cuid())
+  userId            String?
+  worldId           String?
+  title             String
+  summary           String
+  background        String
+  firstAction       String
+  objective         String
+  pov               StoryPov         @default(second_person)
+  instructions      String
+  authorStyle       String
+  victoryCondition  String
+  victoryEnabled    Boolean          @default(true)
+  defeatCondition   String
+  defeatEnabled     Boolean          @default(true)
+  user              User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  world             World?           @relation(fields: [worldId], references: [id], onDelete: SetNull)
+  playerCharacters  StoryCharacter[]
+  sessions          Session[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([worldId])
+  @@map("Story")
+}
+
+model StoryCharacter {
+  id          String   @id @default(cuid())
+  storyId      String  @map("storyId")
+  name         String
+  description  String
+  strengths    Json
+  weaknesses   Json
+  story        Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  sessions     Session[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([storyId])
+}
+
+model Session {
+  id                 String          @id @default(cuid())
+  userId             String?
+  worldId            String?
+  storyId            String?         @map("storyId")
+  characterId        String?
+  storyCharacterId   String?         @map("storyCharacterId")
+  storyTitle         String?
+  storySummary       String?
+  storyBackground    String?
+  storyFirstAction   String?
+  storyObjective     String?
+  storyInstructions  String?
+  storyAuthorStyle   String?
+  storyPov           StoryPov?
+  victoryCondition   String?
+  victoryEnabled     Boolean?
+  defeatCondition    String?
+  defeatEnabled      Boolean?
+  characterName      String?
+  characterDescription String?
+  characterStrengths Json?
+  characterWeaknesses Json?
+  turnCount          Int             @default(0)
+  objective          String
+  currentObjective   String?
+  pov                StoryPov        @default(second_person)
+  summary            String          @default("")
+  previousResponseId String?
+  user               User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  world              World?          @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  story              Story?          @relation(fields: [storyId], references: [id], onDelete: SetNull)
+  character          PlayerCharacter? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  storyCharacter     StoryCharacter? @relation(fields: [storyCharacterId], references: [id], onDelete: SetNull)
+  turns              Turn[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([worldId])
+  @@index([storyId])
+  @@index([characterId])
+  @@index([storyCharacterId])
+  @@map("Session")
+}
+
+model Turn {
+  id               String    @id @default(cuid())
+  sessionId        String    @map("sessionId")
+  turnNumber       Int
+  playerAction     String
+  storyText        String
+  suggestedActions Json
+  summaryAfterTurn String
+  session          Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([sessionId])
+  @@unique([sessionId, turnNumber])
+}
