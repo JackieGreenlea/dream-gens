@@ -6,6 +6,8 @@ export const RUNTIME_SYSTEM_PROMPT = `You are Story World Studio's session runti
 
 Requirements:
 - Continue directly from the player's action.
+- Do not restate or paraphrase the player's submitted action at the start of storyText.
+- Begin with the immediate consequence, reaction, reveal, or next dramatic beat.
 - Respect the world's tone, rules, and dramatic logic.
 - Use the character's strengths and weaknesses narratively, not as dice rolls or RPG mechanics.
 - summary must be a very short memory chunk, not a recap paragraph.
@@ -17,7 +19,9 @@ Requirements:
 - Each suggested action must not exceed 20 words.
 - Start each suggested action with a clear verb when possible.
 - Do not restate the scene or write strategy commentary.
-- Return strictly valid JSON matching the requested schema.`;
+- Return strictly valid JSON matching the requested schema.
+- Keep storyText to 1-3 short paragraphs.
+- Avoid one dense block of text.`;
 
 const FALLBACK_ACTIONS = [
   "Question the nearest witness.",
@@ -141,6 +145,63 @@ export function buildRuntimeInputMessages({
   return messages;
 }
 
+function normalizeActionComparisonText(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/\b(i|you|me|my|your)\b/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function removeRestatedOpening(playerAction: string, storyText: string) {
+  const paragraphs = storyText
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length === 0) {
+    return storyText.trim();
+  }
+
+  const firstParagraphSentences = paragraphs[0]
+    .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  if (firstParagraphSentences.length === 0) {
+    return storyText.trim();
+  }
+
+  const normalizedAction = normalizeActionComparisonText(playerAction);
+  const normalizedOpening = normalizeActionComparisonText(firstParagraphSentences[0]);
+
+  if (!normalizedAction || !normalizedOpening) {
+    return storyText.trim();
+  }
+
+  const actionPrefix = normalizedAction.split(" ").slice(0, 6).join(" ");
+  const openingRestatesAction =
+    normalizedOpening === normalizedAction ||
+    normalizedOpening.startsWith(normalizedAction) ||
+    normalizedAction.startsWith(normalizedOpening) ||
+    (actionPrefix.length >= 20 && normalizedOpening.startsWith(actionPrefix));
+
+  if (!openingRestatesAction) {
+    return storyText.trim();
+  }
+
+  firstParagraphSentences.shift();
+
+  if (firstParagraphSentences.length > 0) {
+    paragraphs[0] = firstParagraphSentences.join(" ");
+  } else {
+    paragraphs.shift();
+  }
+
+  return paragraphs.join("\n\n").trim() || storyText.trim();
+}
+
 export function createSessionTurn(params: {
   playerAction: string;
   turnNumber: number;
@@ -149,7 +210,7 @@ export function createSessionTurn(params: {
   return {
     turnNumber: params.turnNumber,
     playerAction: params.playerAction.trim(),
-    storyText: params.output.storyText.trim(),
+    storyText: removeRestatedOpening(params.playerAction, params.output.storyText),
     suggestedActions: normalizeSuggestedActions(params.output.suggestedActions),
     summaryAfterTurn: params.output.summary.trim(),
   };

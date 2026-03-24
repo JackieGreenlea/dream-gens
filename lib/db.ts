@@ -1234,19 +1234,10 @@ export async function deleteStoryForUser(storyId: string, userId: string) {
     return false;
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.session.deleteMany({
-      where: {
-        storyId,
-        userId,
-      },
-    });
-
-    await tx.story.delete({
-      where: {
-        id: storyId,
-      },
-    });
+  await prisma.story.delete({
+    where: {
+      id: storyId,
+    },
   });
 
   return true;
@@ -1269,10 +1260,13 @@ export async function deleteWorldForUser(worldId: string, userId: string) {
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.session.deleteMany({
+    await tx.session.updateMany({
       where: {
         worldId,
         userId,
+      },
+      data: {
+        worldId: null,
       },
     });
 

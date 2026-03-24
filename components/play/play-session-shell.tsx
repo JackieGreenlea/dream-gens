@@ -33,6 +33,7 @@ export function PlaySessionShell({
   const [debugThreadState, setDebugThreadState] = useState<unknown>(null);
   const [debugRawResponse, setDebugRawResponse] = useState<unknown>(null);
   const [debugNormalizedTurn, setDebugNormalizedTurn] = useState<SessionTurn | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const suggestedActions =
     session && world && character
@@ -41,6 +42,25 @@ export function PlaySessionShell({
   const recentTurns = session?.turns ?? [];
   const latestTurn = recentTurns.at(-1) ?? null;
   const previousTurns = latestTurn ? recentTurns.slice(0, -1) : [];
+
+  function renderStoryText(text: string) {
+    const paragraphs = text
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+
+    const content = paragraphs.length > 0 ? paragraphs : [text.trim()];
+
+    return (
+      <div className="space-y-4">
+        {content.map((paragraph, index) => (
+          <p key={`${index}-${paragraph.slice(0, 24)}`} className="text-sm leading-7 text-mist whitespace-pre-wrap">
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    );
+  }
 
   if (!session || !world || !character) {
     return (
@@ -144,123 +164,149 @@ export function PlaySessionShell({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
-      <div className="space-y-6">
-        <Card className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3 text-sm text-mist">
-            <span className="rounded-full border border-white/10 px-3 py-1">
-              Turn {session.turnCount}
-            </span>
-            <span className="rounded-full border border-white/10 px-3 py-1">{character.name}</span>
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold text-white">{world.title}</h1>
-            <p className="text-sm leading-6 text-mist">{character.description}</p>
-          </div>
-        </Card>
+    <div className="space-y-6">
+      <Card className="overflow-hidden p-0">
+        <section className="relative p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-mist">
+                <span className="rounded-full border border-white/10 px-3 py-1">
+                  Turn {session.turnCount}
+                </span>
+                <span className="rounded-full border border-white/10 px-3 py-1">{character.name}</span>
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold text-white">{world.title}</h1>
+              </div>
+            </div>
 
-        {latestTurn ? (
-          <Card className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm uppercase tracking-[0.24em] text-gold">Current Scene</p>
-              <span className="text-xs text-mist">Turn {latestTurn.turnNumber}</span>
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsDetailsOpen((current) => !current)}
+                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:border-white/25 hover:bg-white/[0.08]"
+              >
+                {isDetailsOpen ? "Hide" : "Details"}
+              </button>
+
+              {isDetailsOpen ? (
+                <div className="absolute right-0 top-10 z-10 w-[min(22rem,calc(100vw-3rem))] rounded-3xl border border-white/10 bg-[#120f1c]/95 p-5 shadow-glow backdrop-blur">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-white">Details</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsDetailsOpen(false)}
+                      className="text-xs uppercase tracking-[0.18em] text-mist transition hover:text-white"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="mt-4 space-y-5">
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-[0.2em] text-mist">Character</p>
+                      <p className="text-lg font-medium text-white">{character.name}</p>
+                      <p className="text-sm leading-6 text-mist">{character.description}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-[0.2em] text-mist">Objective</p>
+                      <p className="text-sm leading-6 text-mist">{session.objective}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs uppercase tracking-[0.2em] text-mist">Story Summary</p>
+                      <p className="text-sm leading-6 text-mist">{world.summary}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-mist">Latest Action</p>
-              <p className="mt-2 text-sm leading-7 text-white">{latestTurn.playerAction}</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.2em] text-mist">Story</p>
-              <p className="text-sm leading-7 text-mist">{latestTurn.storyText}</p>
-            </div>
-          </Card>
-        ) : (
-          <Card className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.24em] text-gold">Starting Game</p>
-            <p className="text-sm leading-7 text-mist">
-              The first turn is being established for this session.
-            </p>
-          </Card>
-        )}
+          </div>
+        </section>
 
         {previousTurns.length > 0 ? (
-          <details className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-glow backdrop-blur">
-            <summary className="cursor-pointer list-none text-sm font-medium text-white">
-              Previous turns
-            </summary>
-            <div className="mt-4 space-y-4">
-              {previousTurns.map((turn) => (
-                <div key={turn.turnNumber} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-mist">Turn {turn.turnNumber}</p>
-                  <p className="mt-2 text-sm leading-6 text-white">{turn.playerAction}</p>
-                  <p className="mt-3 text-sm leading-7 text-mist">{turn.storyText}</p>
-                </div>
-              ))}
-            </div>
-          </details>
+          <section className="border-t border-white/10 p-6">
+            <details className="space-y-4">
+              <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                Previous turns
+              </summary>
+              <div className="mt-4 space-y-4">
+                {previousTurns.map((turn) => (
+                  <div key={turn.turnNumber} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-mist">Turn {turn.turnNumber}</p>
+                    <p className="mt-2 text-sm leading-6 text-white">{turn.playerAction}</p>
+                    <div className="mt-3">{renderStoryText(turn.storyText)}</div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          </section>
         ) : null}
 
-        <Card className="space-y-4">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Suggested Actions</p>
-          <div className="grid gap-3">
-            {suggestedActions.map((action) => (
-              <button
-                key={action}
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => submitAction(action)}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm text-mist transition hover:border-white/25 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      <div className="space-y-6">
-        <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Character</p>
-          <p className="text-lg font-medium text-white">{character.name}</p>
-          <p className="text-sm leading-6 text-mist">{character.description}</p>
-        </Card>
-
-        <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Objective</p>
-          <p className="text-sm leading-6 text-mist">{session.objective}</p>
-        </Card>
-
-        <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Session Memory</p>
-          <p className="text-sm leading-6 text-mist">
-            {session.summary || "No long-range memory yet. The session is still establishing itself."}
-          </p>
-        </Card>
-
-        <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Action Input</p>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <textarea
-              value={playerAction}
-              onChange={(event) => setPlayerAction(event.target.value)}
-              disabled={isSubmitting}
-              className="min-h-40 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-mist/60 focus:border-gold/70 focus:outline-none focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
-              placeholder="Type what your character does next..."
-            />
-            {error ? (
-              <div className="rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-100">
-                {error}
+        <section className="border-t border-white/10 p-6">
+          {latestTurn ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm uppercase tracking-[0.24em] text-gold">Current Scene</p>
+                <span className="text-xs text-mist">Turn {latestTurn.turnNumber}</span>
               </div>
-            ) : null}
-            <Button type="submit" disabled={isSubmitting || !playerAction.trim()}>
-              {isSubmitting ? "Resolving turn..." : "Submit action"}
-            </Button>
-          </form>
-        </Card>
-      </div>
+              <p className="text-sm leading-7 text-white">{latestTurn.playerAction}</p>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-mist">Story</p>
+                {renderStoryText(latestTurn.storyText)}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm uppercase tracking-[0.24em] text-gold">Starting Game</p>
+              <p className="text-sm leading-7 text-mist">
+                The first turn is being established for this session.
+              </p>
+            </div>
+          )}
+        </section>
+
+        <section className="border-t border-white/10 p-6">
+          <div className="space-y-4">
+            <p className="text-sm uppercase tracking-[0.24em] text-gold">Actions</p>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <textarea
+                value={playerAction}
+                onChange={(event) => setPlayerAction(event.target.value)}
+                disabled={isSubmitting}
+                className="min-h-40 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-mist/60 focus:border-gold/70 focus:outline-none focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+                placeholder="Type what your character does next..."
+              />
+              {error ? (
+                <div className="rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-100">
+                  {error}
+                </div>
+              ) : null}
+              <Button type="submit" disabled={isSubmitting || !playerAction.trim()}>
+                {isSubmitting ? "Resolving turn..." : "Submit action"}
+              </Button>
+            </form>
+
+            <div className="space-y-3 border-t border-white/10 pt-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-mist">Suggested Actions</p>
+              <div className="grid gap-3">
+                {suggestedActions.map((action) => (
+                  <button
+                    key={action}
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => submitAction(action)}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm text-mist transition hover:border-white/25 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {action}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </Card>
 
       {isDevelopment ? (
-        <div className="xl:col-span-2">
+        <div>
           <details className="rounded-3xl border border-amber-400/20 bg-amber-400/5 p-6 shadow-glow backdrop-blur">
             <summary className="cursor-pointer list-none text-sm font-medium text-white">
               Runtime Debug

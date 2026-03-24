@@ -117,6 +117,15 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save world"}
+          </Button>
+          <ButtonLink href={`/worlds/${world.id}`} variant="ghost">
+            Cancel
+          </ButtonLink>
+        </div>
+
         <div className="grid gap-5">
           <Field label="Title">
             <Input value={world.title} onChange={(event) => updateField("title", event.target.value)} />

@@ -20,22 +20,22 @@ export default async function HomePage({
           <div className="max-w-4xl space-y-8 py-8 lg:py-14">
             <div className="space-y-4">
               <p className="text-sm uppercase tracking-[0.34em] text-gold">
-                Structured Interactive Fiction
+                 
               </p>
               <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-white sm:text-6xl">
                 Everplot
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-mist">
-                Turn a story idea into a playable interactive story, or compile a reusable world canon for future stories.
+                Create. Explore. Play.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">
-              <ButtonLink href="/create">Create a story</ButtonLink>
+              <ButtonLink href="/create">Create a Story</ButtonLink>
               <ButtonLink href="/worlds/create" variant="ghost">
-                Create a world
+                Create a World
               </ButtonLink>
               <ButtonLink href="#samples" variant="ghost">
-                Explore samples
+                Explore Stories
               </ButtonLink>
             </div>
           </div>

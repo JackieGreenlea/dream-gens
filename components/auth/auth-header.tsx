@@ -12,7 +12,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
     <header className="border-b border-white/10 bg-black/20 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4 sm:px-8 lg:px-10">
         <Link href="/" className="text-sm font-medium uppercase tracking-[0.28em] text-gold">
-          Story World Studio
+          Everplot
         </Link>
 
         <div className="flex flex-wrap items-center justify-end gap-3">

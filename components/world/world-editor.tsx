@@ -67,7 +67,7 @@ export function WorldEditor({
     );
   }
 
-  async function persistWorld(nextStep?: "characters") {
+  async function persistWorld(nextStep?: "characters" | "exit") {
     if (!world || isSaving) {
       return false;
     }
@@ -104,6 +104,13 @@ export function WorldEditor({
 
       if (nextStep === "characters") {
         router.push(`${basePath}/${data.world.id}/characters`);
+      } else if (nextStep === "exit") {
+        setIsCustomizeOpen(false);
+        setIsAdvancedOpen(false);
+
+        if (basePath === "/stories" && data.world.id !== currentWorldId) {
+          router.replace(`${basePath}/${data.world.id}`);
+        }
       } else if (data.world.id !== currentWorldId || data.world.id !== worldId) {
         router.replace(
           basePath === "/stories"
@@ -123,6 +130,10 @@ export function WorldEditor({
 
   async function handleSave() {
     await persistWorld();
+  }
+
+  async function handleSaveAndExit() {
+    await persistWorld("exit");
   }
 
   async function handlePlay() {
@@ -166,7 +177,7 @@ export function WorldEditor({
               endpoint={`/api/stories/${world.id}`}
               label="Delete"
               signInMessage="Sign in to delete this story."
-              confirmMessage={`Delete "${world.title}"? This will also permanently delete any sessions started from it.`}
+              confirmMessage={`Delete "${world.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
             />
           ) : null}
         </div>
@@ -212,16 +223,6 @@ export function WorldEditor({
                 value={world.objective}
                 onChange={(event) => updateField("objective", event.target.value)}
               />
-            </Field>
-            <Field label="POV" hint="Controls narration perspective during play.">
-              <Select
-                value={world.pov}
-                onChange={(event) => updateField("pov", event.target.value as World["pov"])}
-              >
-                <option value="second_person">Second person</option>
-                <option value="first_person">First person</option>
-                <option value="third_person">Third person</option>
-              </Select>
             </Field>
             <Field label="Instructions">
               <Textarea
@@ -317,9 +318,16 @@ export function WorldEditor({
               </div>
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <Button type="button" onClick={handleSaveAndPlay} disabled={isSaving}>
-                  {isSaving ? "Saving..." : "Save & Play"}
-                </Button>
+                <div className="flex flex-wrap items-center gap-3">
+                  {basePath === "/stories" ? (
+                    <Button type="button" variant="ghost" onClick={handleSaveAndExit} disabled={isSaving}>
+                      {isSaving ? "Saving..." : "Save & Exit"}
+                    </Button>
+                  ) : null}
+                  <Button type="button" onClick={handleSaveAndPlay} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save & Play"}
+                  </Button>
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsAdvancedOpen(true)}
@@ -345,6 +353,19 @@ export function WorldEditor({
 
           {isAdvancedOpen ? (
             <div className="space-y-4 border-t border-white/10 pt-6">
+              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                <Field label="POV" hint="Controls narration perspective during play.">
+                  <Select
+                    value={world.pov}
+                    onChange={(event) => updateField("pov", event.target.value as World["pov"])}
+                  >
+                    <option value="second_person">Second person</option>
+                    <option value="first_person">First person</option>
+                    <option value="third_person">Third person</option>
+                  </Select>
+                </Field>
+              </div>
+
               <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
                 <Field label="Author Style">
                   <Textarea
@@ -398,7 +419,12 @@ export function WorldEditor({
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex flex-wrap justify-end gap-3">
+                {basePath === "/stories" ? (
+                  <Button type="button" variant="ghost" onClick={handleSaveAndExit} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save & Exit"}
+                  </Button>
+                ) : null}
                 <Button type="button" onClick={handleSaveAndPlay} disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save & Play"}
                 </Button>

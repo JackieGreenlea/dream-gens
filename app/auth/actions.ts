@@ -37,7 +37,7 @@ export async function signUp(formData: FormData) {
   return encodedRedirect(
     "/auth/sign-in",
     "message",
-    "Account created. Check your email if confirmation is required.",
+    "Account created. Check your email to verify your account.",
   );
 }
 

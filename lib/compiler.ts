@@ -2,6 +2,20 @@ import { CompiledWorldOutput, CompileRequest } from "@/lib/schemas";
 import { World } from "@/lib/types";
 import { createId } from "@/lib/utils";
 
+
+
+//- It should have a hook.
+//- Write the summary as immersive, consumer-facing story copy.
+//- Lead with the player’s role and the central tension, then make it dramatic.
+//- Avoid sounding like generic back-cover copy or a detached overview.
+//- Avoid bland synopsis language like "must respond", "very different", "work against", "navigate", or "find themselves".
+
+//Ground it in specifics of the story, while building urgency and making the stakes known
+
+//PERFECT
+//Summary:
+//Write an enticing, punchy story summary with a strong hook.Prefer leading with the player character's role.Make it clear, specific, and emotionally compelling. Focus on the player character, the core conflict, and what makes the story feel exciting or irresistible. Keep it concise. Avoid clichés, vagueness, overexplaining, and generic epic language.Prefer second person ("you", "your") when it fits the premise.
+
 export const COMPILER_SYSTEM_PROMPT = `You are Story World Studio's story compiler.
 
 Your job is to turn a rough story idea into a structured, playable interactive fiction world.
@@ -20,24 +34,25 @@ Title:
 
 
 Summary:
-- Prefer second person ("you", "your") when it fits the premise.
-- Lead with the player’s role and the central tension, then make it dramatic.
-- It should be punchy and have a hook.
-- Write the summary as immersive, consumer-facing story copy.
-- Prefer 2-4 short sentences.
-
-- Make the stakes evident.
-- Avoid bland synopsis language like "must respond", "very different", "work against", "navigate", or "find themselves".
-- Avoid sounding like generic back-cover copy or a detached overview.
+Write an enticing, punchy story summary with a strong hook.
+Focus on the player character, the core conflict, and what makes the story feel exciting or irresistible. 
+Make it clear, specific, and emotionally compelling. 
+Keep it concise. 
+Avoid clichés, vagueness, overexplaining, and generic epic language.
+Prefer second person ("you", "your") when it fits the premise.
 
 Background:
-- Prefer second person when grounding the player character and their situation.
-- Write this like a compelling story setup, not exposition.
-- Make it punchy and exciting to read.
-- Ground it in specifics of the story and recent events, while building urgency and making the stakes known.
-- It is okay for the background to be a few paragraphs if that makes it feel more immersive.
-- The background should naturally build toward the story’s starting pressure, but should not become the opening action itself.
-- Avoid sounding like high-level design notes or detached world summary.
+Write a vivid, immersive story background that immediately pulls the reader in. 
+Focus on the player character and most compelling aspects of the situation.
+Make it feel alive and already in motion, and create a strong sense of tension, intrigue, danger, or possibility. 
+Ground it in specifics of the story, and use specifics based on real-world factual information as appropriate, particulary as it relates to the setting and time period.
+Use specific, evocative language. 
+Keep it clear, engaging, and concise. 
+Avoid dry exposition, excessive lore, generic epic phrasing, and anything that reads like a wiki entry instead of the beginning of a real story.
+Naturally build toward the story’s starting pressure.
+Prefer second person when grounding the player character and their situation.
+Prefer 3-5 paragraphs of varying lengths.
+
 
 FirstAction:
 - This is extremely important.
@@ -63,8 +78,8 @@ Instructions:
 - Write this field as a hidden story brief for the runtime model.
 - Explain the context of the story, describing the setting, what the game is about, and what part the player character will play.
 - Describe the central characters, their personalities, motivations, and dynamics.
-- Describe the world conditions, social rules, and tensions that should shape the story.
-- Describe the kinds of scenes, pressure, and consequences that belong in this story.
+- Describe the world conditions, social rules, and tensions that should shape the story.   
+- Describe the kinds of scenes, pressures, and consequences that belong in this story.
 - Describe the tone, how the story should feel, how it should be told, and what elements should be included.
 - Keep it usable, not bloated.
 
@@ -74,18 +89,16 @@ AuthorStyle:
 
 PlayerCharacters:
 - Aim for 1-3 distinct playable characters by default.
-- If the user's premise clearly centers one protagonist, return only that protagonist.
-- Never invent filler characters just to hit 3.
+- If the user's premise clearly centers one protagonist, return only that character, and preserve them faithfully.
 - Do not make love interests, rivals, antagonists, or major side characters playable unless the premise clearly supports them as true player perspectives.
+- Never invent filler characters just to hit 3.
 - Each player character should differ in role, access, motive, and emotional stakes.
 - Each should feel specific, useful, and worth choosing.
-- If the premise clearly defines one main protagonist, preserve that character faithfully.
+- Character descriptions should be written in 3rd person.
+- Character description should be a meaningful background story and include identity, motive, and context.
 - Each player character should include exactly 2 strengths and exactly 2 weaknesses.
 - Strengths and weaknesses should feel story-relevant, character-specific, and dramatically useful.
-- Avoid generic filler like "brave", "smart", "kind", or "bad temper" unless the premise makes them unusually specific.
-- Character descriptions should feel like meaningful playable intros, not thin one-line labels.
-- Character descriptions should be written in 3rd person.
-- Each description should include identity, motive, context, and a clear reason this perspective would play differently.
+
 
 VictoryCondition / DefeatCondition:
 - Keep them concrete and game-relevant.
@@ -104,13 +117,14 @@ General rules:
 export const COMPILER_DEVELOPER_PROMPT = `Design notes:
 - Preserve specific details from the premise whenever possible.
 - Favor scenes, pressure, and player agency over encyclopedia-style lore.
-- Make the summary feel like clickable world-card copy, not back-cover synopsis text.
-- Keep the summary tight, vivid, and specific, but do not clip it so hard that the hook feels cut off.
-- firstAction is the player's hidden first move, not assistant narration or an opening cutscene.
-- firstAction can include a little immediate context, but it must still clearly read as the player's action.
-- Make each character description deeper than a one-line summary by including identity, motive, context, and playable flavor.
+
 
 Compile the user's story premise into a structured World object.`;
+//LOOK INTO THE ABOVE LINE
+
+
+//- firstAction is the player's hidden first move, not assistant narration or an opening cutscene.
+//- Keep the summary tight, vivid, and specific, but do not clip it so hard that the hook feels cut off.
 
 function formatOptionalField(label: string, value: string) {
   return value.trim() ? `${label}: ${value.trim()}` : `${label}: none provided`;

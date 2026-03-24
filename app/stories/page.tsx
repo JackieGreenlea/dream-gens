@@ -76,7 +76,7 @@ export default async function MyStoriesPage() {
                     }
                     label="Delete"
                     signInMessage="Sign in to delete this story."
-                    confirmMessage={`Delete "${story.title}"? This will also permanently delete any sessions started from it.`}
+                    confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
                   />
                 </div>
               </Card>

@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Story World Studio",
-  description: "Turn a story idea into a playable interactive world.",
+  title: "Everplot",
+  description: "Create. Explore. Play.",
 };
 
 export default async function RootLayout({
