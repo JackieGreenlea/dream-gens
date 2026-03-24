@@ -1,5 +1,28 @@
-import { ButtonLink } from "@/components/ui/button";
-import { SampleWorlds } from "@/components/world/sample-worlds";
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
+
+const placeholderStories = [
+  {
+    title: "Kedar",
+    summary: "Storm-wracked ruins, buried gods, and one story waiting to be disturbed.",
+    accent: "from-slate-600 via-slate-700 to-slate-900",
+  },
+  {
+    title: "The Debugger",
+    summary: "A fast-moving thriller where one impossible bug starts rewriting the city around you.",
+    accent: "from-cyan-500 via-emerald-500 to-slate-900",
+  },
+  {
+    title: "Xaxas",
+    summary: "A quiet kingdom built on old bargains, now beginning to crack under pressure.",
+    accent: "from-amber-500 via-stone-700 to-slate-900",
+  },
+  {
+    title: "Procavia",
+    summary: "A neon district, a sealed gate, and a night that keeps revealing the wrong future.",
+    accent: "from-sky-400 via-indigo-700 to-slate-950",
+  },
+];
 
 export default async function HomePage({
   searchParams,
@@ -10,40 +33,44 @@ export default async function HomePage({
 
   return (
     <main className="min-h-screen bg-celestial-glow">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-20 px-6 py-10 sm:px-8 lg:px-10">
+      <div className="mx-auto flex min-h-screen max-w-[1380px] flex-col gap-8 px-4 py-8 sm:px-8 lg:px-10">
         {message ? (
           <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-100">
             {message}
           </div>
         ) : null}
-        <section className="flex flex-1 items-center">
-          <div className="max-w-4xl space-y-8 py-8 lg:py-14">
-            <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.34em] text-gold">
-                 
-              </p>
-              <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-white sm:text-6xl">
+
+        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#1a29b8] px-6 py-20 shadow-glow sm:px-10 sm:py-24">
+          <div className="mx-auto flex min-h-[230px] max-w-4xl items-center justify-center text-center">
+            <div className="space-y-3">
+              <h1 className="text-5xl font-semibold uppercase tracking-tight text-white sm:text-6xl lg:text-7xl">
                 Everplot
               </h1>
-              <p className="max-w-2xl text-lg leading-8 text-mist">
-                Create. Explore. Play.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <ButtonLink href="/create">Create a Story</ButtonLink>
-              <ButtonLink href="/worlds/create" variant="ghost">
-                Create a World
-              </ButtonLink>
-              <ButtonLink href="#samples" variant="ghost">
-                Explore Stories
-              </ButtonLink>
+              <p className="text-lg font-medium text-white/90 sm:text-xl">Create. Explore. Play.</p>
             </div>
           </div>
         </section>
 
-        <div id="samples">
-          <SampleWorlds />
-        </div>
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-semibold text-white">Explore Stories</h2>
+            <p className="text-sm text-mist">Placeholder cards for featured stories.</p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {placeholderStories.map((story) => (
+              <Link key={story.title} href="/" className="block">
+                <Card className="flex h-full flex-col gap-4 overflow-hidden p-0 transition hover:border-white/20 hover:bg-white/[0.06]">
+                  <div className={`h-40 bg-gradient-to-br ${story.accent}`} />
+                  <div className="space-y-3 p-5">
+                    <h3 className="text-xl font-semibold text-white">{story.title}</h3>
+                    <p className="text-sm leading-6 text-mist">{story.summary}</p>
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
