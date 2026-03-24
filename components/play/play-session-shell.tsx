@@ -166,64 +166,64 @@ export function PlaySessionShell({
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden p-0">
-        <section className="relative p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-4">
+        <section className="relative p-4 sm:p-6">
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3 text-sm text-mist">
                 <span className="rounded-full border border-white/10 px-3 py-1">
                   Turn {session.turnCount}
                 </span>
                 <span className="rounded-full border border-white/10 px-3 py-1">{character.name}</span>
               </div>
-              <div className="space-y-2">
-                <h1 className="text-3xl font-semibold text-white">{world.title}</h1>
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsDetailsOpen((current) => !current)}
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:border-white/25 hover:bg-white/[0.08]"
+                >
+                  {isDetailsOpen ? "Hide" : "Details"}
+                </button>
+
+                {isDetailsOpen ? (
+                  <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-3xl border border-white/10 bg-[#120f1c]/95 p-5 shadow-glow backdrop-blur sm:w-[22rem]">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-white">Details</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsDetailsOpen(false)}
+                        className="text-xs uppercase tracking-[0.18em] text-mist transition hover:text-white"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="mt-4 space-y-5">
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-mist">Character</p>
+                        <p className="text-lg font-medium text-white">{character.name}</p>
+                        <p className="text-sm leading-6 text-mist">{character.description}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-mist">Objective</p>
+                        <p className="text-sm leading-6 text-mist">{session.objective}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-mist">Story Summary</p>
+                        <p className="text-sm leading-6 text-mist">{world.summary}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            <div className="relative shrink-0">
-              <button
-                type="button"
-                onClick={() => setIsDetailsOpen((current) => !current)}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:border-white/25 hover:bg-white/[0.08]"
-              >
-                {isDetailsOpen ? "Hide" : "Details"}
-              </button>
-
-              {isDetailsOpen ? (
-                <div className="absolute right-0 top-10 z-10 w-[min(22rem,calc(100vw-3rem))] rounded-3xl border border-white/10 bg-[#120f1c]/95 p-5 shadow-glow backdrop-blur">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-white">Details</p>
-                    <button
-                      type="button"
-                      onClick={() => setIsDetailsOpen(false)}
-                      className="text-xs uppercase tracking-[0.18em] text-mist transition hover:text-white"
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <div className="mt-4 space-y-5">
-                    <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.2em] text-mist">Character</p>
-                      <p className="text-lg font-medium text-white">{character.name}</p>
-                      <p className="text-sm leading-6 text-mist">{character.description}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.2em] text-mist">Objective</p>
-                      <p className="text-sm leading-6 text-mist">{session.objective}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.2em] text-mist">Story Summary</p>
-                      <p className="text-sm leading-6 text-mist">{world.summary}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">{world.title}</h1>
             </div>
           </div>
         </section>
 
         {previousTurns.length > 0 ? (
-          <section className="border-t border-white/10 p-6">
+          <section className="border-t border-white/10 p-4 sm:p-6">
             <details className="space-y-4">
               <summary className="cursor-pointer list-none text-sm font-medium text-white">
                 Previous turns
@@ -241,7 +241,7 @@ export function PlaySessionShell({
           </section>
         ) : null}
 
-        <section className="border-t border-white/10 p-6">
+        <section className="border-t border-white/10 p-4 sm:p-6">
           {latestTurn ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
@@ -264,7 +264,7 @@ export function PlaySessionShell({
           )}
         </section>
 
-        <section className="border-t border-white/10 p-6">
+        <section className="border-t border-white/10 p-4 sm:p-6">
           <div className="space-y-4">
             <p className="text-sm uppercase tracking-[0.24em] text-gold">Actions</p>
             <form className="space-y-4" onSubmit={handleSubmit}>
