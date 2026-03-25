@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { CharacterSelect } from "@/components/world/character-select";
+import { StoryCharacterSelect } from "@/components/story/character-select";
 import { getStoryPlayableById } from "@/lib/db";
 import { getCurrentUser } from "@/lib/supabase/server";
 
@@ -25,7 +25,7 @@ export default async function StoryCharacterSelectPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
-      <CharacterSelect initialWorld={story} apiBasePath="/api/stories" />
+      <StoryCharacterSelect initialStory={story} apiBasePath="/api/stories" />
     </main>
   );
 }

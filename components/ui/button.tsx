@@ -3,7 +3,7 @@ import { ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const baseStyles =
-  "inline-flex items-center justify-center rounded-full border border-white/10 bg-white px-5 py-3 text-sm font-medium text-slate-950 transition hover:scale-[1.01] hover:bg-gold hover:text-night focus:outline-none focus:ring-2 focus:ring-gold/50 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center justify-center rounded-full border border-transparent bg-warm px-5 py-3 text-sm font-medium text-page transition hover:scale-[1.01] hover:bg-[#d5b57d] focus:outline-none focus:ring-2 focus:ring-focus/50 disabled:cursor-not-allowed disabled:opacity-60";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "ghost";
@@ -19,7 +19,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       className={cn(
         baseStyles,
         variant === "ghost" &&
-          "border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white",
+          "border-line bg-surface text-foreground hover:border-fieldBorder hover:bg-elevated hover:text-foreground",
         className,
       )}
       {...props}
@@ -44,7 +44,7 @@ export function ButtonLink({
       className={cn(
         baseStyles,
         variant === "ghost" &&
-          "border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white",
+          "border-line bg-surface text-foreground hover:border-fieldBorder hover:bg-elevated hover:text-foreground",
         className,
       )}
       {...props}

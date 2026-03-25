@@ -6,24 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DeleteEntryButton } from "@/components/ui/delete-entry-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
-import { PlayerCharacter, World } from "@/lib/types";
+import { PlayerCharacter, Story } from "@/lib/types";
 import { formatLineList, parseLineList } from "@/lib/utils";
 
-type WorldEditorProps = {
-  initialWorld: World | null;
-  worldId: string;
+type StoryEditorProps = {
+  initialStory: Story | null;
+  storyId: string;
   basePath?: "/worlds" | "/stories";
   apiBasePath?: "/api/worlds" | "/api/stories";
 };
 
-export function WorldEditor({
-  initialWorld,
-  worldId,
+export function StoryEditor({
+  initialStory,
+  storyId,
   basePath = "/worlds",
   apiBasePath = "/api/worlds",
-}: WorldEditorProps) {
+}: StoryEditorProps) {
   const router = useRouter();
-  const [world, setWorld] = useState<World | null>(initialWorld);
+  const [story, setStory] = useState<Story | null>(initialStory);
   const [saved, setSaved] = useState(false);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -39,23 +39,23 @@ export function WorldEditor({
     return () => window.clearTimeout(timeout);
   }, [saved]);
 
-  if (!world) {
+  if (!story) {
     return (
       <Card>
-        <p className="text-white">World not found.</p>
+        <p className="text-foreground">Story not found.</p>
       </Card>
     );
   }
 
-  function updateField<Key extends keyof World>(key: Key, value: World[Key]) {
-    setWorld((current) => (current ? { ...current, [key]: value } : current));
+  function updateField<Key extends keyof Story>(key: Key, value: Story[Key]) {
+    setStory((current) => (current ? { ...current, [key]: value } : current));
   }
 
   function updateCharacter(
     characterId: string,
     updater: (character: PlayerCharacter) => PlayerCharacter,
   ) {
-    setWorld((current) =>
+    setStory((current) =>
       current
         ? {
             ...current,
@@ -67,61 +67,60 @@ export function WorldEditor({
     );
   }
 
-  async function persistWorld(nextStep?: "characters" | "exit") {
-    if (!world || isSaving) {
+  async function persistStory(nextStep?: "characters" | "exit") {
+    if (!story || isSaving) {
       return false;
     }
 
     setIsSaving(true);
     setError("");
-    const currentWorldId = world.id;
+    const currentStoryId = story.id;
 
     try {
-      const response = await fetch(`${apiBasePath}/${world.id}`, {
+      const response = await fetch(`${apiBasePath}/${story.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(world),
+        body: JSON.stringify(story),
       });
 
       const data = (await response.json()) as {
-        world?: World;
+        world?: Story;
         error?: string;
       };
+      const savedStory = data.world;
 
       if (response.status === 401) {
         router.push("/auth/sign-in?message=Sign%20in%20to%20save%20and%20play%20your%20story.");
         return false;
       }
 
-      if (!response.ok || !data.world) {
+      if (!response.ok || !savedStory) {
         throw new Error(data.error || "The story could not be saved.");
       }
 
-      setWorld(data.world);
+      setStory(savedStory);
       setSaved(true);
 
       if (nextStep === "characters") {
-        router.push(`${basePath}/${data.world.id}/characters`);
+        router.push(`${basePath}/${savedStory.id}/characters`);
       } else if (nextStep === "exit") {
         setIsCustomizeOpen(false);
         setIsAdvancedOpen(false);
 
-        if (basePath === "/stories" && data.world.id !== currentWorldId) {
-          router.replace(`${basePath}/${data.world.id}`);
+        if (basePath === "/stories" && savedStory.id !== currentStoryId) {
+          router.replace(`${basePath}/${savedStory.id}`);
         }
-      } else if (data.world.id !== currentWorldId || data.world.id !== worldId) {
+      } else if (savedStory.id !== currentStoryId || savedStory.id !== storyId) {
         router.replace(
-          basePath === "/stories"
-            ? `${basePath}/${data.world.id}`
-            : `${basePath}/${data.world.id}/edit`,
+          basePath === "/stories" ? `${basePath}/${savedStory.id}` : `${basePath}/${savedStory.id}/edit`,
         );
       }
 
       return true;
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "The world could not be saved.");
+      setError(saveError instanceof Error ? saveError.message : "The story could not be saved.");
       return false;
     } finally {
       setIsSaving(false);
@@ -129,35 +128,35 @@ export function WorldEditor({
   }
 
   async function handleSave() {
-    await persistWorld();
+    await persistStory();
   }
 
   async function handleSaveAndExit() {
-    await persistWorld("exit");
+    await persistStory("exit");
   }
 
   async function handlePlay() {
-    await persistWorld("characters");
+    await persistStory("characters");
   }
 
   async function handleSaveAndPlay() {
-    await persistWorld("characters");
+    await persistStory("characters");
   }
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {error ? (
-        <Card className="border-rose-400/25 bg-rose-400/10 p-5">
-          <p className="text-sm font-medium text-white">Story save failed</p>
-          <p className="mt-2 text-sm leading-6 text-rose-100/90">{error}</p>
+        <Card className="border-danger/35 bg-danger/12 p-5">
+          <p className="text-sm font-medium text-foreground">Story save failed</p>
+          <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
         </Card>
       ) : null}
 
       <Card className="space-y-6 p-6 sm:p-10">
         <div className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Review your story</p>
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">{world.title}</h1>
-          <p className="max-w-3xl text-base leading-7 text-mist">{world.summary}</p>
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">Review your story</p>
+          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">{story.title}</h1>
+          <p className="max-w-3xl text-base leading-7 text-secondary">{story.summary}</p>
         </div>
 
         <div className="flex flex-wrap gap-3">
@@ -174,10 +173,10 @@ export function WorldEditor({
           </Button>
           {basePath === "/stories" ? (
             <DeleteEntryButton
-              endpoint={`/api/stories/${world.id}`}
+              endpoint={`/api/stories/${story.id}`}
               label="Delete"
               signInMessage="Sign in to delete this story."
-              confirmMessage={`Delete "${world.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
+              confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
             />
           ) : null}
         </div>
@@ -186,8 +185,8 @@ export function WorldEditor({
       {isCustomizeOpen ? (
         <Card className="space-y-6 p-6 sm:p-8">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.24em] text-gold">Customize</p>
-            <p className="text-sm leading-6 text-mist">
+            <p className="text-sm uppercase tracking-[0.24em] text-warm">Customize</p>
+            <p className="text-sm leading-6 text-secondary">
               Adjust the compiled story before you move into character selection.
             </p>
           </div>
@@ -195,38 +194,38 @@ export function WorldEditor({
           <div className="grid gap-5">
             <Field label="Title">
               <Input
-                value={world.title}
+                value={story.title}
                 onChange={(event) => updateField("title", event.target.value)}
               />
             </Field>
             <Field label="Summary">
               <Textarea
-                value={world.summary}
+                value={story.summary}
                 onChange={(event) => updateField("summary", event.target.value)}
               />
             </Field>
             <Field label="Background">
               <Textarea
-                value={world.background}
+                value={story.background}
                 onChange={(event) => updateField("background", event.target.value)}
                 className="min-h-40"
               />
             </Field>
             <Field label="First action">
               <Textarea
-                value={world.firstAction}
+                value={story.firstAction}
                 onChange={(event) => updateField("firstAction", event.target.value)}
               />
             </Field>
             <Field label="Objective">
               <Textarea
-                value={world.objective}
+                value={story.objective}
                 onChange={(event) => updateField("objective", event.target.value)}
               />
             </Field>
             <Field label="Instructions">
               <Textarea
-                value={world.instructions}
+                value={story.instructions}
                 onChange={(event) => updateField("instructions", event.target.value)}
               />
             </Field>
@@ -234,16 +233,16 @@ export function WorldEditor({
 
           <div className="space-y-4">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-white">Player characters</p>
-              <p className="text-sm text-mist">
+              <p className="text-sm font-medium text-foreground">Player characters</p>
+              <p className="text-sm text-secondary">
                 Edit each playable character directly, including their strengths and weaknesses.
               </p>
             </div>
             <div className="grid gap-4">
-              {world.playerCharacters.map((character) => (
+              {story.playerCharacters.map((character) => (
                 <div
                   key={character.id}
-                  className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
+                  className="rounded-3xl border border-line bg-elevated p-4 sm:p-5"
                 >
                   <div className="grid gap-4">
                     <Field label="Character name">
@@ -304,14 +303,14 @@ export function WorldEditor({
             </div>
           </div>
 
-          <div className="space-y-4 border-t border-white/10 pt-6">
+          <div className="space-y-4 border-t border-line pt-6">
             {isAdvancedOpen ? (
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsAdvancedOpen(false)}
                   aria-expanded={isAdvancedOpen}
-                  className="text-sm font-medium text-mist transition hover:text-white"
+                  className="text-sm font-medium text-secondary transition hover:text-foreground"
                 >
                   Advanced options
                 </button>
@@ -332,19 +331,19 @@ export function WorldEditor({
                   type="button"
                   onClick={() => setIsAdvancedOpen(true)}
                   aria-expanded={isAdvancedOpen}
-                  className="text-sm font-medium text-mist transition hover:text-white"
+                  className="text-sm font-medium text-secondary transition hover:text-foreground"
                 >
                   Advanced options
                 </button>
               </div>
             )}
-            <div className="flex flex-wrap items-center gap-3 text-sm text-mist">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-secondary">
               <span>{saved ? "Saved to database" : "Database-backed draft"}</span>
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={isSaving}
-                className="font-medium text-white transition hover:text-gold disabled:cursor-not-allowed disabled:opacity-60"
+                className="font-medium text-foreground transition hover:text-warm disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSaving ? "Saving..." : "Save"}
               </button>
@@ -352,12 +351,12 @@ export function WorldEditor({
           </div>
 
           {isAdvancedOpen ? (
-            <div className="space-y-4 border-t border-white/10 pt-6">
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+            <div className="space-y-4 border-t border-line pt-6">
+              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
                 <Field label="POV" hint="Controls narration perspective during play.">
                   <Select
-                    value={world.pov}
-                    onChange={(event) => updateField("pov", event.target.value as World["pov"])}
+                    value={story.pov}
+                    onChange={(event) => updateField("pov", event.target.value as Story["pov"])}
                   >
                     <option value="second_person">Second person</option>
                     <option value="first_person">First person</option>
@@ -366,55 +365,55 @@ export function WorldEditor({
                 </Field>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
                 <Field label="Author Style">
                   <Textarea
-                    value={world.authorStyle}
+                    value={story.authorStyle}
                     onChange={(event) => updateField("authorStyle", event.target.value)}
                   />
                 </Field>
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-white">Victory Conditions</p>
-                    <p className="text-sm text-mist">Control whether the victory condition is active.</p>
+                    <p className="text-sm font-medium text-foreground">Victory Conditions</p>
+                    <p className="text-sm text-secondary">Control whether the victory condition is active.</p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => updateField("victoryEnabled", !world.victoryEnabled)}
-                    className="rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-white/25 hover:bg-white/5"
+                    onClick={() => updateField("victoryEnabled", !story.victoryEnabled)}
+                    className="rounded-full border border-line px-4 py-2 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
                   >
-                    {world.victoryEnabled ? "Enabled" : "Disabled"}
+                    {story.victoryEnabled ? "Enabled" : "Disabled"}
                   </button>
                 </div>
                 <Textarea
-                  value={world.victoryCondition}
+                  value={story.victoryCondition}
                   onChange={(event) => updateField("victoryCondition", event.target.value)}
-                  disabled={!world.victoryEnabled}
+                  disabled={!story.victoryEnabled}
                   className="mt-4"
                 />
               </div>
 
-              <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="text-sm font-medium text-white">Defeat Conditions</p>
-                    <p className="text-sm text-mist">Control whether the defeat condition is active.</p>
+                    <p className="text-sm font-medium text-foreground">Defeat Conditions</p>
+                    <p className="text-sm text-secondary">Control whether the defeat condition is active.</p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => updateField("defeatEnabled", !world.defeatEnabled)}
-                    className="rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-white/25 hover:bg-white/5"
+                    onClick={() => updateField("defeatEnabled", !story.defeatEnabled)}
+                    className="rounded-full border border-line px-4 py-2 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
                   >
-                    {world.defeatEnabled ? "Enabled" : "Disabled"}
+                    {story.defeatEnabled ? "Enabled" : "Disabled"}
                   </button>
                 </div>
                 <Textarea
-                  value={world.defeatCondition}
+                  value={story.defeatCondition}
                   onChange={(event) => updateField("defeatCondition", event.target.value)}
-                  disabled={!world.defeatEnabled}
+                  disabled={!story.defeatEnabled}
                   className="mt-4"
                 />
               </div>

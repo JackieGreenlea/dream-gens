@@ -21,9 +21,9 @@ export default async function MyStoriesPage() {
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
       <div className="space-y-6">
         <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">My Stories</p>
-          <h1 className="text-3xl font-semibold text-white">Your saved stories</h1>
-          <p className="max-w-3xl text-sm leading-6 text-mist">
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">My Stories</p>
+          <h1 className="text-3xl font-semibold text-foreground">Your saved stories</h1>
+          <p className="max-w-3xl text-sm leading-6 text-secondary">
             Reopen a story to review, customize, or jump back into character selection.
           </p>
         </Card>
@@ -31,8 +31,8 @@ export default async function MyStoriesPage() {
         {stories.length === 0 ? (
           <Card className="space-y-4 text-center">
             <div className="space-y-2">
-              <h2 className="text-2xl font-semibold text-white">No stories yet</h2>
-              <p className="text-sm leading-6 text-mist">
+              <h2 className="text-2xl font-semibold text-foreground">No stories yet</h2>
+              <p className="text-sm leading-6 text-secondary">
                 Compile your first premise to start building a private story library.
               </p>
             </div>
@@ -48,11 +48,11 @@ export default async function MyStoriesPage() {
                 className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.18em] text-mist">
+                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.18em] text-secondary">
                     <span>Updated {formatLibraryDate(story.updatedAt)}</span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-white">{story.title}</h2>
-                  <p className="max-w-3xl text-sm leading-6 text-mist">{story.summary}</p>
+                  <h2 className="text-2xl font-semibold text-foreground">{story.title}</h2>
+                  <p className="max-w-3xl text-sm leading-6 text-secondary">{story.summary}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <ButtonLink

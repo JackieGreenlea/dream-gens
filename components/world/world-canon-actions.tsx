@@ -109,7 +109,7 @@ export function WorldCanonActions({ world }: WorldCanonActionsProps) {
         variant="ghost"
         onClick={handleDelete}
         disabled={isDeleting}
-        className="border-rose-400/20 bg-rose-400/10 text-rose-100 hover:bg-rose-400/15 hover:text-white"
+        className="border-danger/35 bg-danger/12 text-foreground hover:bg-danger/18 hover:text-foreground"
       >
         {isDeleting ? "Deleting..." : "Delete"}
       </Button>

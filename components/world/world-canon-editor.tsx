@@ -102,17 +102,17 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       {error ? (
-        <Card className="border-rose-400/25 bg-rose-400/10 p-5">
-          <p className="text-sm font-medium text-white">World save failed</p>
-          <p className="mt-2 text-sm leading-6 text-rose-100/90">{error}</p>
+        <Card className="border-danger/35 bg-danger/12 p-5">
+          <p className="text-sm font-medium text-foreground">World save failed</p>
+          <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
         </Card>
       ) : null}
 
       <Card className="space-y-6 p-6 sm:p-8">
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Edit World</p>
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">{world.title}</h1>
-          <p className="max-w-3xl text-sm leading-6 text-mist">
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">Edit World</p>
+          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">{world.title}</h1>
+          <p className="max-w-3xl text-sm leading-6 text-secondary">
             Refine the canon container directly. This page is only for reusable world material, not playable Story setup.
           </p>
         </div>
@@ -148,8 +148,8 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
 
       <Card className="space-y-6 p-6 sm:p-8">
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">World Structure</p>
-          <p className="text-sm leading-6 text-mist">
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">World Structure</p>
+          <p className="text-sm leading-6 text-secondary">
             Keep these sections focused on reusable canon that future stories can draw from.
           </p>
         </div>
@@ -189,8 +189,8 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
       <Card className="space-y-6 p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.24em] text-gold">Cast</p>
-            <p className="text-sm leading-6 text-mist">
+            <p className="text-sm uppercase tracking-[0.24em] text-warm">Cast</p>
+            <p className="text-sm leading-6 text-secondary">
               Optional recurring world-level characters. Leave empty if this world does not need them.
             </p>
           </div>
@@ -200,7 +200,7 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
         </div>
 
         {world.cast.length === 0 ? (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 text-sm text-mist">
+          <div className="rounded-3xl border border-line bg-elevated p-5 text-sm text-secondary">
             No cast members yet.
           </div>
         ) : (
@@ -208,7 +208,7 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
             {world.cast.map((member, index) => (
               <div
                 key={`${world.id}-cast-${index}`}
-                className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5"
+                className="rounded-3xl border border-line bg-elevated p-4 sm:p-5"
               >
                 <div className="grid gap-4">
                   <Field label="Name">

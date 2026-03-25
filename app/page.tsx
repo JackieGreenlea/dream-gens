@@ -1,5 +1,6 @@
-import Link from "next/link";
-import { Card } from "@/components/ui/card";
+import Image from "next/image";
+import { ExploreStoriesCarousel } from "@/components/home/explore-stories-carousel";
+import homeBanner from "@/components/home/everplot-home-banner.png";
 
 const placeholderStories = [
   {
@@ -24,53 +25,54 @@ const placeholderStories = [
   },
 ];
 
+const storyRows = ["Trending", "Placeholder 2", "Placeholder 3", "Placeholder 4"];
+
 export default async function HomePage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string }>;
 }) {
-  const { message } = await searchParams;
+  await searchParams;
 
   return (
-    <main className="min-h-screen bg-celestial-glow">
-      <div className="mx-auto flex min-h-screen max-w-[1380px] flex-col gap-8 px-4 py-8 sm:px-8 lg:px-10">
-        {message ? (
-          <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-100">
-            {message}
-          </div>
-        ) : null}
-
-        <section className="overflow-hidden rounded-[2rem] border border-white/10 bg-[#1a29b8] px-6 py-20 shadow-glow sm:px-10 sm:py-24">
-          <div className="mx-auto flex min-h-[230px] max-w-4xl items-center justify-center text-center">
-            <div className="space-y-3">
-              <h1 className="text-5xl font-semibold uppercase tracking-tight text-white sm:text-6xl lg:text-7xl">
-                Everplot
-              </h1>
-              <p className="text-lg font-medium text-white/90 sm:text-xl">Create. Explore. Play.</p>
+    <main className="min-h-screen bg-page">
+      <div className="mx-auto flex min-h-screen max-w-[1680px] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+        <section className="rounded-[2rem] py-2 sm:py-4 lg:py-6">
+          <div className="flex min-h-[320px] w-full items-center justify-center sm:min-h-[420px] lg:min-h-[560px]">
+            <div
+              className="w-full"
+              style={{
+                WebkitMaskImage:
+                  "radial-gradient(ellipse at center, black 86%, transparent 100%), linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 86%, transparent 100%)",
+                maskImage:
+                  "radial-gradient(ellipse at center, black 86%, transparent 100%), linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 86%, transparent 100%)",
+                WebkitMaskComposite: "source-in",
+                maskComposite: "intersect",
+              }}
+            >
+              <Image
+                src={homeBanner}
+                alt="Everplot banner artwork"
+                priority
+                className="h-auto w-full object-contain"
+                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 90vw, 1680px"
+              />
             </div>
           </div>
         </section>
 
-        <section className="space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-semibold text-white">Explore Stories</h2>
-            <p className="text-sm text-mist">Placeholder cards for featured stories.</p>
-          </div>
+        <div className="space-y-8">
+          {storyRows.map((rowTitle) => (
+            <section key={rowTitle} className="space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-2xl font-semibold text-foreground">{rowTitle}</h2>
+                <p className="text-sm text-secondary">Placeholder cards for featured stories.</p>
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {placeholderStories.map((story) => (
-              <Link key={story.title} href="/" className="block">
-                <Card className="flex h-full flex-col gap-4 overflow-hidden p-0 transition hover:border-white/20 hover:bg-white/[0.06]">
-                  <div className={`h-40 bg-gradient-to-br ${story.accent}`} />
-                  <div className="space-y-3 p-5">
-                    <h3 className="text-xl font-semibold text-white">{story.title}</h3>
-                    <p className="text-sm leading-6 text-mist">{story.summary}</p>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </section>
+              <ExploreStoriesCarousel stories={placeholderStories} />
+            </section>
+          ))}
+        </div>
       </div>
     </main>
   );

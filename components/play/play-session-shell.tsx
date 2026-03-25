@@ -54,7 +54,7 @@ export function PlaySessionShell({
     return (
       <div className="space-y-4">
         {content.map((paragraph, index) => (
-          <p key={`${index}-${paragraph.slice(0, 24)}`} className="text-sm leading-7 text-mist whitespace-pre-wrap">
+          <p key={`${index}-${paragraph.slice(0, 24)}`} className="text-sm leading-7 text-secondary whitespace-pre-wrap">
             {paragraph}
           </p>
         ))}
@@ -65,7 +65,7 @@ export function PlaySessionShell({
   if (!session || !world || !character) {
     return (
       <Card>
-        <p className="text-white">Session not found.</p>
+        <p className="text-foreground">Session not found.</p>
       </Card>
     );
   }
@@ -169,46 +169,46 @@ export function PlaySessionShell({
         <section className="relative p-4 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3 text-sm text-mist">
-                <span className="rounded-full border border-white/10 px-3 py-1">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-secondary">
+                <span className="rounded-full border border-line px-3 py-1">
                   Turn {session.turnCount}
                 </span>
-                <span className="rounded-full border border-white/10 px-3 py-1">{character.name}</span>
+                <span className="rounded-full border border-line px-3 py-1">{character.name}</span>
               </div>
               <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsDetailsOpen((current) => !current)}
-                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-white transition hover:border-white/25 hover:bg-white/[0.08]"
+                  className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-foreground transition hover:border-fieldBorder hover:bg-elevated"
                 >
                   {isDetailsOpen ? "Hide" : "Details"}
                 </button>
 
                 {isDetailsOpen ? (
-                  <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-3xl border border-white/10 bg-[#120f1c]/95 p-5 shadow-glow backdrop-blur sm:w-[22rem]">
+                  <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-5 backdrop-blur sm:w-[22rem]">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-white">Details</p>
+                      <p className="text-sm font-medium text-foreground">Details</p>
                       <button
                         type="button"
                         onClick={() => setIsDetailsOpen(false)}
-                        className="text-xs uppercase tracking-[0.18em] text-mist transition hover:text-white"
+                        className="text-xs uppercase tracking-[0.18em] text-secondary transition hover:text-foreground"
                       >
                         Close
                       </button>
                     </div>
                     <div className="mt-4 space-y-5">
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-mist">Character</p>
-                        <p className="text-lg font-medium text-white">{character.name}</p>
-                        <p className="text-sm leading-6 text-mist">{character.description}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Character</p>
+                        <p className="text-lg font-medium text-foreground">{character.name}</p>
+                        <p className="text-sm leading-6 text-secondary">{character.description}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-mist">Objective</p>
-                        <p className="text-sm leading-6 text-mist">{session.objective}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Objective</p>
+                        <p className="text-sm leading-6 text-secondary">{session.objective}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-mist">Story Summary</p>
-                        <p className="text-sm leading-6 text-mist">{world.summary}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Story Summary</p>
+                        <p className="text-sm leading-6 text-secondary">{world.summary}</p>
                       </div>
                     </div>
                   </div>
@@ -217,22 +217,22 @@ export function PlaySessionShell({
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">{world.title}</h1>
+              <h1 className="text-3xl font-semibold leading-tight text-foreground sm:text-4xl">{world.title}</h1>
             </div>
           </div>
         </section>
 
         {previousTurns.length > 0 ? (
-          <section className="border-t border-white/10 p-4 sm:p-6">
+          <section className="border-t border-line p-4 sm:p-6">
             <details className="space-y-4">
-              <summary className="cursor-pointer list-none text-sm font-medium text-white">
+              <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
                 Previous turns
               </summary>
               <div className="mt-4 space-y-4">
                 {previousTurns.map((turn) => (
-                  <div key={turn.turnNumber} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-mist">Turn {turn.turnNumber}</p>
-                    <p className="mt-2 text-sm leading-6 text-white">{turn.playerAction}</p>
+                  <div key={turn.turnNumber} className="rounded-2xl border border-line bg-elevated p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-secondary">Turn {turn.turnNumber}</p>
+                    <p className="mt-2 text-sm leading-6 text-foreground">{turn.playerAction}</p>
                     <div className="mt-3">{renderStoryText(turn.storyText)}</div>
                   </div>
                 ))}
@@ -241,42 +241,42 @@ export function PlaySessionShell({
           </section>
         ) : null}
 
-        <section className="border-t border-white/10 p-4 sm:p-6">
+        <section className="border-t border-line p-4 sm:p-6">
           {latestTurn ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-sm uppercase tracking-[0.24em] text-gold">Current Scene</p>
-                <span className="text-xs text-mist">Turn {latestTurn.turnNumber}</span>
+                <p className="text-sm uppercase tracking-[0.24em] text-warm">Current Scene</p>
+                <span className="text-xs text-secondary">Turn {latestTurn.turnNumber}</span>
               </div>
-              <p className="text-sm leading-7 text-white">{latestTurn.playerAction}</p>
+              <p className="text-sm leading-7 text-foreground">{latestTurn.playerAction}</p>
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-mist">Story</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-secondary">Story</p>
                 {renderStoryText(latestTurn.storyText)}
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.24em] text-gold">Starting Game</p>
-              <p className="text-sm leading-7 text-mist">
+              <p className="text-sm uppercase tracking-[0.24em] text-warm">Starting Game</p>
+              <p className="text-sm leading-7 text-secondary">
                 The first turn is being established for this session.
               </p>
             </div>
           )}
         </section>
 
-        <section className="border-t border-white/10 p-4 sm:p-6">
+        <section className="border-t border-line p-4 sm:p-6">
           <div className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.24em] text-gold">Actions</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-warm">Actions</p>
             <form className="space-y-4" onSubmit={handleSubmit}>
               <textarea
                 value={playerAction}
                 onChange={(event) => setPlayerAction(event.target.value)}
                 disabled={isSubmitting}
-                className="min-h-40 w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-mist/60 focus:border-gold/70 focus:outline-none focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-40 w-full rounded-2xl border border-fieldBorder bg-field px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-60"
                 placeholder="Type what your character does next..."
               />
               {error ? (
-                <div className="rounded-2xl border border-rose-400/25 bg-rose-400/10 p-4 text-sm text-rose-100">
+                <div className="rounded-2xl border border-danger/35 bg-danger/12 p-4 text-sm text-foreground">
                   {error}
                 </div>
               ) : null}
@@ -285,8 +285,8 @@ export function PlaySessionShell({
               </Button>
             </form>
 
-            <div className="space-y-3 border-t border-white/10 pt-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-mist">Suggested Actions</p>
+            <div className="space-y-3 border-t border-line pt-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-secondary">Suggested Actions</p>
               <div className="grid gap-3">
                 {suggestedActions.map((action) => (
                   <button
@@ -294,7 +294,7 @@ export function PlaySessionShell({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => submitAction(action)}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left text-sm text-mist transition hover:border-white/25 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-2xl border border-line bg-elevated p-4 text-left text-sm text-secondary transition hover:border-fieldBorder hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {action}
                   </button>
@@ -307,50 +307,50 @@ export function PlaySessionShell({
 
       {isDevelopment ? (
         <div>
-          <details className="rounded-3xl border border-amber-400/20 bg-amber-400/5 p-6 shadow-glow backdrop-blur">
-            <summary className="cursor-pointer list-none text-sm font-medium text-white">
+          <details className="rounded-3xl border border-warning/35 bg-warning/10 p-6 backdrop-blur">
+            <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
               Runtime Debug
             </summary>
             <div className="mt-4 space-y-4">
-              <Card className="space-y-3 border-amber-400/20 bg-black/30">
-                <p className="text-sm uppercase tracking-[0.24em] text-gold">Client Request Payload</p>
-                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-4 text-xs leading-6 text-mist">
+              <Card className="space-y-3 border-warning/35 bg-elevated">
+                <p className="text-sm uppercase tracking-[0.24em] text-warm">Client Request Payload</p>
+                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
                   {debugRequestPayload
                     ? JSON.stringify(debugRequestPayload, null, 2)
                     : "No request submitted yet."}
                 </pre>
               </Card>
 
-              <Card className="space-y-3 border-amber-400/20 bg-black/30">
-                <p className="text-sm uppercase tracking-[0.24em] text-gold">Runtime Message Array</p>
-                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-4 text-xs leading-6 text-mist">
+              <Card className="space-y-3 border-warning/35 bg-elevated">
+                <p className="text-sm uppercase tracking-[0.24em] text-warm">Runtime Message Array</p>
+                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
                   {debugInputMessages
                     ? JSON.stringify(debugInputMessages, null, 2)
                     : "No message array captured yet."}
                 </pre>
               </Card>
 
-              <Card className="space-y-3 border-amber-400/20 bg-black/30">
-                <p className="text-sm uppercase tracking-[0.24em] text-gold">Thread State</p>
-                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-4 text-xs leading-6 text-mist">
+              <Card className="space-y-3 border-warning/35 bg-elevated">
+                <p className="text-sm uppercase tracking-[0.24em] text-warm">Thread State</p>
+                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
                   {debugThreadState
                     ? JSON.stringify(debugThreadState, null, 2)
                     : "No thread state captured yet."}
                 </pre>
               </Card>
 
-              <Card className="space-y-3 border-amber-400/20 bg-black/30">
-                <p className="text-sm uppercase tracking-[0.24em] text-gold">Raw Runtime Response</p>
-                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-4 text-xs leading-6 text-mist">
+              <Card className="space-y-3 border-warning/35 bg-elevated">
+                <p className="text-sm uppercase tracking-[0.24em] text-warm">Raw Runtime Response</p>
+                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
                   {debugRawResponse
                     ? JSON.stringify(debugRawResponse, null, 2)
                     : "No raw response captured yet."}
                 </pre>
               </Card>
 
-              <Card className="space-y-3 border-amber-400/20 bg-black/30">
-                <p className="text-sm uppercase tracking-[0.24em] text-gold">Final Normalized Turn</p>
-                <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-4 text-xs leading-6 text-mist">
+              <Card className="space-y-3 border-warning/35 bg-elevated">
+                <p className="text-sm uppercase tracking-[0.24em] text-warm">Final Normalized Turn</p>
+                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
                   {debugNormalizedTurn
                     ? JSON.stringify(debugNormalizedTurn, null, 2)
                     : "No normalized turn stored yet."}

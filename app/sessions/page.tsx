@@ -21,17 +21,17 @@ export default async function MySessionsPage() {
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
       <div className="space-y-6">
         <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">My Sessions</p>
-          <h1 className="text-3xl font-semibold text-white">Your active stories</h1>
-          <p className="max-w-3xl text-sm leading-6 text-mist">
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">My Sessions</p>
+          <h1 className="text-3xl font-semibold text-foreground">Your active stories</h1>
+          <p className="max-w-3xl text-sm leading-6 text-secondary">
             Resume recent sessions and continue from the last saved turn.
           </p>
         </Card>
 
         {sessions.length === 0 ? (
           <Card className="space-y-3 text-center">
-            <h2 className="text-2xl font-semibold text-white">No sessions yet</h2>
-            <p className="text-sm leading-6 text-mist">
+            <h2 className="text-2xl font-semibold text-foreground">No sessions yet</h2>
+            <p className="text-sm leading-6 text-secondary">
               Start a game from one of your stories and it will show up here.
             </p>
           </Card>
@@ -43,12 +43,12 @@ export default async function MySessionsPage() {
                 className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.18em] text-mist">
+                  <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.18em] text-secondary">
                     <span>Updated {formatLibraryDate(session.updatedAt)}</span>
                     <span>Turn {session.turnCount}</span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-white">{session.worldTitle}</h2>
-                  <p className="text-sm leading-6 text-mist">
+                  <h2 className="text-2xl font-semibold text-foreground">{session.worldTitle}</h2>
+                  <p className="text-sm leading-6 text-secondary">
                     {session.characterName
                       ? `Playing as ${session.characterName}`
                       : "No character selected"}

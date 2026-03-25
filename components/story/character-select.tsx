@@ -4,83 +4,84 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { World } from "@/lib/types";
+import { Story } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-type CharacterSelectProps = {
-  initialWorld: World | null;
+type StoryCharacterSelectProps = {
+  initialStory: Story | null;
   apiBasePath?: "/api/worlds" | "/api/stories";
 };
 
-export function CharacterSelect({
-  initialWorld,
+export function StoryCharacterSelect({
+  initialStory,
   apiBasePath = "/api/worlds",
-}: CharacterSelectProps) {
+}: StoryCharacterSelectProps) {
   const router = useRouter();
-  const [liveWorld, setLiveWorld] = useState<World | null>(initialWorld);
+  const [liveStory, setLiveStory] = useState<Story | null>(initialStory);
   const [selectedId, setSelectedId] = useState<string | null>(
-    initialWorld?.playerCharacters[0]?.id ?? null,
+    initialStory?.playerCharacters[0]?.id ?? null,
   );
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!initialWorld) {
+    if (!initialStory) {
       return;
     }
 
     let isMounted = true;
 
-    async function loadLatestWorld() {
-      if (!initialWorld) {
+    async function loadLatestStory() {
+      if (!initialStory) {
         return;
       }
 
       try {
-        const response = await fetch(`${apiBasePath}/${initialWorld.id}`, {
+        const response = await fetch(`${apiBasePath}/${initialStory.id}`, {
           cache: "no-store",
         });
         const data = (await response.json()) as {
-          world?: World;
+          world?: Story;
         };
+        const fetchedStory = data.world;
 
-        if (!response.ok || !data.world || !isMounted) {
+        if (!response.ok || !fetchedStory || !isMounted) {
           return;
         }
 
-        setLiveWorld(data.world);
+        setLiveStory(fetchedStory);
         setSelectedId((current) =>
-          data.world?.playerCharacters.some((character) => character.id === current)
+          fetchedStory.playerCharacters.some((character) => character.id === current)
             ? current
-            : data.world?.playerCharacters[0]?.id ?? null,
+            : fetchedStory.playerCharacters[0]?.id ?? null,
         );
       } catch {
-        // Keep the server-provided world if the refresh fails.
+        // Keep the server-provided story if the refresh fails.
       }
     }
 
-    void loadLatestWorld();
+    void loadLatestStory();
 
     return () => {
       isMounted = false;
     };
-  }, [apiBasePath, initialWorld]);
+  }, [apiBasePath, initialStory]);
 
   const selectedCharacter = useMemo(
-    () => liveWorld?.playerCharacters.find((character) => character.id === selectedId) ?? null,
-    [selectedId, liveWorld],
+    () => liveStory?.playerCharacters.find((character) => character.id === selectedId) ?? null,
+    [selectedId, liveStory],
   );
 
-  if (!liveWorld) {
+  if (!liveStory) {
     return (
       <Card>
-        <p className="text-white">World not found.</p>
+        <p className="text-foreground">Story not found.</p>
       </Card>
     );
   }
 
   async function beginSession() {
-    if (!selectedCharacter || !liveWorld || isStarting) {
+    if (!selectedCharacter || !liveStory || isStarting) {
       return;
     }
 
@@ -94,7 +95,7 @@ export function CharacterSelect({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          worldId: liveWorld.id,
+          worldId: liveStory.id,
           characterId: selectedCharacter.id,
         }),
       });
@@ -126,15 +127,15 @@ export function CharacterSelect({
   return (
     <div className="space-y-6">
       <Card className="space-y-4">
-        <p className="text-sm uppercase tracking-[0.24em] text-gold">Character Select</p>
+        <p className="text-sm uppercase tracking-[0.24em] text-warm">Character Select</p>
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold text-white">{liveWorld.title}</h1>
-          <p className="max-w-3xl text-sm leading-6 text-mist">{liveWorld.summary}</p>
+          <h1 className="text-3xl font-semibold text-foreground">{liveStory.title}</h1>
+          <p className="max-w-3xl text-sm leading-6 text-secondary">{liveStory.summary}</p>
         </div>
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {liveWorld.playerCharacters.map((character) => {
+        {liveStory.playerCharacters.map((character) => {
           const isSelected = character.id === selectedId;
 
           return (
@@ -145,28 +146,28 @@ export function CharacterSelect({
               className={cn(
                 "rounded-3xl border p-6 text-left transition",
                 isSelected
-                  ? "border-gold bg-white/[0.08] shadow-glow"
-                  : "border-white/10 bg-white/[0.04] hover:border-white/25 hover:bg-white/[0.06]",
+                  ? "border-warm bg-elevated"
+                  : "border-line bg-surface hover:border-fieldBorder hover:bg-elevated",
               )}
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xl font-semibold text-white">{character.name}</p>
-                    <p className="mt-2 text-sm leading-6 text-mist">{character.description}</p>
+                    <p className="text-xl font-semibold text-foreground">{character.name}</p>
+                    <p className="mt-2 text-sm leading-6 text-secondary">{character.description}</p>
                   </div>
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-mist">
+                  <span className="rounded-full border border-line px-3 py-1 text-xs text-secondary">
                     {isSelected ? "Selected" : "Available"}
                   </span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.18em] text-mist">Strengths</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-secondary">Strengths</p>
                     <div className="flex flex-wrap gap-2">
                       {character.strengths.map((strength) => (
                         <span
                           key={`${character.id}-${strength}`}
-                          className="rounded-full border border-white/10 px-3 py-1 text-xs text-mist"
+                          className="rounded-full border border-line px-3 py-1 text-xs text-secondary"
                         >
                           {strength}
                         </span>
@@ -174,12 +175,12 @@ export function CharacterSelect({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.18em] text-mist">Weaknesses</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-secondary">Weaknesses</p>
                     <div className="flex flex-wrap gap-2">
                       {character.weaknesses.map((weakness) => (
                         <span
                           key={`${character.id}-${weakness}`}
-                          className="rounded-full border border-white/10 px-3 py-1 text-xs text-mist"
+                          className="rounded-full border border-line px-3 py-1 text-xs text-secondary"
                         >
                           {weakness}
                         </span>
@@ -195,11 +196,11 @@ export function CharacterSelect({
 
       <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-mist">Selected character</p>
-          <p className="mt-1 text-lg font-medium text-white">
+          <p className="text-sm text-secondary">Selected character</p>
+          <p className="mt-1 text-lg font-medium text-foreground">
             {selectedCharacter ? selectedCharacter.name : "Choose a character"}
           </p>
-          {error ? <p className="mt-2 text-sm text-rose-200">{error}</p> : null}
+          {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
         </div>
         <Button type="button" onClick={beginSession} disabled={!selectedCharacter || isStarting}>
           {isStarting ? "Starting game..." : "Start Game"}

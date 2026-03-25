@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
+import { StoryEditor } from "@/components/story/story-editor";
 import { WorldCanonEditor } from "@/components/world/world-canon-editor";
-import { WorldEditor } from "@/components/world/world-editor";
 import { getOwnedStoryById, getOwnedWorldCanonById, getPlayableByIdOrSample } from "@/lib/db";
 import { getSampleWorldById } from "@/lib/sampleData";
 import { getCurrentUser } from "@/lib/supabase/server";
@@ -53,7 +53,7 @@ export default async function EditWorldPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
-      <WorldEditor worldId={id} initialWorld={legacyOrSamplePlayable} />
+      <StoryEditor storyId={id} initialStory={legacyOrSamplePlayable} />
     </main>
   );
 }

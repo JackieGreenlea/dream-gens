@@ -108,16 +108,16 @@ export function CreateCanonWorldForm() {
         </fieldset>
 
         {isCompiling ? (
-          <div className="rounded-3xl border border-gold/20 bg-gold/10 p-4 sm:p-5">
+          <div className="rounded-3xl border border-warning/35 bg-warning/10 p-4 sm:p-5">
             <div className="flex items-start gap-4">
               <div className="mt-1 flex gap-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-gold/80" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gold/55" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gold/35" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/90" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/65" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/40" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-white">Compiling your world</p>
-                <p className="text-sm leading-6 text-amber-50/80">
+                <p className="text-sm font-medium text-foreground">Compiling your world</p>
+                <p className="text-sm leading-6 text-secondary">
                   Building a reusable canon container with setting, lore, history, rules, and optional recurring cast.
                 </p>
               </div>
@@ -126,9 +126,9 @@ export function CreateCanonWorldForm() {
         ) : null}
 
         {error ? (
-          <div className="rounded-3xl border border-rose-400/25 bg-rose-400/10 p-4 sm:p-5">
-            <p className="text-sm font-medium text-white">Compilation failed</p>
-            <p className="mt-2 text-sm leading-6 text-rose-100/90">{error}</p>
+          <div className="rounded-3xl border border-danger/35 bg-danger/12 p-4 sm:p-5">
+            <p className="text-sm font-medium text-foreground">Compilation failed</p>
+            <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
           </div>
         ) : null}
 

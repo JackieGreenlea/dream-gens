@@ -11,8 +11,8 @@ export function Field({ label, hint, className, children }: FieldProps) {
   return (
     <label className={cn("flex flex-col gap-3", className)}>
       <div className="space-y-1">
-        <span className="text-sm font-medium text-white">{label}</span>
-        {hint ? <p className="text-sm text-mist">{hint}</p> : null}
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        {hint ? <p className="text-sm text-secondary">{hint}</p> : null}
       </div>
       {children}
     </label>
@@ -24,7 +24,7 @@ export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        "min-h-12 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-mist/60 focus:border-gold/70 focus:outline-none focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60",
+        "min-h-12 rounded-2xl border border-fieldBorder bg-field px-4 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-60",
         props.className,
       )}
     />
@@ -36,7 +36,7 @@ export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
     <textarea
       {...props}
       className={cn(
-        "min-h-32 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-mist/60 focus:border-gold/70 focus:outline-none focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60",
+        "min-h-32 rounded-2xl border border-fieldBorder bg-field px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-60",
         props.className,
       )}
     />
@@ -48,7 +48,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       {...props}
       className={cn(
-        "min-h-12 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm text-white focus:border-gold/70 focus:outline-none focus:ring-2 focus:ring-gold/20 disabled:cursor-not-allowed disabled:opacity-60",
+        "min-h-12 rounded-2xl border border-fieldBorder bg-field px-4 text-sm text-foreground focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-60",
         props.className,
       )}
     />

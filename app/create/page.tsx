@@ -1,15 +1,15 @@
 import { ButtonLink } from "@/components/ui/button";
-import { CreateWorldForm } from "@/components/world/create-world-form";
+import { CreateStoryForm } from "@/components/story/create-story-form";
 
-export default function CreateWorldPage() {
+export default function CreateStoryPage() {
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10 sm:px-8 lg:px-10">
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-3">
-            <p className="text-sm uppercase tracking-[0.28em] text-gold">Story Compiler</p>
-            <h1 className="text-4xl font-semibold text-white">Create a story</h1>
-            <p className="max-w-2xl text-sm leading-6 text-mist">
+            <p className="text-sm uppercase tracking-[0.28em] text-warm">Story Compiler</p>
+            <h1 className="text-4xl font-semibold text-foreground">Create a story</h1>
+            <p className="max-w-2xl text-sm leading-6 text-secondary">
               Capture a rough premise, add a little direction if you want, and compile it into an editable playable story.
             </p>
           </div>
@@ -18,7 +18,7 @@ export default function CreateWorldPage() {
           </ButtonLink>
         </div>
 
-        <CreateWorldForm />
+        <CreateStoryForm />
       </div>
     </main>
   );

@@ -1,11 +1,11 @@
 import { notFound, redirect } from "next/navigation";
-import { WorldEditor } from "@/components/world/world-editor";
+import { StoryEditor } from "@/components/story/story-editor";
 import { getStoryPlayableById } from "@/lib/db";
 import { getCurrentUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function StoryPage({
+export default async function StorySetupPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -25,9 +25,9 @@ export default async function StoryPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
-      <WorldEditor
-        worldId={id}
-        initialWorld={story}
+      <StoryEditor
+        storyId={id}
+        initialStory={story}
         basePath="/stories"
         apiBasePath="/api/stories"
       />

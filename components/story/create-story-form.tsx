@@ -5,9 +5,9 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
-import { World } from "@/lib/types";
+import { Story } from "@/lib/types";
 
-export function CreateWorldForm() {
+export function CreateStoryForm() {
   const router = useRouter();
   const [premise, setPremise] = useState("");
   const [tone, setTone] = useState("");
@@ -41,20 +41,21 @@ export function CreateWorldForm() {
       });
 
       const data = (await response.json()) as {
-        world?: World;
+        world?: Story;
         error?: string;
       };
+      const compiledStory = data.world;
 
       if (response.status === 401) {
         router.push("/auth/sign-in?message=Sign%20in%20to%20compile%20and%20save%20a%20story.");
         return;
       }
 
-      if (!response.ok || !data.world) {
+      if (!response.ok || !compiledStory) {
         throw new Error(data.error || "The story compiler could not finish this request.");
       }
 
-      router.push(`/stories/${data.world.id}`);
+      router.push(`/stories/${compiledStory.id}`);
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -107,16 +108,16 @@ export function CreateWorldForm() {
           </div>
         </fieldset>
         {isCompiling ? (
-          <div className="rounded-3xl border border-gold/20 bg-gold/10 p-4 sm:p-5">
+          <div className="rounded-3xl border border-warning/35 bg-warning/10 p-4 sm:p-5">
             <div className="flex items-start gap-4">
               <div className="mt-1 flex gap-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-gold/80" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gold/55" />
-                <span className="h-2.5 w-2.5 rounded-full bg-gold/35" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/90" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/65" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/40" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-white">Compiling your story</p>
-                <p className="text-sm leading-6 text-amber-50/80">
+                <p className="text-sm font-medium text-foreground">Compiling your story</p>
+                <p className="text-sm leading-6 text-secondary">
                   Turning your premise into a structured story setup with an opening move and playable characters.
                 </p>
               </div>
@@ -124,9 +125,9 @@ export function CreateWorldForm() {
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-3xl border border-rose-400/25 bg-rose-400/10 p-4 sm:p-5">
-            <p className="text-sm font-medium text-white">Compilation failed</p>
-            <p className="mt-2 text-sm leading-6 text-rose-100/90">{error}</p>
+          <div className="rounded-3xl border border-danger/35 bg-danger/12 p-4 sm:p-5">
+            <p className="text-sm font-medium text-foreground">Compilation failed</p>
+            <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
           </div>
         ) : null}
         <Button type="submit" disabled={isCompiling}>

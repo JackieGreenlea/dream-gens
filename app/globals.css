@@ -4,6 +4,21 @@
 
 :root {
   color-scheme: dark;
+  --color-page: #131315;
+  --color-surface: #2a2131315f3a;
+  --color-elevated: #343a46;
+  --color-line: #454c59;
+  --color-foreground: #f3f5f8;
+  --color-secondary: #b8c0cc;
+  --color-muted: #8d97a6;
+  --color-field: #252b35;
+  --color-field-border: #4a5260;
+  --color-focus: #7c8fb5;
+  --color-cool: #a9b8d6;
+  --color-warm: #c9a86a;
+  --color-success: #7fb58d;
+  --color-warning: #d2a86d;
+  --color-danger: #c97c7c;
 }
 
 html {
@@ -11,22 +26,25 @@ html {
 }
 
 body {
-  @apply min-h-screen bg-night text-white antialiased;
-  background-image:
-    radial-gradient(circle at top, rgba(214, 185, 122, 0.18), transparent 30%),
-    radial-gradient(circle at 20% 20%, rgba(223, 139, 85, 0.08), transparent 25%),
-    linear-gradient(180deg, #07101d 0%, #02060d 100%);
+  @apply min-h-screen antialiased;
+  color: var(--color-foreground);
+  background-color: var(--color-page);
 }
 
 * {
-  scrollbar-color: rgba(159, 176, 199, 0.3) transparent;
+  scrollbar-color: rgba(141, 151, 166, 0.45) transparent;
 }
 
 ::selection {
-  background: rgba(214, 185, 122, 0.35);
-  color: white;
+  background: rgba(201, 168, 106, 0.35);
+  color: var(--color-foreground);
 }
 
 .bg-grid {
   background-size: auto, 44px 44px, 44px 44px;
+}
+
+.bg-celestial-glow {
+  background-color: var(--color-page);
+  background-image: none;
 }

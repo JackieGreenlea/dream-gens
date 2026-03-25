@@ -30,9 +30,9 @@ export default async function WorldProfilePage({
       <div className="space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-3">
-            <p className="text-sm uppercase tracking-[0.28em] text-gold">World Profile</p>
-            <h1 className="text-4xl font-semibold text-white">{world.title}</h1>
-            <p className="max-w-2xl text-lg leading-8 text-mist">{world.shortSummary}</p>
+            <p className="text-sm uppercase tracking-[0.28em] text-warm">World Profile</p>
+            <h1 className="text-4xl font-semibold text-foreground">{world.title}</h1>
+            <p className="max-w-2xl text-lg leading-8 text-secondary">{world.shortSummary}</p>
           </div>
 
           <WorldCanonActions world={world} />
@@ -40,10 +40,10 @@ export default async function WorldProfilePage({
 
         <Card className="space-y-5 p-6 sm:p-8">
           <div className="space-y-2">
-            <p className="text-sm uppercase tracking-[0.18em] text-gold">Canon Overview</p>
-            <h2 className="text-2xl font-semibold text-white">Long Description</h2>
+            <p className="text-sm uppercase tracking-[0.18em] text-warm">Canon Overview</p>
+            <h2 className="text-2xl font-semibold text-foreground">Long Description</h2>
           </div>
-          <div className="space-y-4 text-sm leading-7 text-mist sm:text-base">
+          <div className="space-y-4 text-sm leading-7 text-secondary sm:text-base">
             {world.longDescription
               .split(/\n+/)
               .map((paragraph) => paragraph.trim())
@@ -55,8 +55,8 @@ export default async function WorldProfilePage({
         </Card>
 
         <Card className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.18em] text-gold">Next</p>
-          <p className="text-sm leading-6 text-mist">
+          <p className="text-sm uppercase tracking-[0.18em] text-warm">Next</p>
+          <p className="text-sm leading-6 text-secondary">
             You can now edit, clone, delete, or use this world as canon for a new Story. Further world-to-story controls can come later.
           </p>
           <div className="flex flex-wrap gap-3">

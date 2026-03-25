@@ -72,9 +72,9 @@ export function CreateStoryFromWorldForm({ world }: CreateStoryFromWorldFormProp
     <div className="mx-auto max-w-5xl space-y-6">
       <Card className="space-y-4 p-6 sm:p-8">
         <div className="space-y-2">
-          <p className="text-sm uppercase tracking-[0.24em] text-gold">Create Story From World</p>
-          <h1 className="text-3xl font-semibold text-white sm:text-4xl">{world.title}</h1>
-          <p className="max-w-3xl text-sm leading-6 text-mist">
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">Create Story From World</p>
+          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">{world.title}</h1>
+          <p className="max-w-3xl text-sm leading-6 text-secondary">
             Choose a story angle for this canon world, or leave it blank and let the compiler pick the strongest playable setup.
           </p>
         </div>
@@ -114,18 +114,18 @@ export function CreateStoryFromWorldForm({ world }: CreateStoryFromWorldFormProp
           </fieldset>
 
           {isCompiling ? (
-            <div className="rounded-3xl border border-gold/20 bg-gold/10 p-4 sm:p-5">
-              <p className="text-sm font-medium text-white">Compiling your story</p>
-              <p className="mt-2 text-sm leading-6 text-amber-50/80">
+            <div className="rounded-3xl border border-warning/35 bg-warning/10 p-4 sm:p-5">
+              <p className="text-sm font-medium text-foreground">Compiling your story</p>
+              <p className="mt-2 text-sm leading-6 text-secondary">
                 Turning this world canon into a playable Story with a specific setup, opening move, and characters.
               </p>
             </div>
           ) : null}
 
           {error ? (
-            <div className="rounded-3xl border border-rose-400/25 bg-rose-400/10 p-4 sm:p-5">
-              <p className="text-sm font-medium text-white">Compilation failed</p>
-              <p className="mt-2 text-sm leading-6 text-rose-100/90">{error}</p>
+            <div className="rounded-3xl border border-danger/35 bg-danger/12 p-4 sm:p-5">
+              <p className="text-sm font-medium text-foreground">Compilation failed</p>
+              <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
             </div>
           ) : null}
 

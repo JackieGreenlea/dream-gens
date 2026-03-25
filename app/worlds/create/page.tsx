@@ -7,9 +7,9 @@ export default function CreateCanonWorldPage() {
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-3">
-            <p className="text-sm uppercase tracking-[0.28em] text-gold">World Compiler</p>
-            <h1 className="text-4xl font-semibold text-white">Create a world</h1>
-            <p className="max-w-2xl text-sm leading-6 text-mist">
+            <p className="text-sm uppercase tracking-[0.28em] text-warm">World Compiler</p>
+            <h1 className="text-4xl font-semibold text-foreground">Create a world</h1>
+            <p className="max-w-2xl text-sm leading-6 text-secondary">
               Build a reusable canon container for future stories. This flow creates world lore and structure, not a playable setup.
             </p>
           </div>

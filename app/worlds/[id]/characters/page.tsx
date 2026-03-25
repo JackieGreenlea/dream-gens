@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { CharacterSelect } from "@/components/world/character-select";
+import { StoryCharacterSelect } from "@/components/story/character-select";
 import { getOwnedStoryById, getPlayableByIdOrSample } from "@/lib/db";
 import { getSampleWorldById } from "@/lib/sampleData";
 import { getCurrentUser } from "@/lib/supabase/server";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // Compatibility wrapper:
 // - real Story setup character select lives under /stories/[id]/characters
 // - this route remains for sample and legacy playable World records
-export default async function CharacterSelectPage({
+export default async function WorldCharactersCompatibilityPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -32,15 +32,15 @@ export default async function CharacterSelectPage({
   }
 
   // Compatibility fallback only: sample worlds and older legacy playable World records.
-  const legacyOrSamplePlayable = await getPlayableByIdOrSample(id, user?.id);
+  const legacyOrSampleStory = await getPlayableByIdOrSample(id, user?.id);
 
-  if (!legacyOrSamplePlayable) {
+  if (!legacyOrSampleStory) {
     notFound();
   }
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
-      <CharacterSelect initialWorld={legacyOrSamplePlayable} />
+      <StoryCharacterSelect initialStory={legacyOrSampleStory} />
     </main>
   );
 }

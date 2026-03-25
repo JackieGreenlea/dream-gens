@@ -9,20 +9,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#0b1020",
-        night: "#040814",
-        mist: "#b7c2d9",
-        line: "rgba(183, 194, 217, 0.16)",
-        gold: "#c9d6ff",
-        ember: "#7aa2ff",
+        page: "#131315",
+        surface: "#2A2F3A",
+        elevated: "#343A46",
+        line: "#454C59",
+        foreground: "#F3F5F8",
+        secondary: "#B8C0CC",
+        muted: "#8D97A6",
+        field: "#252B35",
+        fieldBorder: "#4A5260",
+        focus: "#7C8FB5",
+        cool: "#A9B8D6",
+        warm: "#C9A86A",
+        success: "#7FB58D",
+        warning: "#D2A86D",
+        danger: "#C97C7C",
+        ink: "#F3F5F8",
+        night: "#1E222B",
+        mist: "#B8C0CC",
+        gold: "#C9A86A",
+        ember: "#7C8FB5",
       },
       boxShadow: {
-        glow: "0 20px 80px rgba(35, 69, 143, 0.28)",
+        glow: "0 18px 56px rgba(0, 0, 0, 0.28)",
       },
-backgroundImage: {
-  "celestial-fade":
-    "radial-gradient(circle at top, rgba(201, 214, 255, 0.16), transparent 50%), linear-gradient(180deg, #0b1020 0%, #040814 100%)",
-},
+      backgroundImage: {
+        "celestial-fade":
+          "radial-gradient(circle at top, rgba(169, 184, 214, 0.08), transparent 48%), linear-gradient(180deg, #1E222B 0%, #1E222B 100%)",
+      },
     },
   },
   plugins: [],

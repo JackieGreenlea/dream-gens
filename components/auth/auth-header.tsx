@@ -40,7 +40,7 @@ function UserIcon() {
 }
 
 function headerActionButtonClasses() {
-  return "inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-mist transition hover:border-white/25 hover:bg-white/[0.08] hover:text-white";
+  return "inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-secondary transition hover:border-fieldBorder hover:bg-elevated hover:text-foreground";
 }
 
 export function AuthHeader({ user }: AuthHeaderProps) {
@@ -48,12 +48,12 @@ export function AuthHeader({ user }: AuthHeaderProps) {
   const username = user?.email?.split("@")[0] ?? "Guest";
   const centerControls = (
     <>
-      <button
-        type="button"
-        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-mist transition hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
+      <Link
+        href="/explore"
+        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface px-4 text-sm text-secondary transition hover:border-fieldBorder hover:bg-elevated hover:text-foreground"
       >
         Explore
-      </button>
+      </Link>
       <div className="min-w-[4.5rem] flex-1">
         <label className="sr-only" htmlFor="site-search">
           Search
@@ -62,14 +62,14 @@ export function AuthHeader({ user }: AuthHeaderProps) {
           id="site-search"
           type="search"
           placeholder="Search"
-          className="h-11 w-full rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-white placeholder:text-mist/60 focus:border-white/20 focus:outline-none"
+          className="h-11 w-full rounded-full border border-fieldBorder bg-field px-4 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25"
         />
       </div>
     </>
   );
 
   return (
-    <header className="relative z-50 border-b border-white/10 bg-black/20 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line/80 bg-page/95 backdrop-blur">
       <div className="absolute left-1/2 top-1/2 hidden w-[clamp(11rem,54vw,52rem)] -translate-x-1/2 -translate-y-1/2 items-center gap-3 lg:flex">
         {centerControls}
       </div>
@@ -78,7 +78,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
         <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
           <Link
             href="/"
-            className="inline-flex h-11 items-center text-sm font-medium uppercase tracking-[0.28em] text-gold"
+            className="inline-flex h-11 items-center text-sm font-medium uppercase tracking-[0.28em] text-warm"
           >
             Everplot
           </Link>
@@ -99,22 +99,22 @@ export function AuthHeader({ user }: AuthHeaderProps) {
 
           <details className="group relative">
             <summary
-              className={`${headerActionButtonClasses()} list-none cursor-pointer text-[#b7b7b7]`}
+              className={`${headerActionButtonClasses()} list-none cursor-pointer`}
               aria-label="Account menu"
             >
               <UserIcon />
             </summary>
 
-            <div className="absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-white/10 bg-[#120f1c]/95 p-3 shadow-glow backdrop-blur">
+            <div className="absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-3 backdrop-blur">
               <div className="flex flex-col">
-                <div className="border-b border-white/10 px-3 pb-3">
-                  <p className="text-sm font-medium text-white">{username}</p>
-                  <p className="mt-1 text-xs text-mist/80">{accountLabel}</p>
+                <div className="border-b border-line px-3 pb-3">
+                  <p className="text-sm font-medium text-foreground">{username}</p>
+                  <p className="mt-1 text-xs text-muted">{accountLabel}</p>
                 </div>
 
                 <button
                   type="button"
-                  className="mt-2 rounded-2xl px-3 py-2 text-left text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                  className="mt-2 rounded-2xl px-3 py-2 text-left text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                 >
                   My Profile
                 </button>
@@ -123,19 +123,19 @@ export function AuthHeader({ user }: AuthHeaderProps) {
                   <>
                     <Link
                       href="/sessions"
-                      className="rounded-2xl px-3 py-2 text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                      className="rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                     >
                       My Sessions
                     </Link>
                     <Link
                       href="/stories"
-                      className="rounded-2xl px-3 py-2 text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                      className="rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                     >
                       My Stories
                     </Link>
                     <Link
                       href="/worlds"
-                      className="rounded-2xl px-3 py-2 text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                      className="rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                     >
                       My Worlds
                     </Link>
@@ -144,17 +144,17 @@ export function AuthHeader({ user }: AuthHeaderProps) {
 
                 <button
                   type="button"
-                  className="rounded-2xl px-3 py-2 text-left text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                  className="rounded-2xl px-3 py-2 text-left text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                 >
                   Settings
                 </button>
 
-                <div className="mt-2 border-t border-white/10 pt-2">
+                <div className="mt-2 border-t border-line pt-2">
                   {user ? (
                     <form action={signOut}>
                       <button
                         type="submit"
-                        className="w-full rounded-2xl px-3 py-2 text-left text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                        className="w-full rounded-2xl px-3 py-2 text-left text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                       >
                         Sign out
                       </button>
@@ -162,7 +162,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
                   ) : (
                     <Link
                       href="/auth/sign-in"
-                      className="block rounded-2xl px-3 py-2 text-sm text-mist transition hover:bg-white/[0.08] hover:text-white"
+                      className="block rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
                     >
                       Sign in
                     </Link>
