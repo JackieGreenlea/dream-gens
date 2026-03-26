@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { LoadingDots } from "@/components/ui/loading";
 import { PlayerCharacter, Session, SessionTurn, World } from "@/lib/types";
 import { buildSuggestedActions } from "@/lib/utils";
 
@@ -170,22 +171,22 @@ export function PlaySessionShell({
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3 text-sm text-secondary">
-                <span className="rounded-full border border-line px-3 py-1">
+                <span className="rounded-md border border-line/70 px-2.5 py-1">
                   Turn {session.turnCount}
                 </span>
-                <span className="rounded-full border border-line px-3 py-1">{character.name}</span>
+                <span className="rounded-md border border-line/70 px-2.5 py-1">{character.name}</span>
               </div>
               <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsDetailsOpen((current) => !current)}
-                  className="rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-foreground transition hover:border-fieldBorder hover:bg-elevated"
+                  className="rounded-lg border border-line bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground"
                 >
                   {isDetailsOpen ? "Hide" : "Details"}
                 </button>
 
                 {isDetailsOpen ? (
-                  <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-5 backdrop-blur sm:w-[22rem]">
+                  <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-5 backdrop-blur sm:w-[22rem]">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium text-foreground">Details</p>
                       <button
@@ -230,7 +231,7 @@ export function PlaySessionShell({
               </summary>
               <div className="mt-4 space-y-4">
                 {previousTurns.map((turn) => (
-                  <div key={turn.turnNumber} className="rounded-2xl border border-line bg-elevated p-4">
+                  <div key={turn.turnNumber} className="border-l border-line pl-4">
                     <p className="text-xs uppercase tracking-[0.2em] text-secondary">Turn {turn.turnNumber}</p>
                     <p className="mt-2 text-sm leading-6 text-foreground">{turn.playerAction}</p>
                     <div className="mt-3">{renderStoryText(turn.storyText)}</div>
@@ -272,18 +273,16 @@ export function PlaySessionShell({
                 value={playerAction}
                 onChange={(event) => setPlayerAction(event.target.value)}
                 disabled={isSubmitting}
-                className="min-h-40 w-full rounded-2xl border border-fieldBorder bg-field px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-60"
+                className="min-h-40 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
                 placeholder="Type what your character does next..."
               />
-              {error ? (
-                <div className="rounded-2xl border border-danger/35 bg-danger/12 p-4 text-sm text-foreground">
-                  {error}
-                </div>
-              ) : null}
+              {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground">{error}</div> : null}
               <Button type="submit" disabled={isSubmitting || !playerAction.trim()}>
                 {isSubmitting ? "Resolving turn..." : "Submit action"}
               </Button>
             </form>
+
+            {isSubmitting ? <LoadingDots label="Writing the next beat..." /> : null}
 
             <div className="space-y-3 border-t border-line pt-4">
               <p className="text-xs uppercase tracking-[0.2em] text-secondary">Suggested Actions</p>
@@ -294,7 +293,7 @@ export function PlaySessionShell({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => submitAction(action)}
-                    className="rounded-2xl border border-line bg-elevated p-4 text-left text-sm text-secondary transition hover:border-fieldBorder hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-line/70 bg-transparent p-4 text-left text-sm text-secondary transition hover:border-fieldBorder hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {action}
                   </button>

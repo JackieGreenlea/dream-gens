@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SessionOpeningSkeletonScreen } from "@/components/ui/loading";
 import { Story } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type StoryCharacterSelectProps = {
   initialStory: Story | null;
-  apiBasePath?: "/api/worlds" | "/api/stories";
+  apiBasePath?: "/api/worlds" | "/api/stories" | null;
 };
 
 export function StoryCharacterSelect({
@@ -25,7 +26,7 @@ export function StoryCharacterSelect({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!initialStory) {
+    if (!initialStory || !apiBasePath) {
       return;
     }
 
@@ -41,9 +42,10 @@ export function StoryCharacterSelect({
           cache: "no-store",
         });
         const data = (await response.json()) as {
+          story?: Story;
           world?: Story;
         };
-        const fetchedStory = data.world;
+        const fetchedStory = data.story ?? data.world;
 
         if (!response.ok || !fetchedStory || !isMounted) {
           return;
@@ -78,6 +80,10 @@ export function StoryCharacterSelect({
         <p className="text-foreground">Story not found.</p>
       </Card>
     );
+  }
+
+  if (isStarting) {
+    return <SessionOpeningSkeletonScreen message="Preparing your opening scene..." />;
   }
 
   async function beginSession() {
@@ -144,10 +150,10 @@ export function StoryCharacterSelect({
               type="button"
               onClick={() => setSelectedId(character.id)}
               className={cn(
-                "rounded-3xl border p-6 text-left transition",
+                "rounded-xl border p-5 text-left transition",
                 isSelected
-                  ? "border-warm bg-elevated"
-                  : "border-line bg-surface hover:border-fieldBorder hover:bg-elevated",
+                  ? "border-accent/55 bg-surface"
+                  : "border-line/70 bg-transparent hover:border-fieldBorder hover:bg-surface",
               )}
             >
               <div className="space-y-3">
@@ -156,34 +162,28 @@ export function StoryCharacterSelect({
                     <p className="text-xl font-semibold text-foreground">{character.name}</p>
                     <p className="mt-2 text-sm leading-6 text-secondary">{character.description}</p>
                   </div>
-                  <span className="rounded-full border border-line px-3 py-1 text-xs text-secondary">
+                  <span className="text-xs uppercase tracking-[0.16em] text-muted">
                     {isSelected ? "Selected" : "Available"}
                   </span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.18em] text-secondary">Strengths</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-1.5 text-sm text-secondary">
                       {character.strengths.map((strength) => (
-                        <span
-                          key={`${character.id}-${strength}`}
-                          className="rounded-full border border-line px-3 py-1 text-xs text-secondary"
-                        >
+                        <p key={`${character.id}-${strength}`}>
                           {strength}
-                        </span>
+                        </p>
                       ))}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <p className="text-xs uppercase tracking-[0.18em] text-secondary">Weaknesses</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="space-y-1.5 text-sm text-secondary">
                       {character.weaknesses.map((weakness) => (
-                        <span
-                          key={`${character.id}-${weakness}`}
-                          className="rounded-full border border-line px-3 py-1 text-xs text-secondary"
-                        >
+                        <p key={`${character.id}-${weakness}`}>
                           {weakness}
-                        </span>
+                        </p>
                       ))}
                     </div>
                   </div>

@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { StoryReviewSkeletonScreen } from "@/components/ui/loading";
 import { Story } from "@/lib/types";
 
 export function CreateStoryForm() {
@@ -68,6 +69,9 @@ export function CreateStoryForm() {
   }
 
   return (
+    isCompiling ? (
+      <StoryReviewSkeletonScreen message="Compiling your story..." />
+    ) : (
     <Card className="p-5 sm:p-8">
       <form className="space-y-6" onSubmit={handleSubmit}>
         <fieldset disabled={isCompiling} className="space-y-6 disabled:opacity-100">
@@ -107,25 +111,8 @@ export function CreateStoryForm() {
             </Field>
           </div>
         </fieldset>
-        {isCompiling ? (
-          <div className="rounded-3xl border border-warning/35 bg-warning/10 p-4 sm:p-5">
-            <div className="flex items-start gap-4">
-              <div className="mt-1 flex gap-1">
-                <span className="h-2.5 w-2.5 rounded-full bg-warning/90" />
-                <span className="h-2.5 w-2.5 rounded-full bg-warning/65" />
-                <span className="h-2.5 w-2.5 rounded-full bg-warning/40" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">Compiling your story</p>
-                <p className="text-sm leading-6 text-secondary">
-                  Turning your premise into a structured story setup with an opening move and playable characters.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : null}
         {error ? (
-          <div className="rounded-3xl border border-danger/35 bg-danger/12 p-4 sm:p-5">
+          <div className="border-l border-danger/45 pl-4">
             <p className="text-sm font-medium text-foreground">Compilation failed</p>
             <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
           </div>
@@ -135,5 +122,6 @@ export function CreateStoryForm() {
         </Button>
       </form>
     </Card>
+    )
   );
 }

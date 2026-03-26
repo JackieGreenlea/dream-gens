@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { StoryPublishToggleButton } from "@/components/story/story-publish-toggle-button";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DeleteEntryButton } from "@/components/ui/delete-entry-button";
@@ -50,6 +51,9 @@ export default async function MyStoriesPage() {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.18em] text-secondary">
                     <span>Updated {formatLibraryDate(story.updatedAt)}</span>
+                    {story.source === "story" ? (
+                      <span>{story.visibility === "public" ? "Published" : "Private"}</span>
+                    ) : null}
                   </div>
                   <h2 className="text-2xl font-semibold text-foreground">{story.title}</h2>
                   <p className="max-w-3xl text-sm leading-6 text-secondary">{story.summary}</p>
@@ -70,6 +74,12 @@ export default async function MyStoriesPage() {
                   >
                     Play
                   </ButtonLink>
+                  {story.source === "story" ? (
+                    <StoryPublishToggleButton
+                      storyId={story.id}
+                      visibility={story.visibility === "public" ? "public" : "private"}
+                    />
+                  ) : null}
                   <DeleteEntryButton
                     endpoint={
                       story.source === "story" ? `/api/stories/${story.id}` : `/api/worlds/${story.id}`

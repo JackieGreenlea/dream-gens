@@ -11,11 +11,12 @@ import {
   SessionTurn,
   Story,
   StoryPov,
+  StoryVisibility,
   World,
   WorldCanon,
   WorldCastMember,
 } from "@/lib/types";
-import { createId } from "@/lib/utils";
+import { createId, slugify } from "@/lib/utils";
 
 const RECENT_TURN_LIMIT = 5;
 
@@ -108,6 +109,8 @@ export type UserStoryListItem = {
   source: "story" | "world";
   title: string;
   summary: string;
+  visibility?: StoryVisibility;
+  publishedAt?: Date | null;
   updatedAt: Date;
 };
 
@@ -120,7 +123,28 @@ export type UserSessionListItem = {
   updatedAt: Date;
 };
 
+export type PublicStoryListItem = {
+  id: string;
+  title: string;
+  summary: string;
+  authorName: string;
+  publishedAt: Date | null;
+  coverImageUrl: string | null;
+};
+
 // Internal shared mapping helpers
+
+function getStoryAuthorLabel(record: {
+  user: {
+    name: string | null;
+    email: string | null;
+  } | null;
+}) {
+  const name = record.user?.name?.trim();
+  const email = record.user?.email?.trim();
+
+  return name || email || "Unknown author";
+}
 
 function normalizePov(value: string | StoryPov | null | undefined): StoryPov {
   if (value === "first_person" || value === "third_person") {
@@ -205,6 +229,10 @@ function mapStoryRecord(record: DbStoryRecord): Story {
   return {
     id: record.id,
     worldId: record.worldId,
+    visibility: record.visibility as StoryVisibility,
+    slug: record.slug,
+    publishedAt: record.publishedAt ? record.publishedAt.toISOString() : null,
+    coverImageUrl: record.coverImageUrl,
     title: record.title,
     summary: record.summary,
     background: record.background,
@@ -219,6 +247,63 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     defeatEnabled: record.defeatEnabled,
     playerCharacters: record.playerCharacters.map(mapCharacter),
   };
+}
+
+function getStoryPublishValidationError(story: Story) {
+  if (!story.title.trim()) return "A title is required before publishing.";
+  if (!story.summary.trim()) return "A summary is required before publishing.";
+  if (!story.background.trim()) return "Background is required before publishing.";
+  if (!story.firstAction.trim()) return "A first action is required before publishing.";
+  if (!story.objective.trim()) return "An objective is required before publishing.";
+  if (!story.instructions.trim()) return "Instructions are required before publishing.";
+  if (!story.authorStyle.trim()) return "Author style is required before publishing.";
+  if (story.playerCharacters.length === 0) {
+    return "Add at least one playable character before publishing.";
+  }
+
+  if (
+    story.playerCharacters.some(
+      (character) => !character.name.trim() || !character.description.trim(),
+    )
+  ) {
+    return "Each playable character needs a name and description before publishing.";
+  }
+
+  return null;
+}
+
+async function ensureUniqueStorySlug(
+  tx: Prisma.TransactionClient,
+  title: string,
+  storyId: string,
+  currentSlug: string | null,
+) {
+  if (currentSlug) {
+    return currentSlug;
+  }
+
+  const baseSlug = slugify(title);
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+    const existingStory = await tx.story.findFirst({
+      where: {
+        slug: candidate,
+        NOT: {
+          id: storyId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingStory) {
+      return candidate;
+    }
+  }
+
+  return `${baseSlug}-${createId("slug").replace("slug-", "")}`;
 }
 
 function mapWorldCanon(record: DbWorldCanon): WorldCanon {
@@ -407,6 +492,7 @@ function worldCanonPersistenceData(world: WorldCanon) {
 function storyPersistenceData(story: Story) {
   return {
     worldId: story.worldId ?? null,
+    coverImageUrl: story.coverImageUrl ?? null,
     title: sanitizeTextForDatabase(story.title),
     summary: sanitizeTextForDatabase(story.summary),
     background: sanitizeTextForDatabase(story.background),
@@ -713,6 +799,38 @@ export async function updateStoryForUser(story: Story, userId: string) {
   return persistStoryRecord(story, userId);
 }
 
+export async function updateStoryCoverImageForUser(
+  storyId: string,
+  userId: string,
+  coverImageUrl: string | null,
+) {
+  const existingStory = await prisma.story.findFirst({
+    where: {
+      id: storyId,
+      userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingStory) {
+    return null;
+  }
+
+  const story = await prisma.story.update({
+    where: {
+      id: storyId,
+    },
+    data: {
+      coverImageUrl,
+    },
+    include: storyInclude,
+  });
+
+  return mapStoryRecord(story);
+}
+
 export async function createOwnedCopyFromWorld(world: World, userId: string) {
   const ownedWorld = cloneWorldForOwner(world);
   return createWorld(ownedWorld, userId);
@@ -780,6 +898,113 @@ export async function getOwnedStoryById(id: string, userId: string) {
   });
 
   return story ? mapStoryRecord(story) : null;
+}
+
+export async function listPublishedStoriesForExplore(
+  limit = 24,
+): Promise<PublicStoryListItem[]> {
+  const stories = await prisma.story.findMany({
+    where: {
+      visibility: "public",
+    },
+    orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
+    take: limit,
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return stories.map((story) => ({
+    id: story.id,
+    title: story.title,
+    summary: story.summary,
+    authorName: getStoryAuthorLabel(story),
+    publishedAt: story.publishedAt ?? null,
+    coverImageUrl: story.coverImageUrl ?? null,
+  }));
+}
+
+export async function publishStoryForUser(storyId: string, userId: string) {
+  const existingStory = await getOwnedStoryById(storyId, userId);
+
+  if (!existingStory) {
+    return { story: null, error: "Story not found." };
+  }
+
+  const validationError = getStoryPublishValidationError(existingStory);
+
+  if (validationError) {
+    return { story: null, error: validationError };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const story = await tx.story.findFirst({
+      where: {
+        id: storyId,
+        userId,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+      },
+    });
+
+    if (!story) {
+      throw new Error("Story not found.");
+    }
+
+    const slug = await ensureUniqueStorySlug(tx, story.title, story.id, story.slug);
+
+    await tx.story.update({
+      where: {
+        id: story.id,
+      },
+      data: {
+        visibility: "public",
+        slug,
+        publishedAt: new Date(),
+      },
+    });
+  });
+
+  return {
+    story: await getOwnedStoryById(storyId, userId),
+    error: null,
+  };
+}
+
+export async function unpublishStoryForUser(storyId: string, userId: string) {
+  const existingStory = await prisma.story.findFirst({
+    where: {
+      id: storyId,
+      userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingStory) {
+    return null;
+  }
+
+  await prisma.story.update({
+    where: {
+      id: storyId,
+    },
+    data: {
+      visibility: "private",
+      publishedAt: null,
+    },
+  });
+
+  return getOwnedStoryById(storyId, userId);
 }
 
 export async function listPlayableEntriesForUser(userId: string): Promise<UserWorldListItem[]> {
@@ -1092,6 +1317,8 @@ export async function listStoriesForUser(userId: string): Promise<UserStoryListI
         id: true,
         title: true,
         summary: true,
+        visibility: true,
+        publishedAt: true,
         updatedAt: true,
       },
     }),
@@ -1128,6 +1355,8 @@ export async function listStoriesForUser(userId: string): Promise<UserStoryListI
       source: item.source,
       title: item.title,
       summary: item.summary,
+      visibility: "visibility" in item ? item.visibility : undefined,
+      publishedAt: "publishedAt" in item ? item.publishedAt : undefined,
       updatedAt: item.updatedAt,
     }));
 }
@@ -1204,15 +1433,18 @@ export async function savePlayableSetupForUser(world: World, userId: string) {
   return updateWorldForUser(world, userId);
 }
 
-export async function saveStoryPlayableForUser(world: World, userId: string) {
-  const existingStory = await getOwnedStoryById(world.id, userId);
+export async function saveStoryPlayableForUser(story: Story, userId: string) {
+  const existingStory = await getOwnedStoryById(story.id, userId);
 
   if (!existingStory) {
     return null;
   }
 
   const savedStory = await updateStoryForUser(
-    storyFromPlayableInput(world, existingStory.worldId ?? null),
+    {
+      ...story,
+      worldId: existingStory.worldId ?? story.worldId ?? null,
+    },
     userId,
   );
 

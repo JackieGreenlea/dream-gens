@@ -9,6 +9,17 @@ export function createId(prefix: string) {
   return `${prefix}-${seed}`;
 }
 
+export function slugify(value: string) {
+  const normalized = value
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || "story";
+}
+
 export function titleFromPremise(premise: string) {
   const trimmed = premise.trim();
 

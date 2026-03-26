@@ -61,7 +61,7 @@ export function DeleteEntryButton({
       variant="ghost"
       onClick={handleDelete}
       disabled={isDeleting}
-      className="border-danger/35 bg-danger/12 text-foreground hover:bg-danger/18 hover:text-foreground"
+      className="border-danger/25 bg-transparent text-secondary hover:border-danger/40 hover:bg-danger/10 hover:text-foreground"
     >
       {isDeleting ? "Deleting..." : label}
     </Button>

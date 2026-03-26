@@ -9,10 +9,21 @@ export function createStoryFromWorld(
   return {
     ...world,
     worldId,
+    visibility: "private",
+    slug: null,
+    publishedAt: null,
+    coverImageUrl: null,
   };
 }
 
 export function createWorldFromStory(story: Story): World {
-  const { worldId: _worldId, ...world } = story;
+  const {
+    worldId: _worldId,
+    visibility: _visibility,
+    slug: _slug,
+    publishedAt: _publishedAt,
+    coverImageUrl: _coverImageUrl,
+    ...world
+  } = story;
   return world;
 }

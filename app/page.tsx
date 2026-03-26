@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ExploreStoriesCarousel } from "@/components/home/explore-stories-carousel";
 import homeBanner from "@/components/home/everplot-home-banner.png";
+import { listPublishedStoriesForExplore } from "@/lib/db";
 
 const placeholderStories = [
   {
@@ -33,6 +34,7 @@ export default async function HomePage({
   searchParams: Promise<{ message?: string }>;
 }) {
   await searchParams;
+  const publishedStories = await listPublishedStoriesForExplore(8);
 
   return (
     <main className="min-h-screen bg-page">
@@ -62,6 +64,34 @@ export default async function HomePage({
         </section>
 
         <div className="space-y-8">
+          <section className="space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-semibold text-foreground">Published Stories</h2>
+              <p className="text-sm text-secondary">
+                Public stories currently available in Explore.
+              </p>
+            </div>
+
+            {publishedStories.length > 0 ? (
+              <ExploreStoriesCarousel
+                stories={publishedStories.map((story) => ({
+                  title: story.title,
+                  summary: story.summary,
+                  accent: "from-[#0091AD] via-[#00768D] to-slate-950",
+                  imageUrl: story.coverImageUrl,
+                  href: "/explore",
+                }))}
+              />
+            ) : (
+              <div className="border-t border-line pt-6">
+                <p className="text-lg font-medium text-foreground">No published stories yet</p>
+                <p className="mt-2 text-sm leading-6 text-secondary">
+                  Published stories will appear here once authors choose to share them.
+                </p>
+              </div>
+            )}
+          </section>
+
           {storyRows.map((rowTitle) => (
             <section key={rowTitle} className="space-y-4">
               <div className="space-y-1">

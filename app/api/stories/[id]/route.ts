@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import {
   deleteStoryForUser,
-  getStoryPlayableById,
+  getOwnedStoryById,
   saveStoryPlayableForUser,
 } from "@/lib/db";
-import { persistedWorldSchema } from "@/lib/schemas";
+import { storySchema } from "@/lib/schemas";
+import { createWorldFromStory } from "@/lib/story";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { ensureDatabaseUser } from "@/lib/user-sync";
 
@@ -25,13 +26,13 @@ export async function GET(
     return NextResponse.json({ error: "Sign in to open this story." }, { status: 401 });
   }
 
-  const world = await getStoryPlayableById(id, user.id);
+  const story = await getOwnedStoryById(id, user.id);
 
-  if (!world) {
+  if (!story) {
     return NextResponse.json({ error: "Story not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ world });
+  return NextResponse.json({ story, world: createWorldFromStory(story) });
 }
 
 export async function PATCH(
@@ -51,7 +52,7 @@ export async function PATCH(
     await ensureDatabaseUser(user);
 
     const body = await request.json();
-    const input = persistedWorldSchema.parse(body);
+    const input = storySchema.parse(body);
 
     if (input.id !== id) {
       return NextResponse.json({ error: "Story id mismatch." }, { status: 400 });
@@ -63,7 +64,9 @@ export async function PATCH(
       return NextResponse.json({ error: "Story not found." }, { status: 404 });
     }
 
-    return NextResponse.json({ world });
+    const story = await getOwnedStoryById(id, user.id);
+
+    return NextResponse.json({ story, world });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(

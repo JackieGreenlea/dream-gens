@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { StoryEditor } from "@/components/story/story-editor";
-import { getStoryPlayableById } from "@/lib/db";
+import { getOwnedStoryById } from "@/lib/db";
 import { getCurrentUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default async function StorySetupPage({
     redirect("/auth/sign-in?message=Sign%20in%20to%20open%20your%20saved%20stories.");
   }
 
-  const story = await getStoryPlayableById(id, user.id);
+  const story = await getOwnedStoryById(id, user.id);
 
   if (!story) {
     notFound();

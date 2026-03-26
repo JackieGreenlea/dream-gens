@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DeleteEntryButton } from "@/components/ui/delete-entry-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import {
+  isAllowedStoryCoverType,
+  MAX_STORY_COVER_BYTES,
+} from "@/lib/supabase/storage";
 import { PlayerCharacter, Story } from "@/lib/types";
 import { formatLineList, parseLineList } from "@/lib/utils";
 
@@ -28,6 +32,12 @@ export function StoryEditor({
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
+    initialStory?.coverImageUrl ?? null,
+  );
+  const [errorTitle, setErrorTitle] = useState("Story save failed");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -38,6 +48,10 @@ export function StoryEditor({
     const timeout = window.setTimeout(() => setSaved(false), 1800);
     return () => window.clearTimeout(timeout);
   }, [saved]);
+
+  useEffect(() => {
+    setCoverPreviewUrl(initialStory?.coverImageUrl ?? null);
+  }, [initialStory?.coverImageUrl]);
 
   if (!story) {
     return (
@@ -67,12 +81,18 @@ export function StoryEditor({
     );
   }
 
+  function setEditorError(title: string, message: string) {
+    setErrorTitle(title);
+    setError(message);
+  }
+
   async function persistStory(nextStep?: "characters" | "exit") {
     if (!story || isSaving) {
       return false;
     }
 
     setIsSaving(true);
+    setErrorTitle("Story save failed");
     setError("");
     const currentStoryId = story.id;
 
@@ -86,10 +106,11 @@ export function StoryEditor({
       });
 
       const data = (await response.json()) as {
+        story?: Story;
         world?: Story;
         error?: string;
       };
-      const savedStory = data.world;
+      const savedStory = data.story ?? data.world;
 
       if (response.status === 401) {
         router.push("/auth/sign-in?message=Sign%20in%20to%20save%20and%20play%20your%20story.");
@@ -120,7 +141,10 @@ export function StoryEditor({
 
       return true;
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "The story could not be saved.");
+      setEditorError(
+        "Story save failed",
+        saveError instanceof Error ? saveError.message : "The story could not be saved.",
+      );
       return false;
     } finally {
       setIsSaving(false);
@@ -143,11 +167,157 @@ export function StoryEditor({
     await persistStory("characters");
   }
 
+  async function handlePublish() {
+    if (!story || isPublishing) {
+      return;
+    }
+
+    setIsPublishing(true);
+    setErrorTitle("Story publish failed");
+    setError("");
+
+    try {
+      const response = await fetch(`/api/stories/${story.id}/publish`, {
+        method: "POST",
+      });
+      const data = (await response.json()) as {
+        story?: Story;
+        error?: string;
+      };
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in?message=Sign%20in%20to%20publish%20your%20story.");
+        return;
+      }
+
+      if (!response.ok || !data.story) {
+        throw new Error(data.error || "The story could not be published.");
+      }
+
+      const publishedStory = data.story;
+      setStory((current) => (current ? { ...current, ...publishedStory } : publishedStory));
+    } catch (publishError) {
+      setEditorError(
+        "Story publish failed",
+        publishError instanceof Error ? publishError.message : "The story could not be published.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
+  async function handleUnpublish() {
+    if (!story || isPublishing) {
+      return;
+    }
+
+    setIsPublishing(true);
+    setErrorTitle("Story unpublish failed");
+    setError("");
+
+    try {
+      const response = await fetch(`/api/stories/${story.id}/publish`, {
+        method: "DELETE",
+      });
+      const data = (await response.json()) as {
+        story?: Story;
+        error?: string;
+      };
+
+      if (response.status === 401) {
+        router.push("/auth/sign-in?message=Sign%20in%20to%20manage%20your%20story.");
+        return;
+      }
+
+      if (!response.ok || !data.story) {
+        throw new Error(data.error || "The story could not be unpublished.");
+      }
+
+      const unpublishedStory = data.story;
+      setStory((current) => (current ? { ...current, ...unpublishedStory } : unpublishedStory));
+    } catch (unpublishError) {
+      setEditorError(
+        "Story unpublish failed",
+        unpublishError instanceof Error
+          ? unpublishError.message
+          : "The story could not be unpublished.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
+  async function handleCoverUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file || !story || isUploadingCover) {
+      return;
+    }
+
+    if (!isAllowedStoryCoverType(file.type)) {
+      setEditorError("Story cover upload failed", "Upload a JPG, PNG, or WEBP image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_STORY_COVER_BYTES) {
+      setEditorError("Story cover upload failed", "Image must be 5MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setCoverPreviewUrl(previewUrl);
+    setIsUploadingCover(true);
+    setErrorTitle("Story cover upload failed");
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/stories/${story.id}/cover`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json()) as {
+        story?: Story;
+        error?: string;
+      };
+
+      if (response.status === 401) {
+        setCoverPreviewUrl(story.coverImageUrl ?? null);
+        router.push("/auth/sign-in?message=Sign%20in%20to%20upload%20a%20story%20cover.");
+        return;
+      }
+
+      if (!response.ok || !data.story) {
+        throw new Error(data.error || "The story cover could not be uploaded.");
+      }
+
+      const uploadedStory = data.story;
+      setStory((current) => (current ? { ...current, ...uploadedStory } : uploadedStory));
+      setCoverPreviewUrl(uploadedStory.coverImageUrl ?? null);
+    } catch (uploadError) {
+      setEditorError(
+        "Story cover upload failed",
+        uploadError instanceof Error
+          ? uploadError.message
+          : "The story cover could not be uploaded.",
+      );
+      setCoverPreviewUrl(story.coverImageUrl ?? null);
+    } finally {
+      URL.revokeObjectURL(previewUrl);
+      event.target.value = "";
+      setIsUploadingCover(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       {error ? (
-        <Card className="border-danger/35 bg-danger/12 p-5">
-          <p className="text-sm font-medium text-foreground">Story save failed</p>
+        <Card className="border-danger/25 bg-transparent p-5">
+          <p className="text-sm font-medium text-foreground">{errorTitle}</p>
           <p className="mt-2 text-sm leading-6 text-secondary">{error}</p>
         </Card>
       ) : null}
@@ -157,12 +327,28 @@ export function StoryEditor({
           <p className="text-sm uppercase tracking-[0.24em] text-warm">Review your story</p>
           <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">{story.title}</h1>
           <p className="max-w-3xl text-base leading-7 text-secondary">{story.summary}</p>
+          {basePath === "/stories" ? (
+            <div className="text-sm text-secondary">
+              <p>{story.visibility === "public" ? "Published story." : "Private story."}</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-3">
           <Button type="button" onClick={handlePlay} disabled={isSaving}>
             {isSaving ? "Saving..." : "Play"}
           </Button>
+          {basePath === "/stories" ? (
+            story.visibility === "public" ? (
+              <Button type="button" variant="ghost" onClick={handleUnpublish} disabled={isPublishing}>
+                {isPublishing ? "Unpublishing..." : "Unpublish"}
+              </Button>
+            ) : (
+              <Button type="button" variant="ghost" onClick={handlePublish} disabled={isPublishing}>
+                {isPublishing ? "Publishing..." : "Publish"}
+              </Button>
+            )
+          ) : null}
           <Button
             type="button"
             variant="ghost"
@@ -192,6 +378,33 @@ export function StoryEditor({
           </div>
 
           <div className="grid gap-5">
+            <Field label="Cover image" hint="Upload a JPG, PNG, or WEBP image up to 5MB.">
+              <div className="space-y-4">
+                {coverPreviewUrl ? (
+                  <div className="overflow-hidden rounded-lg border border-line/70 bg-surface/40">
+                    <img
+                      src={coverPreviewUrl}
+                      alt={`${story.title} cover preview`}
+                      className="h-56 w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-line/70 bg-transparent text-sm text-secondary">
+                    No cover image uploaded yet.
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleCoverUpload}
+                  disabled={isUploadingCover}
+                  className="block w-full text-sm text-secondary file:mr-4 file:rounded-lg file:border file:border-line file:bg-transparent file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:border-fieldBorder"
+                />
+                {isUploadingCover ? (
+                  <p className="text-sm text-secondary">Uploading cover image...</p>
+                ) : null}
+              </div>
+            </Field>
             <Field label="Title">
               <Input
                 value={story.title}
@@ -242,7 +455,7 @@ export function StoryEditor({
               {story.playerCharacters.map((character) => (
                 <div
                   key={character.id}
-                  className="rounded-3xl border border-line bg-elevated p-4 sm:p-5"
+                  className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5"
                 >
                   <div className="grid gap-4">
                     <Field label="Character name">
@@ -352,7 +565,7 @@ export function StoryEditor({
 
           {isAdvancedOpen ? (
             <div className="space-y-4 border-t border-line pt-6">
-              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
+              <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
                 <Field label="POV" hint="Controls narration perspective during play.">
                   <Select
                     value={story.pov}
@@ -365,7 +578,7 @@ export function StoryEditor({
                 </Field>
               </div>
 
-              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
+              <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
                 <Field label="Author Style">
                   <Textarea
                     value={story.authorStyle}
@@ -374,7 +587,7 @@ export function StoryEditor({
                 </Field>
               </div>
 
-              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
+              <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">Victory Conditions</p>
@@ -383,7 +596,7 @@ export function StoryEditor({
                   <button
                     type="button"
                     onClick={() => updateField("victoryEnabled", !story.victoryEnabled)}
-                    className="rounded-full border border-line px-4 py-2 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
+                    className="rounded-lg border border-line px-3 py-1.5 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
                   >
                     {story.victoryEnabled ? "Enabled" : "Disabled"}
                   </button>
@@ -396,7 +609,7 @@ export function StoryEditor({
                 />
               </div>
 
-              <div className="rounded-3xl border border-line bg-elevated p-4 sm:p-5">
+              <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-foreground">Defeat Conditions</p>
@@ -405,7 +618,7 @@ export function StoryEditor({
                   <button
                     type="button"
                     onClick={() => updateField("defeatEnabled", !story.defeatEnabled)}
-                    className="rounded-full border border-line px-4 py-2 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
+                    className="rounded-lg border border-line px-3 py-1.5 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
                   >
                     {story.defeatEnabled ? "Enabled" : "Disabled"}
                   </button>

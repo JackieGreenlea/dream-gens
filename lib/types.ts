@@ -1,4 +1,5 @@
 export type StoryPov = "second_person" | "first_person" | "third_person";
+export type StoryVisibility = "private" | "public";
 
 export type PlayerCharacter = {
   id: string;
@@ -49,6 +50,10 @@ type PlayableStoryFields = {
 
 export type Story = PlayableStoryFields & {
   worldId?: string | null;
+  visibility?: StoryVisibility;
+  slug?: string | null;
+  publishedAt?: string | null;
+  coverImageUrl?: string | null;
 };
 
 // Compatibility shape for routes/components that still expect a world-shaped playable setup.

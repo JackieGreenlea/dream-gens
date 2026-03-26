@@ -40,7 +40,7 @@ function UserIcon() {
 }
 
 function headerActionButtonClasses() {
-  return "inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-secondary transition hover:border-fieldBorder hover:bg-elevated hover:text-foreground";
+  return "inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-transparent text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground";
 }
 
 export function AuthHeader({ user }: AuthHeaderProps) {
@@ -50,7 +50,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
     <>
       <Link
         href="/explore"
-        className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface px-4 text-sm text-secondary transition hover:border-fieldBorder hover:bg-elevated hover:text-foreground"
+        className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-line bg-transparent px-4 text-sm text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground"
       >
         Explore
       </Link>
@@ -62,14 +62,14 @@ export function AuthHeader({ user }: AuthHeaderProps) {
           id="site-search"
           type="search"
           placeholder="Search"
-          className="h-11 w-full rounded-full border border-fieldBorder bg-field px-4 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/25"
+          className="h-10 w-full rounded-lg border border-fieldBorder bg-field px-4 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
         />
       </div>
     </>
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-page/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-line/80 bg-night/95 backdrop-blur">
       <div className="absolute left-1/2 top-1/2 hidden w-[clamp(11rem,54vw,52rem)] -translate-x-1/2 -translate-y-1/2 items-center gap-3 lg:flex">
         {centerControls}
       </div>
@@ -78,7 +78,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
         <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
           <Link
             href="/"
-            className="inline-flex h-11 items-center text-sm font-medium uppercase tracking-[0.28em] text-warm"
+            className="inline-flex h-11 items-center text-sm font-medium uppercase tracking-[0.28em] text-foreground"
           >
             Everplot
           </Link>
@@ -105,7 +105,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
               <UserIcon />
             </summary>
 
-            <div className="absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-3 backdrop-blur">
+            <div className="absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 backdrop-blur">
               <div className="flex flex-col">
                 <div className="border-b border-line px-3 pb-3">
                   <p className="text-sm font-medium text-foreground">{username}</p>
@@ -114,7 +114,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
 
                 <button
                   type="button"
-                  className="mt-2 rounded-2xl px-3 py-2 text-left text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                  className="mt-2 px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
                 >
                   My Profile
                 </button>
@@ -123,19 +123,19 @@ export function AuthHeader({ user }: AuthHeaderProps) {
                   <>
                     <Link
                       href="/sessions"
-                      className="rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                      className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
                     >
                       My Sessions
                     </Link>
                     <Link
                       href="/stories"
-                      className="rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                      className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
                     >
                       My Stories
                     </Link>
                     <Link
                       href="/worlds"
-                      className="rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                      className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
                     >
                       My Worlds
                     </Link>
@@ -144,7 +144,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
 
                 <button
                   type="button"
-                  className="rounded-2xl px-3 py-2 text-left text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                  className="px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
                 >
                   Settings
                 </button>
@@ -154,7 +154,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
                     <form action={signOut}>
                       <button
                         type="submit"
-                        className="w-full rounded-2xl px-3 py-2 text-left text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                        className="w-full px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
                       >
                         Sign out
                       </button>
@@ -162,7 +162,7 @@ export function AuthHeader({ user }: AuthHeaderProps) {
                   ) : (
                     <Link
                       href="/auth/sign-in"
-                      className="block rounded-2xl px-3 py-2 text-sm text-secondary transition hover:bg-elevated hover:text-foreground"
+                      className="block px-3 py-2 text-sm text-secondary transition hover:text-foreground"
                     >
                       Sign in
                     </Link>

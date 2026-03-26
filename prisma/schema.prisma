@@ -13,6 +13,11 @@ enum StoryPov {
   third_person
 }
 
+enum StoryVisibility {
+  private
+  public
+}
+
 enum WorldKind {
   legacy_playable
   canon
@@ -81,6 +86,10 @@ model Story {
   id                String           @id @default(cuid())
   userId            String?
   worldId           String?
+  visibility        StoryVisibility  @default(private)
+  slug              String?          @unique
+  publishedAt       DateTime?
+  coverImageUrl     String?
   title             String
   summary           String
   background        String
@@ -102,6 +111,7 @@ model Story {
 
   @@index([userId])
   @@index([worldId])
+  @@index([visibility, publishedAt])
   @@map("Story")
 }
 

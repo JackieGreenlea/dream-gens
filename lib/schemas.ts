@@ -95,6 +95,7 @@ export const persistedWorldSchema = compiledWorldSchema.extend({
 
 export const storySchema = persistedWorldSchema.extend({
   worldId: optionalStoryLinkSchema,
+  coverImageUrl: z.string().trim().url().nullable().optional(),
 });
 
 export const worldCastMemberSchema = z.object({
