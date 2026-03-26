@@ -29,13 +29,38 @@ const worldInclude = {
 } satisfies Prisma.WorldInclude;
 
 // Real path: Story setup/template records live in Prisma Story.
-const storyInclude = {
+const storySelect = {
+  id: true,
+  worldId: true,
+  visibility: true,
+  slug: true,
+  publishedAt: true,
+  coverImageUrl: true,
+  title: true,
+  summary: true,
+  background: true,
+  firstAction: true,
+  objective: true,
+  pov: true,
+  instructions: true,
+  authorStyle: true,
+  victoryCondition: true,
+  victoryEnabled: true,
+  defeatCondition: true,
+  defeatEnabled: true,
   playerCharacters: {
     orderBy: {
       createdAt: "asc",
     },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      strengths: true,
+      weaknesses: true,
+    },
   },
-} satisfies Prisma.StoryInclude;
+} satisfies Prisma.StorySelect;
 
 const recentTurnsInclude = {
   turns: {
@@ -52,7 +77,7 @@ const sessionBundleInclude = {
     include: worldInclude,
   },
   story: {
-    include: storyInclude,
+    select: storySelect,
   },
   character: true,
   storyCharacter: true,
@@ -63,7 +88,7 @@ type DbWorld = Prisma.WorldGetPayload<{
 }>;
 
 type DbStoryRecord = Prisma.StoryGetPayload<{
-  include: typeof storyInclude;
+  select: typeof storySelect;
 }>;
 
 type DbWorldCanon = Prisma.WorldGetPayload<Record<string, never>>;
@@ -637,7 +662,7 @@ async function persistStoryRecord(story: Story, userId: string | null) {
 
   const savedStory = await prisma.story.findUnique({
     where: { id: story.id },
-    include: storyInclude,
+    select: storySelect,
   });
 
   return savedStory ? mapStoryRecord(savedStory) : null;
@@ -825,7 +850,7 @@ export async function updateStoryCoverImageForUser(
     data: {
       coverImageUrl,
     },
-    include: storyInclude,
+    select: storySelect,
   });
 
   return mapStoryRecord(story);
@@ -894,7 +919,7 @@ export async function getOwnedStoryById(id: string, userId: string) {
       id,
       userId,
     },
-    include: storyInclude,
+    select: storySelect,
   });
 
   return story ? mapStoryRecord(story) : null;
@@ -1216,7 +1241,7 @@ export async function createSessionFromStory(params: {
       id: params.storyId,
       userId: params.userId,
     },
-    include: storyInclude,
+    select: storySelect,
   });
 
   if (!story) {
