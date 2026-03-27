@@ -51,11 +51,30 @@ export async function POST(request: Request) {
       throw new Error("Session could not be created.");
     }
 
-    await runSessionTurn({
-      sessionId: session.id,
-      playerAction: setup.playable.firstAction,
-      userId: user.id,
-    });
+    try {
+      await runSessionTurn({
+        sessionId: session.id,
+        playerAction: setup.playable.firstAction,
+        userId: user.id,
+      });
+    } catch (openingTurnError) {
+      const message =
+        openingTurnError instanceof Error
+          ? openingTurnError.message
+          : "The opening turn could not be prepared.";
+
+      console.error("[sessions/start] opening turn failed after session creation", {
+        sessionId: session.id,
+        storyId: setup.source === "story" ? setup.story.id : null,
+        worldId: setup.source === "world" ? setup.world.id : null,
+        message,
+      });
+
+      return NextResponse.json({
+        sessionId: session.id,
+        warning: "The session was created, but the opening turn is still unavailable.",
+      });
+    }
 
     return NextResponse.json({ sessionId: session.id });
   } catch (error) {

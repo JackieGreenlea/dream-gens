@@ -12,9 +12,12 @@ export default async function StoryCharacterSelectPage({
 }) {
   const { id } = await params;
   const user = await getCurrentUser();
+  const returnPath = `/stories/${id}/characters`;
 
   if (!user) {
-    redirect("/auth/sign-in?message=Sign%20in%20to%20open%20your%20saved%20stories.");
+    redirect(
+      `/auth/sign-in?message=${encodeURIComponent("Sign in to play this story.")}&next=${encodeURIComponent(returnPath)}`,
+    );
   }
 
   const story = await getStoryPlayableById(id, user.id);

@@ -161,14 +161,17 @@ export type PublicStoryListItem = {
 
 function getStoryAuthorLabel(record: {
   user: {
+    username: string;
+    displayName: string | null;
     name: string | null;
     email: string | null;
   } | null;
 }) {
+  const username = record.user?.username?.trim();
   const name = record.user?.name?.trim();
   const email = record.user?.email?.trim();
 
-  return name || email || "Unknown author";
+  return username || name || email || "Unknown author";
 }
 
 function normalizePov(value: string | StoryPov | null | undefined): StoryPov {
@@ -925,6 +928,25 @@ export async function getOwnedStoryById(id: string, userId: string) {
   return story ? mapStoryRecord(story) : null;
 }
 
+export async function getPlayableStoryById(id: string, userId: string) {
+  const story = await prisma.story.findFirst({
+    where: {
+      id,
+      OR: [
+        {
+          userId,
+        },
+        {
+          visibility: "public",
+        },
+      ],
+    },
+    select: storySelect,
+  });
+
+  return story ? mapStoryRecord(story) : null;
+}
+
 export async function listPublishedStoriesForExplore(
   limit = 24,
 ): Promise<PublicStoryListItem[]> {
@@ -937,6 +959,8 @@ export async function listPublishedStoriesForExplore(
     include: {
       user: {
         select: {
+          username: true,
+          displayName: true,
           name: true,
           email: true,
         },
@@ -1110,7 +1134,7 @@ export async function getPlayableByIdOrSample(id: string, userId?: string | null
 }
 
 export async function getStoryPlayableById(id: string, userId: string) {
-  const story = await getOwnedStoryById(id, userId);
+  const story = await getPlayableStoryById(id, userId);
   return story ? createWorldFromStory(story) : null;
 }
 
@@ -1123,7 +1147,7 @@ export async function resolvePlayableSourceForSessionStart(
   userId: string,
 ): Promise<PlayableSourceRecord | null> {
   // Real path: new runs start from Story. Everything below Story is legacy/sample fallback.
-  const story = await getOwnedStoryById(id, userId);
+  const story = await getPlayableStoryById(id, userId);
 
   if (story) {
     return {
@@ -1239,7 +1263,14 @@ export async function createSessionFromStory(params: {
   const story = await prisma.story.findFirst({
     where: {
       id: params.storyId,
-      userId: params.userId,
+      OR: [
+        {
+          userId: params.userId,
+        },
+        {
+          visibility: "public",
+        },
+      ],
     },
     select: storySelect,
   });

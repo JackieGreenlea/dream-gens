@@ -75,11 +75,12 @@ export default async function HomePage({
             {publishedStories.length > 0 ? (
               <ExploreStoriesCarousel
                 stories={publishedStories.map((story) => ({
+                  id: story.id,
                   title: story.title,
                   summary: story.summary,
                   accent: "from-[#0091AD] via-[#00768D] to-slate-950",
                   imageUrl: story.coverImageUrl,
-                  href: "/explore",
+                  actionHref: `/stories/${story.id}/characters`,
                 }))}
               />
             ) : (

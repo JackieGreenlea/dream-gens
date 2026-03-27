@@ -14,6 +14,7 @@ type AuthFormCardProps = {
   passwordAutoComplete?: "current-password" | "new-password";
   message?: string;
   error?: string;
+  next?: string;
 };
 
 export function AuthFormCard({
@@ -27,6 +28,7 @@ export function AuthFormCard({
   passwordAutoComplete = "current-password",
   message,
   error,
+  next,
 }: AuthFormCardProps) {
   return (
     <Card className="mx-auto w-full max-w-xl p-6 sm:p-8">
@@ -50,6 +52,7 @@ export function AuthFormCard({
         ) : null}
 
         <form action={action} className="space-y-5">
+          {next ? <input type="hidden" name="next" value={next} /> : null}
           <Field label="Email">
             <Input type="email" name="email" required autoComplete="email" />
           </Field>

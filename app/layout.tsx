@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AuthHeader } from "@/components/auth/auth-header";
 import { createClient } from "@/lib/supabase/server";
+import { ensureDatabaseUser } from "@/lib/user-sync";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,11 +18,22 @@ export default async function RootLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const identity = user ? await ensureDatabaseUser(user) : null;
 
   return (
     <html lang="en">
       <body>
-        <AuthHeader user={user} />
+        <AuthHeader
+          user={user}
+          identity={
+            identity
+              ? {
+                  username: identity.username,
+                  email: identity.email,
+                }
+              : null
+          }
+        />
         {children}
       </body>
     </html>

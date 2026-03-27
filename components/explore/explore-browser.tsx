@@ -30,6 +30,7 @@ type PublishedExploreStory = {
   authorName: string;
   publishedLabel: string;
   coverImageUrl?: string | null;
+  actionHref: string;
 };
 
 export function ExploreBrowser({
@@ -177,6 +178,7 @@ export function ExploreBrowser({
                 accent="from-[#0091AD] via-[#00768D] to-slate-950"
                 imageUrl={story.coverImageUrl}
                 metadata={[story.authorName, story.publishedLabel, "Published"]}
+                actionHref={story.actionHref}
                 imageAspectClassName="aspect-[16/10] md:h-full md:min-h-[16rem]"
                 variant="feed"
               />

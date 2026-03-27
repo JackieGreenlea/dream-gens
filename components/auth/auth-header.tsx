@@ -5,6 +5,10 @@ import { ButtonLink } from "@/components/ui/button";
 
 type AuthHeaderProps = {
   user: User | null;
+  identity: {
+    username: string;
+    email: string | null;
+  } | null;
 };
 
 function BellIcon() {
@@ -43,9 +47,10 @@ function headerActionButtonClasses() {
   return "inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-transparent text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground";
 }
 
-export function AuthHeader({ user }: AuthHeaderProps) {
-  const accountLabel = user?.email ?? "Guest";
-  const username = user?.email?.split("@")[0] ?? "Guest";
+export function AuthHeader({ user, identity }: AuthHeaderProps) {
+  const primaryLabel = identity?.username || user?.email?.split("@")[0] || "Guest";
+  const secondaryLabel = identity?.username ? `@${identity.username}` : null;
+  const accountLabel = identity?.email ?? user?.email ?? null;
   const centerControls = (
     <>
       <Link
@@ -108,8 +113,9 @@ export function AuthHeader({ user }: AuthHeaderProps) {
             <div className="absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 backdrop-blur">
               <div className="flex flex-col">
                 <div className="border-b border-line px-3 pb-3">
-                  <p className="text-sm font-medium text-foreground">{username}</p>
-                  <p className="mt-1 text-xs text-muted">{accountLabel}</p>
+                  <p className="text-sm font-medium text-foreground">{primaryLabel}</p>
+                  {secondaryLabel ? <p className="mt-1 text-xs text-muted">{secondaryLabel}</p> : null}
+                  {accountLabel ? <p className="mt-1 text-xs text-muted">{accountLabel}</p> : null}
                 </div>
 
                 <button
@@ -142,12 +148,12 @@ export function AuthHeader({ user }: AuthHeaderProps) {
                   </>
                 ) : null}
 
-                <button
-                  type="button"
-                  className="px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
+                <Link
+                  href="/settings"
+                  className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
                 >
                   Settings
-                </button>
+                </Link>
 
                 <div className="mt-2 border-t border-line pt-2">
                   {user ? (

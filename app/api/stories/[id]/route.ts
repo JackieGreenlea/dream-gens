@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import {
   deleteStoryForUser,
+  getPlayableStoryById,
   getOwnedStoryById,
   saveStoryPlayableForUser,
 } from "@/lib/db";
@@ -26,7 +27,7 @@ export async function GET(
     return NextResponse.json({ error: "Sign in to open this story." }, { status: 401 });
   }
 
-  const story = await getOwnedStoryById(id, user.id);
+  const story = await getPlayableStoryById(id, user.id);
 
   if (!story) {
     return NextResponse.json({ error: "Story not found." }, { status: 404 });

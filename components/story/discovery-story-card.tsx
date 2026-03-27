@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type DiscoveryStoryCardProps = {
@@ -7,6 +8,7 @@ type DiscoveryStoryCardProps = {
   metadata: string[];
   imageUrl?: string | null;
   actionLabel?: string;
+  actionHref?: string;
   imageAspectClassName?: string;
   className?: string;
   variant?: "grid" | "feed";
@@ -19,6 +21,7 @@ export function DiscoveryStoryCard({
   metadata,
   imageUrl,
   actionLabel = "Play",
+  actionHref,
   imageAspectClassName = "aspect-[4/5.2]",
   className,
   variant = "grid",
@@ -66,7 +69,7 @@ export function DiscoveryStoryCard({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line/80 pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line/80 pt-4">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
               {footerMetadata.length > 0
                 ? footerMetadata.map((item, index) => (
@@ -83,9 +86,18 @@ export function DiscoveryStoryCard({
                   ))}
             </div>
 
-            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground transition hover:text-accent">
-              {actionLabel}
-            </span>
+            {actionHref ? (
+              <Link
+                href={actionHref}
+                className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground transition hover:text-accent"
+              >
+                {actionLabel}
+              </Link>
+            ) : (
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] text-foreground">
+                {actionLabel}
+              </span>
+            )}
           </div>
         </div>
       </article>
@@ -120,9 +132,18 @@ export function DiscoveryStoryCard({
           ))}
         </div>
         <div className="pt-1">
-          <span className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:text-accent">
-            {actionLabel}
-          </span>
+          {actionHref ? (
+            <Link
+              href={actionHref}
+              className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:text-accent"
+            >
+              {actionLabel}
+            </Link>
+          ) : (
+            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-foreground">
+              {actionLabel}
+            </span>
+          )}
         </div>
       </div>
     </article>

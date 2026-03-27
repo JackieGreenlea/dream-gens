@@ -16,6 +16,7 @@ import { formatLineList, parseLineList } from "@/lib/utils";
 type StoryEditorProps = {
   initialStory: Story | null;
   storyId: string;
+  authorName?: string | null;
   basePath?: "/worlds" | "/stories";
   apiBasePath?: "/api/worlds" | "/api/stories";
 };
@@ -23,6 +24,7 @@ type StoryEditorProps = {
 export function StoryEditor({
   initialStory,
   storyId,
+  authorName = null,
   basePath = "/worlds",
   apiBasePath = "/api/worlds",
 }: StoryEditorProps) {
@@ -84,6 +86,25 @@ export function StoryEditor({
   function setEditorError(title: string, message: string) {
     setErrorTitle(title);
     setError(message);
+  }
+
+  function renderParagraphs(text: string, className = "text-sm leading-7 text-secondary") {
+    const paragraphs = text
+      .split(/\n\s*\n/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+
+    const content = paragraphs.length > 0 ? paragraphs : [text.trim()];
+
+    return (
+      <div className="space-y-4">
+        {content.map((paragraph, index) => (
+          <p key={`${index}-${paragraph.slice(0, 24)}`} className={className}>
+            {paragraph}
+          </p>
+        ))}
+      </div>
+    );
   }
 
   async function persistStory(nextStep?: "characters" | "exit") {
@@ -322,51 +343,107 @@ export function StoryEditor({
         </Card>
       ) : null}
 
-      <Card className="space-y-6 p-6 sm:p-10">
+      <section className="space-y-6 border-b border-line pb-8">
         <div className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-warm">Review your story</p>
-          <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">{story.title}</h1>
-          <p className="max-w-3xl text-base leading-7 text-secondary">{story.summary}</p>
-          {basePath === "/stories" ? (
-            <div className="text-sm text-secondary">
-              <p>{story.visibility === "public" ? "Published story." : "Private story."}</p>
-            </div>
-          ) : null}
+          <p className="text-sm uppercase tracking-[0.24em] text-warm">Story</p>
+          <h1 className="text-4xl font-semibold tracking-[-0.04em] text-foreground sm:text-5xl">
+            {story.title}
+          </h1>
+          <div className="space-y-1 text-sm text-secondary">
+            {authorName ? <p>by @{authorName}</p> : null}
+            {basePath === "/stories" ? (
+              <p>{story.visibility === "public" ? "Published story" : "Private story"}</p>
+            ) : null}
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-4">
           <Button type="button" onClick={handlePlay} disabled={isSaving}>
             {isSaving ? "Saving..." : "Play"}
           </Button>
-          {basePath === "/stories" ? (
-            story.visibility === "public" ? (
-              <Button type="button" variant="ghost" onClick={handleUnpublish} disabled={isPublishing}>
-                {isPublishing ? "Unpublishing..." : "Unpublish"}
-              </Button>
-            ) : (
-              <Button type="button" variant="ghost" onClick={handlePublish} disabled={isPublishing}>
-                {isPublishing ? "Publishing..." : "Publish"}
-              </Button>
-            )
-          ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setIsCustomizeOpen((current) => !current)}
-            aria-expanded={isCustomizeOpen}
-          >
-            Customize
-          </Button>
-          {basePath === "/stories" ? (
-            <DeleteEntryButton
-              endpoint={`/api/stories/${story.id}`}
-              label="Delete"
-              signInMessage="Sign in to delete this story."
-              confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            {basePath === "/stories" ? (
+              story.visibility === "public" ? (
+                <button
+                  type="button"
+                  onClick={handleUnpublish}
+                  disabled={isPublishing}
+                  className="text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPublishing ? "Unpublishing..." : "Unpublish"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePublish}
+                  disabled={isPublishing}
+                  className="text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPublishing ? "Publishing..." : "Publish"}
+                </button>
+              )
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setIsCustomizeOpen((current) => !current)}
+              aria-expanded={isCustomizeOpen}
+              className="text-secondary transition hover:text-foreground"
+            >
+              {isCustomizeOpen ? "Close customization" : "Customize"}
+            </button>
+            {basePath === "/stories" ? (
+              <DeleteEntryButton
+                endpoint={`/api/stories/${story.id}`}
+                label="Delete"
+                signInMessage="Sign in to delete this story."
+                confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
+              />
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      {(coverPreviewUrl || story.summary.trim()) ? (
+        <section className="grid gap-8 border-b border-line pb-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
+          {coverPreviewUrl ? (
+            <img
+              src={coverPreviewUrl}
+              alt={`${story.title} cover`}
+              className="w-full rounded-xl object-cover"
             />
           ) : null}
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Summary</h2>
+            {renderParagraphs(story.summary)}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="space-y-3 border-b border-line pb-8">
+        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Background</h2>
+        {renderParagraphs(story.background)}
+      </section>
+
+      {story.objective.trim() && story.victoryEnabled ? (
+        <section className="space-y-3 border-b border-line pb-8">
+          <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Objective</h2>
+          {renderParagraphs(story.objective)}
+        </section>
+      ) : null}
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">
+          Playable Characters
+        </h2>
+        <div className="divide-y divide-line">
+          {story.playerCharacters.map((character) => (
+            <div key={character.id} className="space-y-2 py-4 first:pt-0">
+              <p className="text-lg font-medium text-foreground">{character.name}</p>
+              <p className="max-w-3xl text-sm leading-7 text-secondary">{character.description}</p>
+            </div>
+          ))}
         </div>
-      </Card>
+      </section>
 
       {isCustomizeOpen ? (
         <Card className="space-y-6 p-6 sm:p-8">

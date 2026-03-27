@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { DiscoveryStoryCard } from "@/components/story/discovery-story-card";
 
 type PlaceholderStory = {
+  id?: string;
   title: string;
   summary: string;
   accent: string;
   imageUrl?: string | null;
-  href?: string;
+  actionHref?: string;
 };
 
 type ExploreStoriesCarouselProps = {
@@ -80,10 +80,9 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
         className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {stories.map((story) => (
-          <Link
-            key={story.title}
-            href={story.href ?? "/"}
-            className="block min-w-0 flex-none basis-[85%] sm:basis-[calc((100%-1rem)/2)] lg:basis-[calc((100%-2rem)/3)] xl:basis-[calc((100%-3rem)/4)]"
+          <div
+            key={story.id ?? story.title}
+            className="min-w-0 flex-none basis-[85%] sm:basis-[calc((100%-1rem)/2)] lg:basis-[calc((100%-2rem)/3)] xl:basis-[calc((100%-3rem)/4)]"
           >
             <DiscoveryStoryCard
               title={story.title}
@@ -91,9 +90,10 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
               accent={story.accent}
               imageUrl={story.imageUrl}
               metadata={["Featured", "Curated", "4.8 rating"]}
+              actionHref={story.actionHref}
               imageAspectClassName="aspect-[4/4.35]"
             />
-          </Link>
+          </div>
         ))}
       </div>
 
