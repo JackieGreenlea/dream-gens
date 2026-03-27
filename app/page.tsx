@@ -2,31 +2,7 @@ import Image from "next/image";
 import { ExploreStoriesCarousel } from "@/components/home/explore-stories-carousel";
 import homeBanner from "@/components/home/everplot-home-banner.png";
 import { listPublishedStoriesForExplore } from "@/lib/db";
-
-const placeholderStories = [
-  {
-    title: "Kedar",
-    summary: "Storm-wracked ruins, buried gods, and one story waiting to be disturbed.",
-    accent: "from-slate-600 via-slate-700 to-slate-900",
-  },
-  {
-    title: "The Debugger",
-    summary: "A fast-moving thriller where one impossible bug starts rewriting the city around you.",
-    accent: "from-cyan-500 via-emerald-500 to-slate-900",
-  },
-  {
-    title: "Xaxas",
-    summary: "A quiet kingdom built on old bargains, now beginning to crack under pressure.",
-    accent: "from-amber-500 via-stone-700 to-slate-900",
-  },
-  {
-    title: "Procavia",
-    summary: "A neon district, a sealed gate, and a night that keeps revealing the wrong future.",
-    accent: "from-sky-400 via-indigo-700 to-slate-950",
-  },
-];
-
-const storyRows = ["Trending", "Placeholder 2", "Placeholder 3", "Placeholder 4"];
+import { storyHasTag } from "@/lib/story-tags";
 
 export default async function HomePage({
   searchParams,
@@ -34,7 +10,44 @@ export default async function HomePage({
   searchParams: Promise<{ message?: string }>;
 }) {
   await searchParams;
-  const publishedStories = await listPublishedStoriesForExplore(8);
+  const publishedStories = await listPublishedStoriesForExplore(24);
+
+  function toCardStories(stories: typeof publishedStories) {
+    return stories.map((story) => ({
+      id: story.id,
+      title: story.title,
+      summary: story.summary,
+      accent: "from-[#0091AD] via-[#00768D] to-slate-950",
+      authorName: story.authorUsername,
+      authorHref: `/u/${story.authorUsername}`,
+      imageUrl: story.coverImageUrl,
+      actionHref: `/stories/${story.id}/characters`,
+      profileHref: `/stories/${story.id}`,
+    }));
+  }
+
+  const homeRows = [
+    {
+      title: "New Stories",
+      description: "Recently published stories available to play now.",
+      stories: toCardStories(publishedStories),
+    },
+    {
+      title: "Fantasy",
+      description: "Published stories tagged fantasy.",
+      stories: toCardStories(publishedStories.filter((story) => storyHasTag(story.tags, "fantasy"))),
+    },
+    {
+      title: "Romance",
+      description: "Published stories tagged romance.",
+      stories: toCardStories(publishedStories.filter((story) => storyHasTag(story.tags, "romance"))),
+    },
+    {
+      title: "SCI-FI",
+      description: "Published stories tagged sci-fi.",
+      stories: toCardStories(publishedStories.filter((story) => storyHasTag(story.tags, "sci-fi"))),
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-page">
@@ -64,46 +77,22 @@ export default async function HomePage({
         </section>
 
         <div className="space-y-8">
-          <section className="space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-semibold text-foreground">Published Stories</h2>
-              <p className="text-sm text-secondary">
-                Public stories currently available in Explore.
-              </p>
-            </div>
-
-            {publishedStories.length > 0 ? (
-              <ExploreStoriesCarousel
-                stories={publishedStories.map((story) => ({
-                  id: story.id,
-                  title: story.title,
-                  summary: story.summary,
-                  accent: "from-[#0091AD] via-[#00768D] to-slate-950",
-                  authorName: story.authorUsername,
-                  authorHref: `/u/${story.authorUsername}`,
-                  imageUrl: story.coverImageUrl,
-                  actionHref: `/stories/${story.id}/characters`,
-                  profileHref: `/stories/${story.id}`,
-                }))}
-              />
-            ) : (
-              <div className="border-t border-line pt-6">
-                <p className="text-lg font-medium text-foreground">No published stories yet</p>
-                <p className="mt-2 text-sm leading-6 text-secondary">
-                  Published stories will appear here once authors choose to share them.
-                </p>
-              </div>
-            )}
-          </section>
-
-          {storyRows.map((rowTitle) => (
-            <section key={rowTitle} className="space-y-4">
+          {homeRows.map((row) => (
+            <section key={row.title} className="space-y-4">
               <div className="space-y-1">
-                <h2 className="text-2xl font-semibold text-foreground">{rowTitle}</h2>
-                <p className="text-sm text-secondary">Placeholder cards for featured stories.</p>
+                <h2 className="text-2xl font-semibold text-foreground">{row.title}</h2>
+                <p className="text-sm text-secondary">{row.description}</p>
               </div>
 
-              <ExploreStoriesCarousel stories={placeholderStories} />
+              {row.stories.length > 0 ? (
+                <ExploreStoriesCarousel stories={row.stories} />
+              ) : (
+                <div className="border-t border-line pt-6">
+                  <p className="text-sm leading-6 text-secondary">
+                    No published stories match this row yet.
+                  </p>
+                </div>
+              )}
             </section>
           ))}
         </div>

@@ -1,5 +1,6 @@
 import { CompiledWorldOutput, CompileRequest } from "@/lib/schemas";
-import { World } from "@/lib/types";
+import { COMPILER_GENRE_TAG_OPTIONS, normalizeStoryTags } from "@/lib/story-tags";
+import { Story } from "@/lib/types";
 import { createId } from "@/lib/utils";
 
 
@@ -28,6 +29,11 @@ Core priorities:
 
 
 Field guidance:
+
+Tags:
+- Return exactly 1 relevant genre tag.
+- Choose from this list only: ${COMPILER_GENRE_TAG_OPTIONS.join(", ")}.
+- Pick the single best-fit genre tag for browsing and discovery.
 
 Title:
 - Short, memorable, and genre-appropriate.
@@ -154,11 +160,12 @@ export function buildCompilerUserPrompt(input: CompileRequest) {
   ].join("\n");
 }
 
-export function normalizeCompiledWorld(output: CompiledWorldOutput): World {
+export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
   const usedCharacterIds = new Set<string>();
 
   return {
     id: createId("story"),
+    tags: normalizeStoryTags(output.tags),
     title: output.title.trim(),
     summary: output.summary.trim(),
     background: output.background.trim(),
@@ -171,6 +178,11 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): World {
     victoryEnabled: true,
     defeatCondition: output.defeatCondition.trim(),
     defeatEnabled: true,
+    worldId: null,
+    visibility: "private",
+    slug: null,
+    publishedAt: null,
+    coverImageUrl: null,
     playerCharacters: output.playerCharacters.map((character) => {
       let nextId = normalizeCharacterId(character.id);
 

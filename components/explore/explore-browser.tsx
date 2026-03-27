@@ -2,26 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DiscoveryStoryCard } from "@/components/story/discovery-story-card";
+import { STORY_GENRE_TABS, storyHasTag, type StoryGenreTab } from "@/lib/story-tags";
 
-const genreTabs = [
-  "FOR YOU",
-  "TRENDING",
-  "NEW",
-  "FANTASY",
-  "MAGIC",
-  "ROMANCE",
-  "FILM & TV",
-  "ADVENTURE",
-  "SLICE OF LIFE",
-  "SCI-FI",
-  "SUPERHERO",
-  "HISTORICAL",
-  "MYSTERY",
-  "SUPERNATURAL",
-  "COMEDY",
-] as const;
-
-const tabsWithoutSorter = new Set(["FOR YOU", "TRENDING", "NEW"]);
+const tabsWithoutSorter = new Set(["ALL", "NEW"]);
 
 type PublishedExploreStory = {
   id: string;
@@ -31,6 +14,7 @@ type PublishedExploreStory = {
   authorUsername: string;
   publishedLabel: string;
   coverImageUrl?: string | null;
+  tags: string[];
   actionHref: string;
   profileHref: string;
 };
@@ -40,7 +24,7 @@ export function ExploreBrowser({
 }: {
   publishedStories?: PublishedExploreStory[];
 }) {
-  const [selectedTab, setSelectedTab] = useState<(typeof genreTabs)[number]>("FOR YOU");
+  const [selectedTab, setSelectedTab] = useState<StoryGenreTab>("ALL");
   const tabsScrollerRef = useRef<HTMLDivElement | null>(null);
   const [isTabsHovered, setIsTabsHovered] = useState(false);
   const [tabsHaveOverflow, setTabsHaveOverflow] = useState(false);
@@ -98,6 +82,14 @@ export function ExploreBrowser({
     });
   }
 
+  const visibleStories = publishedStories.filter((story) => {
+    if (selectedTab === "ALL" || selectedTab === "NEW") {
+      return true;
+    }
+
+    return storyHasTag(story.tags, selectedTab);
+  });
+
   return (
     <div className="space-y-6">
       <section className="space-y-4">
@@ -110,7 +102,7 @@ export function ExploreBrowser({
             ref={tabsScrollerRef}
             className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {genreTabs.map((tab) => {
+            {STORY_GENRE_TABS.map((tab) => {
               const isActive = tab === selectedTab;
 
               return (
@@ -170,9 +162,9 @@ export function ExploreBrowser({
       </section>
 
       <section className="space-y-4">
-        {publishedStories.length > 0 ? (
+        {visibleStories.length > 0 ? (
           <div className="space-y-4">
-            {publishedStories.map((story) => (
+            {visibleStories.map((story) => (
               <DiscoveryStoryCard
                 key={story.id}
                 title={story.title}
@@ -191,9 +183,9 @@ export function ExploreBrowser({
           </div>
         ) : (
           <div className="border-t border-line pt-6">
-            <p className="text-lg font-medium text-foreground">No published stories yet</p>
+            <p className="text-lg font-medium text-foreground">No stories in this tab yet</p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary">
-              Published stories will appear here once authors choose to share them in Explore.
+              Published stories with matching tags will appear here once authors share them.
             </p>
           </div>
         )}

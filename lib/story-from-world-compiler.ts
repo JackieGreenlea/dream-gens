@@ -16,6 +16,11 @@ Core priorities:
 
 Field guidance:
 
+Tags:
+- Return exactly 1 relevant genre tag.
+- Choose from this list only: fantasy, magic, romance, film & tv, adventure, slice of life, sci-fi, superhero, historical, mystery, supernatural, comedy.
+- Pick the single best-fit genre tag for browsing and discovery.
+
 Title:
 - Short, vivid, and specific to this story, not just the world name.
 

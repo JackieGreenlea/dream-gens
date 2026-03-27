@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSampleWorldById } from "@/lib/sampleData";
 import { createWorldFromStory } from "@/lib/story";
+import { normalizeStoryTags } from "@/lib/story-tags";
 import { sanitizeTextArrayForDatabase, sanitizeTextForDatabase } from "@/lib/text-sanitize";
 import {
   PlayerCharacter,
@@ -36,6 +37,7 @@ const storySelect = {
   slug: true,
   publishedAt: true,
   coverImageUrl: true,
+  tags: true,
   title: true,
   summary: true,
   background: true,
@@ -156,6 +158,7 @@ export type PublicStoryListItem = {
   authorUsername: string;
   publishedAt: Date | null;
   coverImageUrl: string | null;
+  tags: string[];
 };
 
 export type StoryProfileRecord = {
@@ -274,6 +277,7 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     slug: record.slug,
     publishedAt: record.publishedAt ? record.publishedAt.toISOString() : null,
     coverImageUrl: record.coverImageUrl,
+    tags: normalizeStoryTags(record.tags),
     title: record.title,
     summary: record.summary,
     background: record.background,
@@ -534,6 +538,7 @@ function storyPersistenceData(story: Story) {
   return {
     worldId: story.worldId ?? null,
     coverImageUrl: story.coverImageUrl ?? null,
+    tags: sanitizeTextArrayForDatabase(normalizeStoryTags(story.tags)),
     title: sanitizeTextForDatabase(story.title),
     summary: sanitizeTextForDatabase(story.summary),
     background: sanitizeTextForDatabase(story.background),
@@ -553,6 +558,7 @@ function storyFromPlayableInput(world: World, worldId: string | null = null): St
   return {
     id: world.id,
     worldId,
+    tags: [],
     title: world.title,
     summary: world.summary,
     background: world.background,
@@ -1027,6 +1033,7 @@ export async function getPublicUserProfileByUsername(
           summary: true,
           publishedAt: true,
           coverImageUrl: true,
+          tags: true,
         },
       },
     },
@@ -1047,6 +1054,7 @@ export async function getPublicUserProfileByUsername(
       authorUsername: user.username,
       publishedAt: story.publishedAt ?? null,
       coverImageUrl: story.coverImageUrl ?? null,
+      tags: normalizeStoryTags(story.tags),
     })),
   };
 }
@@ -1080,6 +1088,7 @@ export async function listPublishedStoriesForExplore(
     authorUsername: story.user?.username ?? "unknown-author",
     publishedAt: story.publishedAt ?? null,
     coverImageUrl: story.coverImageUrl ?? null,
+    tags: normalizeStoryTags(story.tags),
   }));
 }
 
@@ -1239,8 +1248,7 @@ export async function getPlayableByIdOrSample(id: string, userId?: string | null
 }
 
 export async function getStoryPlayableById(id: string, userId: string) {
-  const story = await getPlayableStoryById(id, userId);
-  return story ? createWorldFromStory(story) : null;
+  return getPlayableStoryById(id, userId);
 }
 
 export async function getWorldByIdOrSample(id: string, userId?: string | null) {

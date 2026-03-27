@@ -1,8 +1,11 @@
 import { z } from "zod";
+import { COMPILER_GENRE_TAG_OPTIONS, normalizeStoryTags } from "@/lib/story-tags";
 
 const povSchema = z.enum(["second_person", "first_person", "third_person"]);
 const optionalCompilerFieldSchema = z.string().trim().max(400).optional().default("");
 const optionalStoryLinkSchema = z.string().trim().min(1).nullable().optional();
+const storyTagSchema = z.string().trim().min(1);
+const compilerGenreTagSchema = z.enum(COMPILER_GENRE_TAG_OPTIONS);
 
 export const compileRequestSchema = z.object({
   premise: z.string().trim().min(1, "Premise is required."),
@@ -70,7 +73,11 @@ export const compiledWorldSchema = z.object({
 });
 
 export type CompileRequest = z.infer<typeof compileRequestSchema>;
-export type CompiledWorldOutput = z.infer<typeof compiledWorldSchema>;
+export const compiledStorySchema = compiledWorldSchema.extend({
+  tags: z.array(compilerGenreTagSchema).length(1),
+});
+
+export type CompiledWorldOutput = z.infer<typeof compiledStorySchema>;
 export type StoredSession = z.infer<typeof sessionSchema>;
 
 export const runtimeTurnOutputSchema = z.object({
@@ -96,6 +103,7 @@ export const persistedWorldSchema = compiledWorldSchema.extend({
 export const storySchema = persistedWorldSchema.extend({
   worldId: optionalStoryLinkSchema,
   coverImageUrl: z.string().trim().url().nullable().optional(),
+  tags: z.array(storyTagSchema).max(8).default([]).transform((tags) => normalizeStoryTags(tags)),
 });
 
 export const worldCastMemberSchema = z.object({
@@ -162,6 +170,75 @@ export const compiledWorldJsonSchema = {
     title: { type: "string" },
     summary: { type: "string", maxLength: 600 },
     background: { type: "string" },
+    firstAction: { type: "string" },
+    objective: { type: "string" },
+    instructions: { type: "string" },
+    authorStyle: { type: "string" },
+    victoryCondition: { type: "string" },
+    defeatCondition: { type: "string" },
+    playerCharacters: {
+      type: "array",
+      minItems: 1,
+      maxItems: 6,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "name", "description", "strengths", "weaknesses"],
+        properties: {
+          id: { type: "string" },
+          name: { type: "string" },
+          description: { type: "string" },
+          strengths: {
+            type: "array",
+            minItems: 2,
+            maxItems: 2,
+            items: {
+              type: "string",
+            },
+          },
+          weaknesses: {
+            type: "array",
+            minItems: 2,
+            maxItems: 2,
+            items: {
+              type: "string",
+            },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+export const compiledStoryJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "title",
+    "summary",
+    "background",
+    "tags",
+    "firstAction",
+    "objective",
+    "instructions",
+    "authorStyle",
+    "victoryCondition",
+    "defeatCondition",
+    "playerCharacters",
+  ],
+  properties: {
+    title: { type: "string" },
+    summary: { type: "string", maxLength: 600 },
+    background: { type: "string" },
+    tags: {
+      type: "array",
+      minItems: 1,
+      maxItems: 1,
+      items: {
+        type: "string",
+        enum: [...COMPILER_GENRE_TAG_OPTIONS],
+      },
+    },
     firstAction: { type: "string" },
     objective: { type: "string" },
     instructions: { type: "string" },

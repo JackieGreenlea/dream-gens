@@ -9,8 +9,8 @@ import {
 } from "@/lib/compiler";
 import { createStructuredOutput } from "@/lib/openai";
 import {
-  compiledWorldJsonSchema,
-  compiledWorldSchema,
+  compiledStoryJsonSchema,
+  compiledStorySchema,
   compileRequestSchema,
 } from "@/lib/schemas";
 import { createStoryFromWorld, createWorldFromStory } from "@/lib/story";
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const input = compileRequestSchema.parse(body);
     const rawWorld = await createStructuredOutput<unknown>({
       schemaName: "story_world",
-      schema: compiledWorldJsonSchema,
+      schema: compiledStoryJsonSchema,
       input: [
         {
           role: "system",
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     let compiledWorld;
 
     try {
-      compiledWorld = compiledWorldSchema.parse(rawWorld);
+      compiledWorld = compiledStorySchema.parse(rawWorld);
     } catch (error) {
       if (error instanceof ZodError) {
         console.error("[compile] schema failure", error.flatten());

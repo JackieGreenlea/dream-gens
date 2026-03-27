@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DeleteEntryButton } from "@/components/ui/delete-entry-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { formatStoryTagLabel, normalizeStoryTag, normalizeStoryTags } from "@/lib/story-tags";
 import {
   isAllowedStoryCoverType,
   MAX_STORY_COVER_BYTES,
@@ -38,6 +39,7 @@ export function StoryEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [pendingTag, setPendingTag] = useState("");
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
     initialStory?.coverImageUrl ?? null,
   );
@@ -82,6 +84,25 @@ export function StoryEditor({
             ),
           }
         : current,
+    );
+  }
+
+  function handleAddTag() {
+    const normalizedTag = normalizeStoryTag(pendingTag);
+
+    if (!normalizedTag) {
+      setPendingTag("");
+      return;
+    }
+
+    updateField("tags", normalizeStoryTags([...(story?.tags ?? []), normalizedTag]));
+    setPendingTag("");
+  }
+
+  function handleRemoveTag(tagToRemove: string) {
+    updateField(
+      "tags",
+      normalizeStoryTags((story?.tags ?? []).filter((tag) => tag !== tagToRemove)),
     );
   }
 
@@ -358,6 +379,7 @@ export function StoryEditor({
           </h1>
           <div className="space-y-1 text-sm text-secondary">
             {authorName ? <p>by @{authorName}</p> : null}
+            {story.tags.length > 0 ? <p>{story.tags.map(formatStoryTagLabel).join(" • ")}</p> : null}
             {basePath === "/stories" && isOwner ? (
               <p>{story.visibility === "public" ? "Published story" : "Private story"}</p>
             ) : null}
@@ -509,6 +531,49 @@ export function StoryEditor({
                 onChange={(event) => updateField("background", event.target.value)}
                 className="min-h-40"
               />
+            </Field>
+            <Field
+              label="Tags"
+              hint="Add simple genre/discovery tags. These drive Explore tabs and home rows."
+            >
+              <div className="space-y-3">
+                {story.tags.length > 0 ? (
+                  <div className="flex flex-wrap gap-3 text-sm text-secondary">
+                    {story.tags.map((tag) => (
+                      <div key={tag} className="flex items-center gap-2">
+                        <span>{formatStoryTagLabel(tag)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          className="text-muted transition hover:text-foreground"
+                          aria-label={`Remove ${formatStoryTagLabel(tag)} tag`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-secondary">No tags yet.</p>
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Input
+                    value={pendingTag}
+                    onChange={(event) => setPendingTag(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    placeholder="Add a tag"
+                    className="max-w-sm"
+                  />
+                  <Button type="button" variant="ghost" onClick={handleAddTag}>
+                    Add tag
+                  </Button>
+                </div>
+              </div>
             </Field>
             <Field label="First action">
               <Textarea

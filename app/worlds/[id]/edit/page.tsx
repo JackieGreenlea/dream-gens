@@ -3,6 +3,7 @@ import { StoryEditor } from "@/components/story/story-editor";
 import { WorldCanonEditor } from "@/components/world/world-canon-editor";
 import { getOwnedStoryById, getOwnedWorldCanonById, getPlayableByIdOrSample } from "@/lib/db";
 import { getSampleWorldById } from "@/lib/sampleData";
+import { createStoryFromWorld } from "@/lib/story";
 import { getCurrentUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,7 @@ export default async function EditWorldPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
-      <StoryEditor storyId={id} initialStory={legacyOrSamplePlayable} />
+      <StoryEditor storyId={id} initialStory={createStoryFromWorld(legacyOrSamplePlayable)} />
     </main>
   );
 }

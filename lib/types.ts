@@ -54,6 +54,7 @@ export type Story = PlayableStoryFields & {
   slug?: string | null;
   publishedAt?: string | null;
   coverImageUrl?: string | null;
+  tags: string[];
 };
 
 // Compatibility shape for routes/components that still expect a world-shaped playable setup.

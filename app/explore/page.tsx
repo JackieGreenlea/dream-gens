@@ -19,6 +19,7 @@ export default async function ExplorePage() {
             authorUsername: story.authorUsername,
             publishedLabel: story.publishedAt ? formatLibraryDate(story.publishedAt) : "Published",
             coverImageUrl: story.coverImageUrl,
+            tags: story.tags,
             actionHref: `/stories/${story.id}/characters`,
             profileHref: `/stories/${story.id}`,
           }))}

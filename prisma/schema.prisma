@@ -93,6 +93,7 @@ model Story {
   slug              String?          @unique
   publishedAt       DateTime?
   coverImageUrl     String?
+  tags              String[]         @default([])
   title             String
   summary           String
   background        String

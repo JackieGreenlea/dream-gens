@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { StoryCharacterSelect } from "@/components/story/character-select";
 import { getOwnedStoryById, getPlayableByIdOrSample } from "@/lib/db";
 import { getSampleWorldById } from "@/lib/sampleData";
+import { createStoryFromWorld } from "@/lib/story";
 import { getCurrentUser } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function WorldCharactersCompatibilityPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
-      <StoryCharacterSelect initialStory={legacyOrSampleStory} />
+      <StoryCharacterSelect initialStory={createStoryFromWorld(legacyOrSampleStory)} />
     </main>
   );
 }

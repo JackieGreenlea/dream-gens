@@ -4,8 +4,8 @@ import { normalizeCompiledWorld } from "@/lib/compiler";
 import { createStory, getOwnedWorldCanonById } from "@/lib/db";
 import { createStructuredOutput } from "@/lib/openai";
 import {
-  compiledWorldJsonSchema,
-  compiledWorldSchema,
+  compiledStoryJsonSchema,
+  compiledStorySchema,
   createStoryFromWorldRequestSchema,
 } from "@/lib/schemas";
 import { createStoryFromWorld } from "@/lib/story";
@@ -48,7 +48,7 @@ export async function POST(
     const input = createStoryFromWorldRequestSchema.parse(body);
     const rawStory = await createStructuredOutput<unknown>({
       schemaName: "story_from_world",
-      schema: compiledWorldJsonSchema,
+      schema: compiledStoryJsonSchema,
       input: [
         {
           role: "system",
@@ -68,7 +68,7 @@ export async function POST(
     let compiledStory;
 
     try {
-      compiledStory = compiledWorldSchema.parse(rawStory);
+      compiledStory = compiledStorySchema.parse(rawStory);
     } catch (error) {
       if (error instanceof ZodError) {
         return NextResponse.json(
