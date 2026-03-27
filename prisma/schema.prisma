@@ -29,6 +29,7 @@ model User {
   name        String?
   username    String    @unique
   displayName String?
+  bio         String?
   worlds      World[]
   stories     Story[]
   sessions    Session[]

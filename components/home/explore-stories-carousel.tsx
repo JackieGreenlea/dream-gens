@@ -8,6 +8,8 @@ type PlaceholderStory = {
   title: string;
   summary: string;
   accent: string;
+  authorName?: string;
+  authorHref?: string;
   imageUrl?: string | null;
   actionHref?: string;
   profileHref?: string;
@@ -89,8 +91,10 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
               title={story.title}
               description={story.summary}
               accent={story.accent}
+              authorName={story.authorName}
+              authorHref={story.authorHref}
               imageUrl={story.imageUrl}
-              metadata={["Featured", "Curated", "4.8 rating"]}
+              metadata={story.authorName ? ["Published", "Editorial pick"] : ["Featured", "Curated", "4.8 rating"]}
               actionHref={story.actionHref}
               profileHref={story.profileHref}
               imageAspectClassName="aspect-[4/4.35]"

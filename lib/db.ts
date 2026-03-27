@@ -153,6 +153,7 @@ export type PublicStoryListItem = {
   title: string;
   summary: string;
   authorName: string;
+  authorUsername: string;
   publishedAt: Date | null;
   coverImageUrl: string | null;
 };
@@ -161,6 +162,12 @@ export type StoryProfileRecord = {
   story: Story;
   authorName: string | null;
   isOwner: boolean;
+};
+
+export type PublicUserProfileRecord = {
+  username: string;
+  bio: string | null;
+  stories: PublicStoryListItem[];
 };
 
 // Internal shared mapping helpers
@@ -999,6 +1006,51 @@ export async function getStoryProfileById(
   };
 }
 
+export async function getPublicUserProfileByUsername(
+  username: string,
+): Promise<PublicUserProfileRecord | null> {
+  const user = await prisma.user.findFirst({
+    where: {
+      username,
+    },
+    select: {
+      username: true,
+      bio: true,
+      stories: {
+        where: {
+          visibility: "public",
+        },
+        orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
+        select: {
+          id: true,
+          title: true,
+          summary: true,
+          publishedAt: true,
+          coverImageUrl: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    username: user.username,
+    bio: user.bio,
+    stories: user.stories.map((story) => ({
+      id: story.id,
+      title: story.title,
+      summary: story.summary,
+      authorName: user.username,
+      authorUsername: user.username,
+      publishedAt: story.publishedAt ?? null,
+      coverImageUrl: story.coverImageUrl ?? null,
+    })),
+  };
+}
+
 export async function listPublishedStoriesForExplore(
   limit = 24,
 ): Promise<PublicStoryListItem[]> {
@@ -1025,6 +1077,7 @@ export async function listPublishedStoriesForExplore(
     title: story.title,
     summary: story.summary,
     authorName: getStoryAuthorLabel(story),
+    authorUsername: story.user?.username ?? "unknown-author",
     publishedAt: story.publishedAt ?? null,
     coverImageUrl: story.coverImageUrl ?? null,
   }));

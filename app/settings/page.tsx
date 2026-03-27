@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { updateIdentity } from "@/app/settings/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input } from "@/components/ui/field";
+import { Field, Input, Textarea } from "@/components/ui/field";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { ensureDatabaseUser } from "@/lib/user-sync";
 
@@ -60,12 +60,21 @@ export default async function SettingsPage({
             />
           </Field>
 
+          <Field label="Bio" hint="A short public bio shown on your profile. Leave blank if you do not want one.">
+            <Textarea
+              name="bio"
+              defaultValue={identity.bio ?? ""}
+              maxLength={400}
+              className="min-h-28"
+            />
+          </Field>
+
           <Field label="Email">
             <Input value={identity.email ?? ""} disabled readOnly />
           </Field>
 
           <div className="flex justify-end">
-            <Button type="submit">Save username</Button>
+            <Button type="submit">Save profile</Button>
           </div>
         </form>
       </Card>

@@ -118,12 +118,14 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                   {accountLabel ? <p className="mt-1 text-xs text-muted">{accountLabel}</p> : null}
                 </div>
 
-                <button
-                  type="button"
-                  className="mt-2 px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
-                >
-                  My Profile
-                </button>
+                {user && identity ? (
+                  <Link
+                    href={`/u/${identity.username}`}
+                    className="mt-2 px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                  >
+                    My Profile
+                  </Link>
+                ) : null}
 
                 {user ? (
                   <>

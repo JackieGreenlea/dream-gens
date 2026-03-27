@@ -16,6 +16,7 @@ export default async function ExplorePage() {
             title: story.title,
             summary: story.summary,
             authorName: story.authorName,
+            authorUsername: story.authorUsername,
             publishedLabel: story.publishedAt ? formatLibraryDate(story.publishedAt) : "Published",
             coverImageUrl: story.coverImageUrl,
             actionHref: `/stories/${story.id}/characters`,

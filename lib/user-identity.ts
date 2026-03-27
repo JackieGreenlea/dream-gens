@@ -43,6 +43,7 @@ export type UserIdentityRecord = {
   email: string | null;
   username: string;
   displayName: string | null;
+  bio: string | null;
 };
 
 export function normalizeUsername(value: string) {

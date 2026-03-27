@@ -79,6 +79,8 @@ export default async function HomePage({
                   title: story.title,
                   summary: story.summary,
                   accent: "from-[#0091AD] via-[#00768D] to-slate-950",
+                  authorName: story.authorUsername,
+                  authorHref: `/u/${story.authorUsername}`,
                   imageUrl: story.coverImageUrl,
                   actionHref: `/stories/${story.id}/characters`,
                   profileHref: `/stories/${story.id}`,

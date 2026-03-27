@@ -21,6 +21,7 @@ export async function ensureDatabaseUser(user: SupabaseUser) {
     select: {
       username: true,
       displayName: true,
+      bio: true,
     },
   });
 
@@ -38,6 +39,7 @@ export async function ensureDatabaseUser(user: SupabaseUser) {
       name: metadataName,
       username,
       displayName,
+      bio: existingUser?.bio ?? null,
     },
     update: {
       email: user.email ?? null,
@@ -58,6 +60,7 @@ export async function getDatabaseUserIdentity(userId: string): Promise<UserIdent
       email: true,
       username: true,
       displayName: true,
+      bio: true,
     },
   });
 
@@ -66,9 +69,10 @@ export async function getDatabaseUserIdentity(userId: string): Promise<UserIdent
 
 export async function updateDatabaseUserIdentity(
   userId: string,
-  input: {
-    username: string;
-  },
+    input: {
+      username: string;
+      bio: string | null;
+    },
 ) {
   return prisma.user.update({
     where: {
@@ -76,12 +80,32 @@ export async function updateDatabaseUserIdentity(
     },
     data: {
       username: input.username,
+      bio: input.bio,
     },
     select: {
       id: true,
       email: true,
       username: true,
       displayName: true,
+      bio: true,
+    },
+  });
+}
+
+export async function updateDatabaseUserBio(userId: string, bio: string | null) {
+  return prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      bio,
+    },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      displayName: true,
+      bio: true,
     },
   });
 }

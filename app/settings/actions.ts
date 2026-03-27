@@ -20,6 +20,7 @@ export async function updateIdentity(formData: FormData) {
   await ensureDatabaseUser(user);
 
   const rawUsername = String(formData.get("username") ?? "");
+  const bio = String(formData.get("bio") ?? "").trim();
   const username = normalizeUsername(rawUsername);
   const validationError = getUsernameValidationError(rawUsername);
 
@@ -44,7 +45,10 @@ export async function updateIdentity(formData: FormData) {
   }
 
   try {
-    await updateDatabaseUserIdentity(user.id, { username });
+    await updateDatabaseUserIdentity(user.id, {
+      username,
+      bio: bio || null,
+    });
   } catch (error) {
     if (isUniqueConstraintError(error)) {
       return encodedRedirect("/settings", "error", "That username is already taken.");
