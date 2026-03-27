@@ -81,6 +81,7 @@ export default async function HomePage({
                   accent: "from-[#0091AD] via-[#00768D] to-slate-950",
                   imageUrl: story.coverImageUrl,
                   actionHref: `/stories/${story.id}/characters`,
+                  profileHref: `/stories/${story.id}`,
                 }))}
               />
             ) : (

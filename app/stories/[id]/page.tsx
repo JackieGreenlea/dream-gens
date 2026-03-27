@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { StoryEditor } from "@/components/story/story-editor";
-import { getOwnedStoryById } from "@/lib/db";
+import { getStoryProfileById } from "@/lib/db";
 import { getCurrentUser } from "@/lib/supabase/server";
-import { ensureDatabaseUser } from "@/lib/user-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -13,16 +12,9 @@ export default async function StorySetupPage({
 }) {
   const { id } = await params;
   const user = await getCurrentUser();
+  const profile = await getStoryProfileById(id, user?.id ?? null);
 
-  if (!user) {
-    redirect("/auth/sign-in?message=Sign%20in%20to%20open%20your%20saved%20stories.");
-  }
-
-  const identity = await ensureDatabaseUser(user);
-
-  const story = await getOwnedStoryById(id, user.id);
-
-  if (!story) {
+  if (!profile) {
     notFound();
   }
 
@@ -30,8 +22,9 @@ export default async function StorySetupPage({
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
       <StoryEditor
         storyId={id}
-        initialStory={story}
-        authorName={identity.username}
+        initialStory={profile.story}
+        authorName={profile.authorName}
+        isOwner={profile.isOwner}
         basePath="/stories"
         apiBasePath="/api/stories"
       />

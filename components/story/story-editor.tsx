@@ -17,6 +17,7 @@ type StoryEditorProps = {
   initialStory: Story | null;
   storyId: string;
   authorName?: string | null;
+  isOwner?: boolean;
   basePath?: "/worlds" | "/stories";
   apiBasePath?: "/api/worlds" | "/api/stories";
 };
@@ -25,6 +26,7 @@ export function StoryEditor({
   initialStory,
   storyId,
   authorName = null,
+  isOwner = true,
   basePath = "/worlds",
   apiBasePath = "/api/worlds",
 }: StoryEditorProps) {
@@ -181,6 +183,11 @@ export function StoryEditor({
   }
 
   async function handlePlay() {
+    if (!isOwner) {
+      router.push(`/stories/${storyId}/characters`);
+      return;
+    }
+
     await persistStory("characters");
   }
 
@@ -351,7 +358,7 @@ export function StoryEditor({
           </h1>
           <div className="space-y-1 text-sm text-secondary">
             {authorName ? <p>by @{authorName}</p> : null}
-            {basePath === "/stories" ? (
+            {basePath === "/stories" && isOwner ? (
               <p>{story.visibility === "public" ? "Published story" : "Private story"}</p>
             ) : null}
           </div>
@@ -361,8 +368,9 @@ export function StoryEditor({
           <Button type="button" onClick={handlePlay} disabled={isSaving}>
             {isSaving ? "Saving..." : "Play"}
           </Button>
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            {basePath === "/stories" ? (
+          {isOwner ? (
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              {basePath === "/stories" ? (
               story.visibility === "public" ? (
                 <button
                   type="button"
@@ -382,24 +390,25 @@ export function StoryEditor({
                   {isPublishing ? "Publishing..." : "Publish"}
                 </button>
               )
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setIsCustomizeOpen((current) => !current)}
-              aria-expanded={isCustomizeOpen}
-              className="text-secondary transition hover:text-foreground"
-            >
-              {isCustomizeOpen ? "Close customization" : "Customize"}
-            </button>
-            {basePath === "/stories" ? (
-              <DeleteEntryButton
-                endpoint={`/api/stories/${story.id}`}
-                label="Delete"
-                signInMessage="Sign in to delete this story."
-                confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
-              />
-            ) : null}
-          </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setIsCustomizeOpen((current) => !current)}
+                aria-expanded={isCustomizeOpen}
+                className="text-secondary transition hover:text-foreground"
+              >
+                {isCustomizeOpen ? "Close customization" : "Customize"}
+              </button>
+              {basePath === "/stories" ? (
+                <DeleteEntryButton
+                  endpoint={`/api/stories/${story.id}`}
+                  label="Delete"
+                  signInMessage="Sign in to delete this story."
+                  confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
+                />
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -445,7 +454,7 @@ export function StoryEditor({
         </div>
       </section>
 
-      {isCustomizeOpen ? (
+      {isOwner && isCustomizeOpen ? (
         <Card className="space-y-6 p-6 sm:p-8">
           <div className="space-y-2">
             <p className="text-sm uppercase tracking-[0.24em] text-warm">Customize</p>

@@ -157,6 +157,12 @@ export type PublicStoryListItem = {
   coverImageUrl: string | null;
 };
 
+export type StoryProfileRecord = {
+  story: Story;
+  authorName: string | null;
+  isOwner: boolean;
+};
+
 // Internal shared mapping helpers
 
 function getStoryAuthorLabel(record: {
@@ -945,6 +951,52 @@ export async function getPlayableStoryById(id: string, userId: string) {
   });
 
   return story ? mapStoryRecord(story) : null;
+}
+
+export async function getStoryProfileById(
+  id: string,
+  userId?: string | null,
+): Promise<StoryProfileRecord | null> {
+  const story = await prisma.story.findFirst({
+    where: {
+      id,
+      OR: userId
+        ? [
+            {
+              userId,
+            },
+            {
+              visibility: "public",
+            },
+          ]
+        : [
+            {
+              visibility: "public",
+            },
+          ],
+    },
+    select: {
+      ...storySelect,
+      userId: true,
+      user: {
+        select: {
+          username: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!story) {
+    return null;
+  }
+
+  return {
+    story: mapStoryRecord(story),
+    authorName: story.user?.username ?? story.user?.name ?? story.user?.email ?? null,
+    isOwner: Boolean(userId && story.userId === userId),
+  };
 }
 
 export async function listPublishedStoriesForExplore(

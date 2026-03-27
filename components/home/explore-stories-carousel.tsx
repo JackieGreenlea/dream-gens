@@ -10,6 +10,7 @@ type PlaceholderStory = {
   accent: string;
   imageUrl?: string | null;
   actionHref?: string;
+  profileHref?: string;
 };
 
 type ExploreStoriesCarouselProps = {
@@ -91,6 +92,7 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
               imageUrl={story.imageUrl}
               metadata={["Featured", "Curated", "4.8 rating"]}
               actionHref={story.actionHref}
+              profileHref={story.profileHref}
               imageAspectClassName="aspect-[4/4.35]"
             />
           </div>

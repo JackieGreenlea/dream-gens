@@ -31,6 +31,7 @@ type PublishedExploreStory = {
   publishedLabel: string;
   coverImageUrl?: string | null;
   actionHref: string;
+  profileHref: string;
 };
 
 export function ExploreBrowser({
@@ -179,6 +180,7 @@ export function ExploreBrowser({
                 imageUrl={story.coverImageUrl}
                 metadata={[story.authorName, story.publishedLabel, "Published"]}
                 actionHref={story.actionHref}
+                profileHref={story.profileHref}
                 imageAspectClassName="aspect-[16/10] md:h-full md:min-h-[16rem]"
                 variant="feed"
               />
