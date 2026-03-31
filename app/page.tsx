@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { ExploreStoriesCarousel } from "@/components/home/explore-stories-carousel";
 import homeBanner from "@/components/home/everplot-home-banner.png";
 import { listPublishedStoriesForExplore } from "@/lib/db";
@@ -53,9 +54,39 @@ export default async function HomePage({
     <main className="min-h-screen bg-page">
       <div className="mx-auto flex min-h-screen max-w-[1680px] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <section className="rounded-[2rem] py-2 sm:py-4 lg:py-6">
-          <div className="flex min-h-[320px] w-full items-center justify-center sm:min-h-[420px] lg:min-h-[560px]">
+          <div className="relative flex min-h-[420px] w-full items-center sm:min-h-[520px] lg:min-h-[620px]">
+            <div className="relative z-10 w-full max-w-xl px-2 sm:px-4 lg:px-8">
+              <div className="max-w-lg rounded-[1.25rem] bg-[linear-gradient(90deg,rgba(13,16,20,0.82)_0%,rgba(13,16,20,0.62)_58%,rgba(13,16,20,0.08)_100%)] p-6 sm:p-8">
+                <div className="space-y-5">
+                  <h1 className="max-w-xl text-4xl font-semibold tracking-[-0.045em] text-foreground sm:text-5xl lg:text-6xl">
+                    Step into a world of your own imagination.
+                  </h1>
+                  <p className="max-w-2xl text-base leading-7 text-secondary sm:text-lg">
+                    Create your own worlds and play through immersive interactive fiction built
+                    for romance, fantasy, sci-fi, adventure, and more.
+                  </p>
+                  <div className="space-y-4">
+                    <Link
+                      href="/create"
+                      className="inline-flex items-center rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                    >
+                      Start your Story
+                    </Link>
+                    <div>
+                      <Link
+                        href="/explore"
+                        className="text-sm font-medium text-foreground transition hover:text-accent"
+                      >
+                        Explore the Worlds &gt;
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div
-              className="w-full"
+              className="absolute inset-0 flex items-center justify-center"
               style={{
                 WebkitMaskImage:
                   "radial-gradient(ellipse at center, black 86%, transparent 100%), linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%), linear-gradient(to bottom, transparent 0%, black 10%, black 86%, transparent 100%)",
