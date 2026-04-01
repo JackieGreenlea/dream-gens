@@ -5,20 +5,21 @@ import { SessionTurn, World } from "@/lib/types";
 export const RUNTIME_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
 
 Requirements:
-- Continue directly from the player's action.
+- The latest user message is the action already taken.
+- Continue directly from that action.
 - Do not restate or paraphrase the player's submitted action at the start of storyText.
-- Begin with the immediate consequence, reaction, reveal, or next dramatic beat.
-- Respect the world's tone, rules, and dramatic logic.
-- Use the character's strengths and weaknesses narratively, not as dice rolls or RPG mechanics.
-- summary must be a very short memory chunk, not a recap paragraph.
+- Begin with the immediate consequence, reaction, reveal, or next beat.
+- Keep player agency intact and move the scene forward.
+- Respect POV, tone, story logic, and runtime instructions.
+- Use the character's strengths and weaknesses narratively, not as mechanics.
+- Do not expose internal scaffolding.
+- summary must be a very short continuity note, not a recap paragraph.
 - Keep summary to about 20 words maximum.
 - Prefer one short sentence.
-- summary should capture only what newly happened that still matters for continuity.
-- Suggested actions must reflect reasonable actions the player could take based on the current scene.
-- Each suggested action must be 1-2 short sentences.
-- Each suggested action must not exceed 20 words.
+- summary should capture only what newly happened that still matters.
+- Suggested actions must reflect reasonable next moves in the current scene.
+- Each suggested action must be 1-2 short sentences and no more than 20 words.
 - Start each suggested action with a clear verb when possible.
-- Do not restate the scene or write strategy commentary.
 - Return strictly valid JSON matching the requested schema.
 - Keep storyText to 1-3 short paragraphs.
 - Avoid one dense block of text.`;
@@ -81,7 +82,17 @@ function toInputMessage(role: OpenAIInputMessage["role"], text: string): OpenAII
   };
 }
 
-function buildRuntimeDeveloperMessage({
+function compactText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength).trimEnd()}...`;
+}
+
+function buildFirstTurnDeveloperMessage({
   world,
   character,
   session,
@@ -95,19 +106,53 @@ function buildRuntimeDeveloperMessage({
   };
 }) {
   return [
-    "Story Background:",
-    world.background,
+    "Session Setup:",
+    `Title: ${world.title}`,
+    `POV: ${session.pov.replace("_", " ")}`,
+    `Tone / Style: ${world.authorStyle}`,
+    `Objective: ${session.objective}`,
     "",
     "Story Instructions:",
     world.instructions,
     "",
-    `Write in the following style: ${world.authorStyle}`,
-    `Narrate in ${session.pov.replace("_", " ")} point of view.`,
-    `The user is ${character.name}, ${character.description}`,
-    `The user's objective is ${session.objective}`,
-    `The user's strengths are ${character.strengths.join(", ")}`,
-    `The user's weaknesses are ${character.weaknesses.join(", ")}`,
-    `So far in the story: ${session.summary || "The story is just beginning."}`,
+    "Story Background:",
+    world.background,
+    "",
+    "Selected Playable Character:",
+    `${character.name}: ${character.description}`,
+    `Strengths: ${character.strengths.join(", ")}`,
+    `Weaknesses: ${character.weaknesses.join(", ")}`,
+    "",
+    "Launch Notes:",
+    `This is the opening runtime turn for this session.`,
+    `The latest user message is the player's hidden first action.`,
+  ].join("\n");
+}
+
+function buildContinuityDeveloperMessage({
+  world,
+  character,
+  session,
+}: {
+  world: World;
+  character: World["playerCharacters"][number];
+  session: {
+    objective: string;
+    pov: World["pov"];
+    summary: string;
+  };
+}) {
+  return [
+    "Continuity Packet:",
+    `Title: ${world.title}`,
+    `POV: ${session.pov.replace("_", " ")}`,
+    `Tone / Style: ${world.authorStyle}`,
+    `Objective: ${session.objective}`,
+    `Runtime Instructions: ${compactText(world.instructions, 220)}`,
+    `Character Anchor: ${character.name} — ${compactText(character.description, 180)}`,
+    `Strengths: ${character.strengths.join(", ")}`,
+    `Weaknesses: ${character.weaknesses.join(", ")}`,
+    `Continuity Summary: ${session.summary || "The story is just beginning."}`,
   ].join("\n");
 }
 
@@ -124,20 +169,27 @@ export function buildRuntimeInputMessages({
     pov: World["pov"];
     previousResponseId: string;
     summary: string;
+    turnCount: number;
     turns: SessionTurn[];
   };
   playerAction: string;
 }) {
+  const developerMessage =
+    session.turnCount === 0
+      ? buildFirstTurnDeveloperMessage({
+          world,
+          character,
+          session,
+        })
+      : buildContinuityDeveloperMessage({
+          world,
+          character,
+          session,
+        });
+
   const messages: OpenAIInputMessage[] = [
     toInputMessage("system", RUNTIME_SYSTEM_PROMPT),
-    toInputMessage(
-      "developer",
-      buildRuntimeDeveloperMessage({
-        world,
-        character,
-        session,
-      }),
-    ),
+    toInputMessage("developer", developerMessage),
   ];
 
   messages.push(toInputMessage("user", playerAction.trim()));
