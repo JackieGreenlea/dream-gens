@@ -1,8 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
 import { PlayerCharacter, Session, SessionTurn, World } from "@/lib/types";
@@ -35,14 +34,13 @@ export function PlaySessionShell({
   const [debugRawResponse, setDebugRawResponse] = useState<unknown>(null);
   const [debugNormalizedTurn, setDebugNormalizedTurn] = useState<SessionTurn | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const threadRef = useRef<HTMLDivElement | null>(null);
 
   const suggestedActions =
     session && world && character
       ? session.turns.at(-1)?.suggestedActions ?? buildSuggestedActions(world, character)
       : [];
   const recentTurns = session?.turns ?? [];
-  const latestTurn = recentTurns.at(-1) ?? null;
-  const previousTurns = latestTurn ? recentTurns.slice(0, -1) : [];
 
   function renderStoryText(text: string) {
     const paragraphs = text
@@ -55,13 +53,29 @@ export function PlaySessionShell({
     return (
       <div className="space-y-4">
         {content.map((paragraph, index) => (
-          <p key={`${index}-${paragraph.slice(0, 24)}`} className="text-sm leading-7 text-secondary whitespace-pre-wrap">
+          <p
+            key={`${index}-${paragraph.slice(0, 24)}`}
+            className="whitespace-pre-wrap text-[1.03rem] leading-8 text-foreground/92"
+          >
             {paragraph}
           </p>
         ))}
       </div>
     );
   }
+
+  useEffect(() => {
+    const thread = threadRef.current;
+
+    if (!thread) {
+      return;
+    }
+
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [session?.turns.length, isSubmitting]);
 
   if (!session || !world || !character) {
     return (
@@ -164,9 +178,23 @@ export function PlaySessionShell({
     await submitAction(playerAction);
   }
 
+  function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!playerAction.trim() || isSubmitting) {
+      return;
+    }
+
+    void submitAction(playerAction);
+  }
+
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden p-0">
+      <Card className="flex h-[calc(100vh-8.5rem)] min-h-[42rem] flex-col overflow-hidden bg-transparent p-0">
         <section className="relative p-4 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
@@ -223,82 +251,84 @@ export function PlaySessionShell({
           </div>
         </section>
 
-        {previousTurns.length > 0 ? (
-          <section className="border-t border-line p-4 sm:p-6">
-            <details className="space-y-4">
-              <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-                Previous turns
-              </summary>
-              <div className="mt-4 space-y-4">
-                {previousTurns.map((turn) => (
-                  <div key={turn.turnNumber} className="border-l border-line pl-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-secondary">Turn {turn.turnNumber}</p>
-                    <p className="mt-2 text-sm leading-6 text-foreground">{turn.playerAction}</p>
-                    <div className="mt-3">{renderStoryText(turn.storyText)}</div>
+        <section className="flex min-h-0 flex-1 flex-col border-t border-line">
+          <div
+            ref={threadRef}
+            className="min-h-0 flex-1 space-y-10 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6"
+          >
+            {recentTurns.length > 0 ? (
+              recentTurns.map((turn) => (
+                <div key={turn.turnNumber} className="space-y-5">
+                  <div className="flex justify-end">
+                    <div className="max-w-[85%] space-y-2 text-right">
+                      <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
+                        You • Turn {turn.turnNumber}
+                      </p>
+                      <p className="text-[1.06rem] leading-8 text-foreground">{turn.playerAction}</p>
+                    </div>
                   </div>
-                ))}
+                  <div className="max-w-4xl">
+                    {renderStoryText(turn.storyText)}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="max-w-3xl py-6">
+                <p className="text-[1.1rem] leading-8 text-secondary">
+                  Preparing the opening scene for this session.
+                </p>
               </div>
-            </details>
-          </section>
-        ) : null}
-
-        <section className="border-t border-line p-4 sm:p-6">
-          {latestTurn ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm uppercase tracking-[0.24em] text-warm">Current Scene</p>
-                <span className="text-xs text-secondary">Turn {latestTurn.turnNumber}</span>
-              </div>
-              <p className="text-sm leading-7 text-foreground">{latestTurn.playerAction}</p>
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-secondary">Story</p>
-                {renderStoryText(latestTurn.storyText)}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-sm uppercase tracking-[0.24em] text-warm">Starting Game</p>
-              <p className="text-sm leading-7 text-secondary">
-                The first turn is being established for this session.
-              </p>
-            </div>
-          )}
-        </section>
-
-        <section className="border-t border-line p-4 sm:p-6">
-          <div className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.24em] text-warm">Actions</p>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <textarea
-                value={playerAction}
-                onChange={(event) => setPlayerAction(event.target.value)}
-                disabled={isSubmitting}
-                className="min-h-40 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
-                placeholder="Type what your character does next..."
-              />
-              {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground">{error}</div> : null}
-              <Button type="submit" disabled={isSubmitting || !playerAction.trim()}>
-                {isSubmitting ? "Resolving turn..." : "Submit action"}
-              </Button>
-            </form>
+            )}
 
             {isSubmitting ? <LoadingDots label="Writing the next beat..." /> : null}
+          </div>
 
-            <div className="space-y-3 border-t border-line pt-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-secondary">Suggested Actions</p>
-              <div className="grid gap-3">
-                {suggestedActions.map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => submitAction(action)}
-                    className="rounded-lg border border-line/70 bg-transparent p-4 text-left text-sm text-secondary transition hover:border-fieldBorder hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {action}
-                  </button>
-                ))}
-              </div>
+          <div className="px-4 py-4 sm:px-6 sm:py-5">
+            <div className="space-y-4">
+              <form className="flex items-end gap-3" onSubmit={handleSubmit}>
+                <textarea
+                  value={playerAction}
+                  onChange={(event) => setPlayerAction(event.target.value)}
+                  onKeyDown={handleComposerKeyDown}
+                  disabled={isSubmitting}
+                  className="min-h-[3.75rem] max-h-48 flex-1 resize-y rounded-lg bg-field px-4 py-3 text-[1.02rem] leading-8 text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  placeholder="Type what your character does next..."
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !playerAction.trim()}
+                  aria-label={isSubmitting ? "Resolving turn" : "Send action"}
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-transparent bg-accent text-foreground transition-colors hover:bg-[#007a92] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h12" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="m13 6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </form>
+
+              {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground">{error}</div> : null}
+
+              {suggestedActions.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
+                    Suggested actions
+                  </p>
+                  <div className="flex flex-col items-start gap-2">
+                    {suggestedActions.map((action) => (
+                      <button
+                        key={action}
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => submitAction(action)}
+                        className="text-sm text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {action}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
