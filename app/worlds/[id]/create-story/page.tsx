@@ -24,7 +24,7 @@ export default async function CreateStoryFromWorldPage({
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
+    <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
       <CreateStoryFromWorldForm world={world} />
     </main>
   );

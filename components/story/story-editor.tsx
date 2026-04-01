@@ -363,7 +363,7 @@ export function StoryEditor({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       {error ? (
         <Card className="border-danger/25 bg-transparent p-5">
           <p className="text-sm font-medium text-foreground">{errorTitle}</p>

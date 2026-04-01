@@ -18,7 +18,7 @@ export default async function MySessionsPage() {
   const sessions = await listSessionsForUser(user.id);
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
+    <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
       <div className="space-y-6">
         <Card className="space-y-3">
           <p className="text-sm uppercase tracking-[0.24em] text-warm">My Sessions</p>

@@ -9,7 +9,7 @@ export default async function SignInPage({
   const { error, message, next } = await searchParams;
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
+    <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
       <AuthFormCard
         title="Sign in"
         description="Access your account to keep working inside Story World Studio."

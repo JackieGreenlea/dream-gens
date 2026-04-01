@@ -9,7 +9,7 @@ export default async function ExplorePage() {
 
   return (
     <main className="min-h-screen bg-page">
-      <div className="mx-auto flex min-h-screen max-w-[1680px] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-screen max-w-[1840px] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
         <ExploreBrowser
           publishedStories={publishedStories.map((story) => ({
             id: story.id,

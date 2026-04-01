@@ -100,7 +100,7 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       {error ? (
         <Card className="border-danger/35 bg-danger/12 p-5">
           <p className="text-sm font-medium text-foreground">World save failed</p>

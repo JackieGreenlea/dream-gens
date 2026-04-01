@@ -69,7 +69,7 @@ export function CreateStoryFromWorldForm({ world }: CreateStoryFromWorldFormProp
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <Card className="space-y-4 p-6 sm:p-8">
         <div className="space-y-2">
           <p className="text-sm uppercase tracking-[0.24em] text-warm">Create Story From World</p>

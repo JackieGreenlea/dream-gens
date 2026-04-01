@@ -3,7 +3,7 @@ import { CreateCanonWorldForm } from "@/components/world/create-canon-world-form
 
 export default function CreateCanonWorldPage() {
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-6 py-10 sm:px-8 lg:px-10">
+    <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
       <div className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-3">

@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
+import logo from "@/app/logo.png";
 import { signOut } from "@/app/auth/actions";
 import { ButtonLink } from "@/components/ui/button";
 
@@ -83,9 +85,10 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
         <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
           <Link
             href="/"
-            className="inline-flex h-11 items-center text-sm font-medium uppercase tracking-[0.28em] text-foreground"
+            className="inline-flex h-11 items-center"
+            aria-label="Everplot home"
           >
-            Everplot
+            <Image src={logo} alt="Everplot" className="h-14 w-auto sm:h-16" priority />
           </Link>
         </div>
 

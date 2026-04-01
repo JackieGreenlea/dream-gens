@@ -27,7 +27,7 @@ export default async function StoryCharacterSelectPage({
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-6 py-10 sm:px-8 lg:px-10">
+    <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
       <StoryCharacterSelect initialStory={story} apiBasePath="/api/stories" />
     </main>
   );
