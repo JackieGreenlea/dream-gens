@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { CustomSessionCharacter } from "@/lib/schemas";
 import { getSampleWorldById } from "@/lib/sampleData";
 import { createWorldFromStory } from "@/lib/story";
 import { normalizeStoryTags } from "@/lib/story-tags";
@@ -1305,7 +1306,8 @@ export async function getPlayableSetupForSession(id: string, userId: string) {
 
 export async function createSessionFromLegacyWorld(params: {
   worldId: string;
-  characterId: string;
+  characterId?: string | null;
+  customCharacter?: CustomSessionCharacter | null;
   userId: string;
 }) {
   const world = await prisma.world.findFirst({
@@ -1320,28 +1322,57 @@ export async function createSessionFromLegacyWorld(params: {
     return null;
   }
 
-  const characterRecord = await prisma.playerCharacter.findFirst({
-    where: {
-      id: params.characterId,
-      worldId: params.worldId,
-    },
-  });
+  let selectedCharacter: PlayerCharacter | null = null;
+  let characterId: string | null = null;
 
-  if (!characterRecord) {
+  if (params.customCharacter) {
+    selectedCharacter = {
+      id: "",
+      name: params.customCharacter.name,
+      description: params.customCharacter.description,
+      strengths: params.customCharacter.strengths,
+      weaknesses: params.customCharacter.weaknesses,
+    };
+  } else if (params.characterId) {
+    const characterRecord = await prisma.playerCharacter.findFirst({
+      where: {
+        id: params.characterId,
+        worldId: params.worldId,
+      },
+    });
+
+    if (!characterRecord) {
+      return null;
+    }
+
+    selectedCharacter = mapCharacter(characterRecord);
+    characterId = params.characterId;
+  }
+
+  if (!selectedCharacter) {
     return null;
   }
 
   const playable = mapWorld({
     ...world,
-    playerCharacters: [characterRecord],
+    playerCharacters: characterId
+      ? [
+          {
+            id: characterId,
+            name: selectedCharacter.name,
+            description: selectedCharacter.description,
+            strengths: selectedCharacter.strengths,
+            weaknesses: selectedCharacter.weaknesses,
+          },
+        ]
+      : [],
   } as DbWorld);
-  const selectedCharacter = mapCharacter(characterRecord);
 
   const session = await prisma.session.create({
     data: {
       userId: params.userId,
       worldId: params.worldId,
-      characterId: params.characterId,
+      characterId,
       storyId: null,
       storyCharacterId: null,
       turnCount: 0,
@@ -1370,7 +1401,8 @@ export async function createSession(params: {
 // Real path: Start Game from a Story creates a Session from Story.
 export async function createSessionFromStory(params: {
   storyId: string;
-  characterId: string;
+  characterId?: string | null;
+  customCharacter?: CustomSessionCharacter | null;
   userId: string;
 }) {
   const story = await prisma.story.findFirst({
@@ -1392,9 +1424,29 @@ export async function createSessionFromStory(params: {
     return null;
   }
 
-  const selectedCharacter = story.playerCharacters.find(
-    (character) => character.id === params.characterId,
-  );
+  let selectedCharacter: PlayerCharacter | null = null;
+  let storyCharacterId: string | null = null;
+
+  if (params.customCharacter) {
+    selectedCharacter = {
+      id: "",
+      name: params.customCharacter.name,
+      description: params.customCharacter.description,
+      strengths: params.customCharacter.strengths,
+      weaknesses: params.customCharacter.weaknesses,
+    };
+  } else if (params.characterId) {
+    const existingCharacter = story.playerCharacters.find(
+      (character) => character.id === params.characterId,
+    );
+
+    if (!existingCharacter) {
+      return null;
+    }
+
+    selectedCharacter = mapCharacter(existingCharacter);
+    storyCharacterId = existingCharacter.id;
+  }
 
   if (!selectedCharacter) {
     return null;
@@ -1406,7 +1458,7 @@ export async function createSessionFromStory(params: {
       worldId: story.worldId ?? null,
       storyId: story.id,
       characterId: null,
-      storyCharacterId: selectedCharacter.id,
+      storyCharacterId,
       turnCount: 0,
       objective: sanitizeTextForDatabase(story.objective),
       currentObjective: sanitizeTextForDatabase(story.objective),

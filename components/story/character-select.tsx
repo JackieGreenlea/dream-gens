@@ -8,6 +8,8 @@ import { SessionOpeningSkeletonScreen } from "@/components/ui/loading";
 import { Story } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const CUSTOM_CHARACTER_ID = "__custom_character__";
+
 type StoryCharacterSelectProps = {
   initialStory: Story | null;
   apiBasePath?: "/api/worlds" | "/api/stories" | null;
@@ -22,8 +24,15 @@ export function StoryCharacterSelect({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialStory?.playerCharacters[0]?.id ?? null,
   );
+  const [customCharacter, setCustomCharacter] = useState({
+    name: "",
+    description: "",
+    strengths: "",
+    weaknesses: "",
+  });
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState("");
+  const isCustomSelected = selectedId === CUSTOM_CHARACTER_ID;
 
   useEffect(() => {
     if (!initialStory || !apiBasePath) {
@@ -53,6 +62,7 @@ export function StoryCharacterSelect({
 
         setLiveStory(fetchedStory);
         setSelectedId((current) =>
+          current === CUSTOM_CHARACTER_ID ||
           fetchedStory.playerCharacters.some((character) => character.id === current)
             ? current
             : fetchedStory.playerCharacters[0]?.id ?? null,
@@ -70,8 +80,17 @@ export function StoryCharacterSelect({
   }, [apiBasePath, initialStory]);
 
   const selectedCharacter = useMemo(
-    () => liveStory?.playerCharacters.find((character) => character.id === selectedId) ?? null,
-    [selectedId, liveStory],
+    () =>
+      selectedId === CUSTOM_CHARACTER_ID
+        ? {
+            id: CUSTOM_CHARACTER_ID,
+            name: customCharacter.name.trim(),
+            description: customCharacter.description.trim(),
+            strengths: splitCustomCharacterField(customCharacter.strengths),
+            weaknesses: splitCustomCharacterField(customCharacter.weaknesses),
+          }
+        : liveStory?.playerCharacters.find((character) => character.id === selectedId) ?? null,
+    [customCharacter.description, customCharacter.name, customCharacter.strengths, customCharacter.weaknesses, selectedId, liveStory],
   );
 
   if (!liveStory) {
@@ -86,6 +105,13 @@ export function StoryCharacterSelect({
     return <SessionOpeningSkeletonScreen message="Preparing your opening scene..." />;
   }
 
+  function splitCustomCharacterField(value: string) {
+    return value
+      .split(/\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   async function beginSession() {
     if (!selectedCharacter || !liveStory || isStarting) {
       return;
@@ -93,6 +119,22 @@ export function StoryCharacterSelect({
 
     setIsStarting(true);
     setError("");
+
+    const isCustomCharacter = selectedId === CUSTOM_CHARACTER_ID;
+
+    if (isCustomCharacter) {
+      if (!selectedCharacter.name) {
+        setError("Custom character name is required.");
+        setIsStarting(false);
+        return;
+      }
+
+      if (!selectedCharacter.description) {
+        setError("Custom character description is required.");
+        setIsStarting(false);
+        return;
+      }
+    }
 
     try {
       const response = await fetch("/api/sessions/start", {
@@ -102,7 +144,18 @@ export function StoryCharacterSelect({
         },
         body: JSON.stringify({
           worldId: liveStory.id,
-          characterId: selectedCharacter.id,
+          ...(isCustomCharacter
+            ? {
+                customCharacter: {
+                  name: selectedCharacter.name,
+                  description: selectedCharacter.description,
+                  strengths: selectedCharacter.strengths,
+                  weaknesses: selectedCharacter.weaknesses,
+                },
+              }
+            : {
+                characterId: selectedCharacter.id,
+              }),
         }),
       });
 
@@ -137,6 +190,9 @@ export function StoryCharacterSelect({
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold text-foreground">{liveStory.title}</h1>
           <p className="max-w-3xl text-sm leading-6 text-secondary">{liveStory.summary}</p>
+          <p className="text-sm leading-6 text-secondary">
+            Choose one of the story characters below, or create your own for this session.
+          </p>
         </div>
       </Card>
 
@@ -192,13 +248,121 @@ export function StoryCharacterSelect({
             </button>
           );
         })}
+
+        <button
+          type="button"
+          onClick={() => setSelectedId(CUSTOM_CHARACTER_ID)}
+          className={cn(
+            "rounded-xl border p-5 text-left transition",
+            isCustomSelected
+              ? "border-accent/55 bg-surface"
+              : "border-line/70 bg-transparent hover:border-fieldBorder hover:bg-surface",
+          )}
+        >
+          <div className="space-y-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xl font-semibold text-foreground">Create Your Own</p>
+                <p className="mt-2 text-sm leading-6 text-secondary">
+                  Build a custom protagonist for this session only. Your Story stays unchanged.
+                </p>
+              </div>
+              <span className="text-xs uppercase tracking-[0.16em] text-muted">
+                {isCustomSelected ? "Selected" : "Available"}
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.18em] text-secondary">Required</p>
+                <div className="space-y-1.5 text-sm text-secondary">
+                  <p>Name</p>
+                  <p>Description</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.18em] text-secondary">Optional</p>
+                <div className="space-y-1.5 text-sm text-secondary">
+                  <p>Strengths</p>
+                  <p>Weaknesses</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </button>
       </div>
+
+      {isCustomSelected ? (
+        <Card className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm uppercase tracking-[0.24em] text-warm">Create Your Own</p>
+            <p className="text-sm leading-6 text-secondary">
+              This custom character is saved to the session only and does not change the Story.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-foreground">Name</span>
+              <input
+                type="text"
+                value={customCharacter.name}
+                onChange={(event) =>
+                  setCustomCharacter((current) => ({ ...current, name: event.target.value }))
+                }
+                className="w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-base text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
+                placeholder="Enter your character's name"
+              />
+            </label>
+
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-foreground">Description</span>
+              <textarea
+                value={customCharacter.description}
+                onChange={(event) =>
+                  setCustomCharacter((current) => ({
+                    ...current,
+                    description: event.target.value,
+                  }))
+                }
+                className="min-h-28 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-base leading-7 text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
+                placeholder="Who is this character in the story?"
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">Strengths</span>
+              <textarea
+                value={customCharacter.strengths}
+                onChange={(event) =>
+                  setCustomCharacter((current) => ({ ...current, strengths: event.target.value }))
+                }
+                className="min-h-24 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-sm leading-6 text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
+                placeholder="Optional. One per line or comma-separated."
+              />
+            </label>
+
+            <label className="space-y-2">
+              <span className="text-sm font-medium text-foreground">Weaknesses</span>
+              <textarea
+                value={customCharacter.weaknesses}
+                onChange={(event) =>
+                  setCustomCharacter((current) => ({ ...current, weaknesses: event.target.value }))
+                }
+                className="min-h-24 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-sm leading-6 text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
+                placeholder="Optional. One per line or comma-separated."
+              />
+            </label>
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-secondary">Selected character</p>
           <p className="mt-1 text-lg font-medium text-foreground">
-            {selectedCharacter ? selectedCharacter.name : "Choose a character"}
+            {isCustomSelected
+              ? selectedCharacter?.name || "Custom Character"
+              : selectedCharacter?.name || "Choose a character"}
           </p>
           {error ? <p className="mt-2 text-sm text-danger">{error}</p> : null}
         </div>

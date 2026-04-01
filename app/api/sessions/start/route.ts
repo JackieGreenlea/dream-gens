@@ -30,7 +30,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "World not found." }, { status: 404 });
     }
 
-    if (!setup.playable.playerCharacters.some((character) => character.id === input.characterId)) {
+    if (
+      input.characterId &&
+      !setup.playable.playerCharacters.some((character) => character.id === input.characterId)
+    ) {
       return NextResponse.json({ error: "Character not found for this world." }, { status: 400 });
     }
 
@@ -38,12 +41,14 @@ export async function POST(request: Request) {
       setup.source === "story"
         ? await createSessionFromStory({
             storyId: setup.story.id,
-            characterId: input.characterId,
+            characterId: input.characterId ?? null,
+            customCharacter: input.customCharacter ?? null,
             userId: user.id,
           })
         : await createSessionFromLegacyWorld({
             worldId: setup.world.id,
-            characterId: input.characterId,
+            characterId: input.characterId ?? null,
+            customCharacter: input.customCharacter ?? null,
             userId: user.id,
           });
 

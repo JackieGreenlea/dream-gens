@@ -153,10 +153,38 @@ export const compiledWorldCanonSchema = z.object({
 export type CompiledWorldCanonOutput = z.infer<typeof compiledWorldCanonSchema>;
 export type CreateStoryFromWorldRequest = z.infer<typeof createStoryFromWorldRequestSchema>;
 
-export const sessionStartRequestSchema = z.object({
-  worldId: z.string().trim().min(1),
-  characterId: z.string().trim().min(1),
+export const customSessionCharacterSchema = z.object({
+  name: z.string().trim().min(1, "Name is required."),
+  description: z.string().trim().min(1, "Description is required."),
+  strengths: z.array(z.string().trim().min(1)).max(8).default([]),
+  weaknesses: z.array(z.string().trim().min(1)).max(8).default([]),
 });
+
+export type CustomSessionCharacter = z.infer<typeof customSessionCharacterSchema>;
+
+export const sessionStartRequestSchema = z
+  .object({
+    worldId: z.string().trim().min(1),
+    characterId: z.string().trim().min(1).optional(),
+    customCharacter: customSessionCharacterSchema.optional(),
+  })
+  .superRefine((input, context) => {
+    if (input.characterId && input.customCharacter) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Choose either a generated character or a custom character, not both.",
+        path: ["characterId"],
+      });
+    }
+
+    if (!input.characterId && !input.customCharacter) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A character selection is required.",
+        path: ["characterId"],
+      });
+    }
+  });
 
 export const compiledWorldJsonSchema = {
   type: "object",
