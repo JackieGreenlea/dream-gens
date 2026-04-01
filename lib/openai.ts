@@ -1,5 +1,6 @@
 const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 const COMPILER_MODEL = "gpt-5-mini";
+export const RUNTIME_MODEL = "gpt-5.2";
 
 export type OpenAIInputMessage = {
   role: "system" | "developer" | "user";

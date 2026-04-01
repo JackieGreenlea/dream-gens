@@ -2,7 +2,7 @@ import "server-only";
 
 import { ZodError } from "zod";
 import { getSessionBundle, saveTurn } from "@/lib/db";
-import { createStructuredOutputWithMetadata } from "@/lib/openai";
+import { createStructuredOutputWithMetadata, RUNTIME_MODEL } from "@/lib/openai";
 import { appendSessionSummary, buildRuntimeInputMessages, createSessionTurn } from "@/lib/runtime";
 import { runtimeTurnJsonSchema, runtimeTurnOutputSchema } from "@/lib/schemas";
 
@@ -28,6 +28,7 @@ export async function runSessionTurn(params: {
     schemaName: "session_turn",
     schema: runtimeTurnJsonSchema,
     input: inputMessages,
+    model: RUNTIME_MODEL,
     previousResponseId: bundle.session.previousResponseId || undefined,
   });
 
