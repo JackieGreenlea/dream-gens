@@ -26,6 +26,8 @@ export function PlaySessionShell({
   const [world] = useState<World | null>(initialWorld);
   const [character] = useState<PlayerCharacter | null>(initialCharacter);
   const [playerAction, setPlayerAction] = useState("");
+  const [pendingPlayerAction, setPendingPlayerAction] = useState("");
+  const [streamingStoryText, setStreamingStoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [debugRequestPayload, setDebugRequestPayload] = useState<unknown>(null);
@@ -34,6 +36,7 @@ export function PlaySessionShell({
   const [debugRawResponse, setDebugRawResponse] = useState<unknown>(null);
   const [debugNormalizedTurn, setDebugNormalizedTurn] = useState<SessionTurn | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
   const suggestedActions =
@@ -41,6 +44,18 @@ export function PlaySessionShell({
       ? session.turns.at(-1)?.suggestedActions ?? buildSuggestedActions(world, character)
       : [];
   const recentTurns = session?.turns ?? [];
+
+  function sanitizeStreamingStoryText(text: string) {
+    return text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```$/g, "")
+      .replace(/^\s*\{\s*"storyText"\s*:\s*/i, "")
+      .replace(/^\s*"storyText"\s*:\s*/i, "")
+      .replace(/\n?\s*"suggestedActions"\s*:\s*\[[\s\S]*$/i, "")
+      .replace(/\n?\s*"summary"\s*:\s*[\s\S]*$/i, "")
+      .replace(/\}\s*$/g, "")
+      .trimStart();
+  }
 
   function renderStoryText(text: string) {
     const paragraphs = text
@@ -55,7 +70,7 @@ export function PlaySessionShell({
         {content.map((paragraph, index) => (
           <p
             key={`${index}-${paragraph.slice(0, 24)}`}
-            className="whitespace-pre-wrap text-[1.03rem] leading-8 text-foreground/92"
+            className="whitespace-pre-wrap text-[1.14rem] leading-[2.05rem] text-foreground/92"
           >
             {paragraph}
           </p>
@@ -75,7 +90,11 @@ export function PlaySessionShell({
       top: thread.scrollHeight,
       behavior: "smooth",
     });
-  }, [session?.turns.length, isSubmitting]);
+  }, [session?.turns.length, isSubmitting, streamingStoryText]);
+
+  useEffect(() => {
+    setAreSuggestedActionsOpen(false);
+  }, [session?.turns.length]);
 
   if (!session || !world || !character) {
     return (
@@ -94,6 +113,9 @@ export function PlaySessionShell({
 
     setIsSubmitting(true);
     setError("");
+    setPendingPlayerAction(nextAction);
+    setStreamingStoryText("");
+    setPlayerAction("");
 
     try {
       const requestPayload = {
@@ -113,56 +135,132 @@ export function PlaySessionShell({
         body: JSON.stringify(requestPayload),
       });
 
-      const data = (await response.json()) as {
-        turn?: SessionTurn;
-        summary?: string;
-        suggestedActions?: string[];
-        previousResponseId?: string;
-        error?: string;
-        debug?: {
-          inputMessages?: unknown;
-          sentPreviousResponseId?: string;
-          responseId?: string;
-          rawResponse?: unknown;
-        };
-      };
-
       if (response.status === 401) {
+        const data = (await response.json()) as { error?: string };
+        setPendingPlayerAction("");
+        setStreamingStoryText("");
+        setPlayerAction(nextAction);
         router.push("/auth/sign-in?message=Sign%20in%20to%20continue%20this%20session.");
         return;
       }
 
-      if (!response.ok || !data.turn || !data.summary) {
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
         throw new Error(data.error || "The session could not generate the next turn.");
       }
 
-      const nextTurn = data.turn;
-      const nextSummary = data.summary;
+      if (!response.body) {
+        throw new Error("The session stream could not be read.");
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let completed = false;
 
-      if (isDevelopment) {
-        setDebugInputMessages(data.debug?.inputMessages ?? null);
-        setDebugThreadState({
-          sentPreviousResponseId: data.debug?.sentPreviousResponseId ?? "",
-          receivedResponseId: data.debug?.responseId ?? "",
-          storedPreviousResponseId: data.previousResponseId ?? data.debug?.responseId ?? "",
-        });
-        setDebugRawResponse(data.debug?.rawResponse ?? null);
-        setDebugNormalizedTurn(nextTurn);
+      function handleEventBlock(block: string) {
+        const lines = block
+          .split("\n")
+          .map((line) => line.trimEnd())
+          .filter(Boolean);
+
+        if (lines.length === 0) {
+          return;
+        }
+
+        const eventLine = lines.find((line) => line.startsWith("event:"));
+        const data = lines
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trim())
+          .join("\n");
+
+        if (!eventLine || !data) {
+          return;
+        }
+
+        const event = eventLine.slice(6).trim();
+        const payload = JSON.parse(data) as {
+          delta?: string;
+          turn?: SessionTurn;
+          summary?: string;
+          suggestedActions?: string[];
+          previousResponseId?: string;
+          error?: string;
+          debug?: {
+            inputMessages?: unknown;
+            sentPreviousResponseId?: string;
+            responseId?: string;
+            rawResponse?: unknown;
+          };
+        };
+
+        if (event === "story_delta" && typeof payload.delta === "string") {
+          setStreamingStoryText((current) => sanitizeStreamingStoryText(current + payload.delta));
+          return;
+        }
+
+        if (event === "complete" && payload.turn && payload.summary) {
+          completed = true;
+
+          if (isDevelopment) {
+            setDebugInputMessages(payload.debug?.inputMessages ?? null);
+            setDebugThreadState({
+              sentPreviousResponseId: payload.debug?.sentPreviousResponseId ?? "",
+              receivedResponseId: payload.debug?.responseId ?? "",
+              storedPreviousResponseId:
+                payload.previousResponseId ?? payload.debug?.responseId ?? "",
+            });
+            setDebugRawResponse(payload.debug?.rawResponse ?? null);
+            setDebugNormalizedTurn(payload.turn);
+          }
+
+          setSession((current) =>
+            current
+              ? {
+                  ...current,
+                  turnCount: payload.turn!.turnNumber,
+                  previousResponseId: payload.previousResponseId ?? current.previousResponseId,
+                  summary: payload.summary!,
+                  turns: [...current.turns, payload.turn!].slice(-5),
+                }
+              : current,
+          );
+          setPendingPlayerAction("");
+          setStreamingStoryText("");
+          return;
+        }
+
+        if (event === "error") {
+          throw new Error(payload.error || "The session could not generate the next turn.");
+        }
       }
 
-      setSession((current) =>
-        current
-          ? {
-              ...current,
-              turnCount: nextTurn.turnNumber,
-              previousResponseId: data.previousResponseId ?? current.previousResponseId,
-              summary: nextSummary,
-              turns: [...current.turns, nextTurn].slice(-5),
-            }
-          : current,
-      );
-      setPlayerAction("");
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value, { stream: !done });
+
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() ?? "";
+
+        for (const block of blocks) {
+          handleEventBlock(block);
+        }
+
+        if (done) {
+          break;
+        }
+      }
+
+      if (buffer.trim()) {
+        handleEventBlock(buffer);
+      }
+
+      if (!completed) {
+        throw new Error("The session stream ended before the turn was finalized.");
+      }
     } catch (submitError) {
+      setPendingPlayerAction("");
+      setStreamingStoryText("");
+      setPlayerAction(nextAction);
       setError(
         submitError instanceof Error
           ? submitError.message
@@ -256,31 +354,53 @@ export function PlaySessionShell({
             ref={threadRef}
             className="min-h-0 flex-1 space-y-10 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6"
           >
-            {recentTurns.length > 0 ? (
-              recentTurns.map((turn) => (
-                <div key={turn.turnNumber} className="space-y-5">
-                  <div className="flex justify-end">
-                    <div className="max-w-[85%] space-y-2 text-right">
-                      <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
-                        You • Turn {turn.turnNumber}
-                      </p>
-                      <p className="text-[1.06rem] leading-8 text-foreground">{turn.playerAction}</p>
+            {recentTurns.length > 0 || pendingPlayerAction ? (
+              <>
+                {recentTurns.map((turn) => (
+                  <div key={turn.turnNumber} className="space-y-5">
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] space-y-2 text-right">
+                        <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
+                          You • Turn {turn.turnNumber}
+                        </p>
+                        <p className="text-[1.12rem] leading-[1.95rem] text-foreground">
+                          {turn.playerAction}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="max-w-4xl">{renderStoryText(turn.storyText)}</div>
+                  </div>
+                ))}
+
+                {pendingPlayerAction ? (
+                  <div className="space-y-5">
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] space-y-2 text-right">
+                        <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
+                          You • Turn {session.turnCount + 1}
+                        </p>
+                        <p className="text-[1.12rem] leading-[1.95rem] text-foreground">
+                          {pendingPlayerAction}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="max-w-4xl space-y-4">
+                      {streamingStoryText ? (
+                        renderStoryText(streamingStoryText)
+                      ) : (
+                        <LoadingDots label="Writing the next beat..." />
+                      )}
                     </div>
                   </div>
-                  <div className="max-w-4xl">
-                    {renderStoryText(turn.storyText)}
-                  </div>
-                </div>
-              ))
+                ) : null}
+              </>
             ) : (
               <div className="max-w-3xl py-6">
-                <p className="text-[1.1rem] leading-8 text-secondary">
+                <p className="text-[1.14rem] leading-[2.05rem] text-secondary">
                   Preparing the opening scene for this session.
                 </p>
               </div>
             )}
-
-            {isSubmitting ? <LoadingDots label="Writing the next beat..." /> : null}
           </div>
 
           <div className="px-4 py-4 sm:px-6 sm:py-5">
@@ -291,7 +411,7 @@ export function PlaySessionShell({
                   onChange={(event) => setPlayerAction(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                   disabled={isSubmitting}
-                  className="min-h-[3.75rem] max-h-48 flex-1 resize-y rounded-lg bg-field px-4 py-3 text-[1.02rem] leading-8 text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-[3.75rem] max-h-48 flex-1 resize-y rounded-lg bg-field px-4 py-3 text-[1.08rem] leading-[1.95rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="Type what your character does next..."
                 />
                 <button
@@ -309,24 +429,30 @@ export function PlaySessionShell({
 
               {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground">{error}</div> : null}
 
-              {suggestedActions.length > 0 ? (
+              {!isSubmitting && suggestedActions.length > 0 ? (
                 <div className="space-y-2">
-                  <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
-                    Suggested actions
-                  </p>
-                  <div className="flex flex-col items-start gap-2">
-                    {suggestedActions.map((action) => (
-                      <button
-                        key={action}
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => submitAction(action)}
-                        className="text-sm text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {action}
-                      </button>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAreSuggestedActionsOpen((current) => !current)}
+                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground"
+                  >
+                    Suggested Actions {areSuggestedActionsOpen ? "v" : ">"}
+                  </button>
+                  {areSuggestedActionsOpen ? (
+                    <div className="flex flex-col items-start gap-2">
+                      {suggestedActions.map((action) => (
+                        <button
+                          key={action}
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => submitAction(action)}
+                          className="text-[1rem] leading-7 text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {action}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>

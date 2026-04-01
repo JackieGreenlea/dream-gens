@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { runSessionTurn } from "@/lib/session-runtime";
+import { streamSessionTurn } from "@/lib/session-runtime";
 import { runtimeTurnRequestSchema } from "@/lib/schemas";
 import { getCurrentUser } from "@/lib/supabase/server";
 
@@ -19,28 +19,60 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const input = runtimeTurnRequestSchema.parse(body);
-    const result = await runSessionTurn({
-      sessionId: input.sessionId,
-      playerAction: input.playerAction,
-      userId: user.id,
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const sendEvent = (event: string, data: unknown) => {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+          );
+        };
+
+        try {
+          const result = await streamSessionTurn({
+            sessionId: input.sessionId,
+            playerAction: input.playerAction,
+            userId: user.id,
+            onTextDelta(delta) {
+              sendEvent("story_delta", { delta });
+            },
+          });
+
+          console.info("[session-turn] success", {
+            sessionId: input.sessionId,
+            turnNumber: result.turn.turnNumber,
+            responseId: result.previousResponseId,
+          });
+
+          sendEvent("complete", {
+            turn: result.turn,
+            summary: result.summary,
+            suggestedActions: result.turn.suggestedActions,
+            previousResponseId: result.previousResponseId,
+            ...(isDevelopment
+              ? {
+                  debug: result.debug,
+                }
+              : {}),
+          });
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "Unable to continue session.";
+          console.error("[session-turn] stream failure", { message });
+          sendEvent("error", { error: message });
+        } finally {
+          controller.close();
+        }
+      },
     });
 
-    console.info("[session-turn] success", {
-      sessionId: input.sessionId,
-      turnNumber: result.turn.turnNumber,
-      responseId: result.previousResponseId,
-    });
-
-    return NextResponse.json({
-      turn: result.turn,
-      summary: result.summary,
-      suggestedActions: result.turn.suggestedActions,
-      previousResponseId: result.previousResponseId,
-      ...(isDevelopment
-        ? {
-            debug: result.debug,
-          }
-        : {}),
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
     });
   } catch (error) {
     if (error instanceof ZodError) {

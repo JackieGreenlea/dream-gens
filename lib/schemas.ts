@@ -88,6 +88,13 @@ export const runtimeTurnOutputSchema = z.object({
 
 export type RuntimeTurnOutput = z.infer<typeof runtimeTurnOutputSchema>;
 
+export const runtimeTurnFinalizationOutputSchema = z.object({
+  suggestedActions: z.array(z.string().trim().min(1)).length(3),
+  summary: z.string().trim().min(1),
+});
+
+export type RuntimeTurnFinalizationOutput = z.infer<typeof runtimeTurnFinalizationOutputSchema>;
+
 export const runtimeTurnRequestSchema = z.object({
   sessionId: z.string().trim().min(1),
   playerAction: z.string().trim().min(1),
@@ -285,6 +292,23 @@ export const runtimeTurnJsonSchema = {
   required: ["storyText", "suggestedActions", "summary"],
   properties: {
     storyText: { type: "string" },
+    suggestedActions: {
+      type: "array",
+      minItems: 3,
+      maxItems: 3,
+      items: {
+        type: "string",
+      },
+    },
+    summary: { type: "string" },
+  },
+} as const;
+
+export const runtimeTurnFinalizationJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["suggestedActions", "summary"],
+  properties: {
     suggestedActions: {
       type: "array",
       minItems: 3,

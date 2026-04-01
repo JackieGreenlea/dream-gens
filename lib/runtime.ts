@@ -1,18 +1,28 @@
 import { OpenAIInputMessage } from "@/lib/openai";
-import { RuntimeTurnOutput } from "@/lib/schemas";
+import { RuntimeTurnFinalizationOutput, RuntimeTurnOutput } from "@/lib/schemas";
 import { SessionTurn, World } from "@/lib/types";
 
-export const RUNTIME_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
+export const RUNTIME_STORY_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
 
 Requirements:
 - The latest user message is the action already taken.
 - Continue directly from that action.
-- Do not restate or paraphrase the player's submitted action at the start of storyText.
+- Do not restate or paraphrase the player's submitted action at the start.
 - Begin with the immediate consequence, reaction, reveal, or next beat.
 - Keep player agency intact and move the scene forward.
 - Respect POV, tone, story logic, and runtime instructions.
 - Use the character's strengths and weaknesses narratively, not as mechanics.
 - Do not expose internal scaffolding.
+- Return only the narrative story prose for this beat.
+- Do not return JSON.
+- Do not include field names, code fences, labels, or wrapper text.
+- Keep the prose to 1-3 short paragraphs.
+- Avoid one dense block of text.`;
+
+export const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `You are Story World Studio's turn finalizer.
+
+Requirements:
+- Read the completed story beat and return strictly valid JSON matching the requested schema.
 - summary must be a very short continuity note, not a recap paragraph.
 - Keep summary to about 20 words maximum.
 - Prefer one short sentence.
@@ -20,9 +30,7 @@ Requirements:
 - Suggested actions must reflect reasonable next moves in the current scene.
 - Each suggested action must be 1-2 short sentences and no more than 20 words.
 - Start each suggested action with a clear verb when possible.
-- Return strictly valid JSON matching the requested schema.
-- Keep storyText to 1-3 short paragraphs.
-- Avoid one dense block of text.`;
+- Do not restate the scene or write strategy commentary.`;
 
 const FALLBACK_ACTIONS = [
   "Question the nearest witness.",
@@ -156,6 +164,33 @@ function buildContinuityDeveloperMessage({
   ].join("\n");
 }
 
+function buildRuntimeDeveloperMessage({
+  world,
+  character,
+  session,
+}: {
+  world: World;
+  character: World["playerCharacters"][number];
+  session: {
+    objective: string;
+    pov: World["pov"];
+    summary: string;
+    turnCount: number;
+  };
+}) {
+  return session.turnCount === 0
+    ? buildFirstTurnDeveloperMessage({
+        world,
+        character,
+        session,
+      })
+    : buildContinuityDeveloperMessage({
+        world,
+        character,
+        session,
+      });
+}
+
 export function buildRuntimeInputMessages({
   world,
   character,
@@ -167,34 +202,68 @@ export function buildRuntimeInputMessages({
   session: {
     objective: string;
     pov: World["pov"];
-    previousResponseId: string;
     summary: string;
     turnCount: number;
-    turns: SessionTurn[];
   };
   playerAction: string;
 }) {
-  const developerMessage =
-    session.turnCount === 0
-      ? buildFirstTurnDeveloperMessage({
-          world,
-          character,
-          session,
-        })
-      : buildContinuityDeveloperMessage({
-          world,
-          character,
-          session,
-        });
-
   const messages: OpenAIInputMessage[] = [
-    toInputMessage("system", RUNTIME_SYSTEM_PROMPT),
-    toInputMessage("developer", developerMessage),
+    toInputMessage("system", RUNTIME_STORY_SYSTEM_PROMPT),
+    toInputMessage(
+      "developer",
+      buildRuntimeDeveloperMessage({
+        world,
+        character,
+        session,
+      }),
+    ),
   ];
 
   messages.push(toInputMessage("user", playerAction.trim()));
 
   return messages;
+}
+
+export function buildRuntimeTurnFinalizationMessages({
+  world,
+  character,
+  session,
+  playerAction,
+  storyText,
+}: {
+  world: World;
+  character: World["playerCharacters"][number];
+  session: {
+    objective: string;
+    pov: World["pov"];
+    summary: string;
+    turnCount: number;
+  };
+  playerAction: string;
+  storyText: string;
+}) {
+  return [
+    toInputMessage("system", RUNTIME_FINALIZATION_SYSTEM_PROMPT),
+    toInputMessage(
+      "developer",
+      buildRuntimeDeveloperMessage({
+        world,
+        character,
+        session,
+      }),
+    ),
+    toInputMessage(
+      "user",
+      [
+        `Player action: ${playerAction.trim()}`,
+        "",
+        "Completed story beat:",
+        storyText.trim(),
+        "",
+        "Return JSON with suggestedActions and summary only.",
+      ].join("\n"),
+    ),
+  ];
 }
 
 function normalizeActionComparisonText(text: string) {
@@ -265,6 +334,17 @@ export function createSessionTurn(params: {
     storyText: removeRestatedOpening(params.playerAction, params.output.storyText),
     suggestedActions: normalizeSuggestedActions(params.output.suggestedActions),
     summaryAfterTurn: params.output.summary.trim(),
+  };
+}
+
+export function buildRuntimeTurnOutput(params: {
+  storyText: string;
+  finalization: RuntimeTurnFinalizationOutput;
+}): RuntimeTurnOutput {
+  return {
+    storyText: params.storyText.trim(),
+    suggestedActions: params.finalization.suggestedActions,
+    summary: params.finalization.summary.trim(),
   };
 }
 
