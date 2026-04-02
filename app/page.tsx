@@ -18,7 +18,7 @@ export default async function HomePage({
       id: story.id,
       title: story.title,
       summary: story.summary,
-      accent: "from-[#0091AD] via-[#00768D] to-slate-950",
+      accent: "from-[#fdd835] via-[#c9a800] to-slate-950",
       authorName: story.authorUsername,
       authorHref: `/u/${story.authorUsername}`,
       imageUrl: story.coverImageUrl,
@@ -52,14 +52,14 @@ export default async function HomePage({
 
   return (
     <main className="min-h-screen bg-page">
-      <div className="mx-auto flex min-h-screen max-w-[1840px] flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] py-2 sm:py-4 lg:py-6">
+      <div className="mx-auto flex min-h-screen max-w-[1840px] flex-col gap-6 px-4 pb-8 pt-4 sm:px-6 sm:pb-8 sm:pt-5 lg:px-8 lg:pb-8 lg:pt-6">
+        <section className="rounded-[2rem] py-0">
           <div className="relative flex min-h-[420px] w-full items-center sm:min-h-[520px] lg:min-h-[620px]">
             <div className="relative z-10 w-full max-w-xl px-2 sm:px-4 lg:px-8">
               <div className="max-w-lg rounded-[1.25rem] bg-[linear-gradient(90deg,rgba(13,16,20,0.82)_0%,rgba(13,16,20,0.62)_58%,rgba(13,16,20,0.08)_100%)] p-6 sm:p-8">
                 <div className="space-y-5">
-                  <h1 className="max-w-sm text-4xl font-semibold tracking-[-0.045em] text-foreground sm:text-5xl lg:text-6xl">
-                    Step into worlds of your imagination.
+                  <h1 className="max-w-md text-5xl font-semibold tracking-[-0.045em] text-foreground sm:text-5xl lg:text-6xl">
+                    Step into a world of your own imagination.
                   </h1>
                   <p className="max-w-2xl text-base leading-7 text-secondary sm:text-lg">
                     Create your own worlds and play through immersive interactive fiction built
@@ -68,7 +68,7 @@ export default async function HomePage({
                   <div className="space-y-4">
                     <Link
                       href="/create"
-                      className="inline-flex items-center rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                      className="inline-flex items-center rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-night transition hover:bg-[#e6c600]"
                     >
                       Start your Story
                     </Link>

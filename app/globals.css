@@ -14,9 +14,9 @@
   --color-muted: #8f98a6;
   --color-field: #151a21;
   --color-field-border: #313949;
-  --color-focus: #0091ad;
-  --color-cool: #0091ad;
-  --color-warm: #0091ad;
+  --color-focus: #fdd835;
+  --color-cool: #fdd835;
+  --color-warm: #fdd835;
   --color-success: #7fb58d;
   --color-warning: #d2a86d;
   --color-danger: #c97c7c;
@@ -37,7 +37,7 @@ body {
 }
 
 ::selection {
-  background: rgba(0, 145, 173, 0.35);
+  background: rgba(253, 216, 53, 0.35);
   color: var(--color-foreground);
 }
 

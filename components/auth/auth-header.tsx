@@ -18,7 +18,7 @@ function BellIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-[1.7rem] w-[1.7rem]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -36,11 +36,62 @@ function UserIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-5 w-5"
+      className="h-[1.7rem] w-[1.7rem]"
       fill="currentColor"
     >
       <path d="M12 12.25a4.25 4.25 0 1 0-4.25-4.25A4.25 4.25 0 0 0 12 12.25Z" />
       <path d="M12 13.75c-4.17 0-7.25 2.16-7.25 5.12 0 .63.5 1.13 1.13 1.13h12.24c.62 0 1.13-.5 1.13-1.13 0-2.96-3.08-5.12-7.25-5.12Z" />
+    </svg>
+  );
+}
+
+function ExploreIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[2.1rem] w-[2.1rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="7.5" />
+      <path d="m14.9 9.1-1.8 5.1-5.1 1.8 1.8-5.1 5.1-1.8Z" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.55rem] w-[1.55rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.95rem] w-[1.95rem]"
+      fill="currentColor"
+    >
+      <rect x="10" y="4.5" width="4" height="15" rx="1" />
+      <rect x="4.5" y="10" width="15" height="4" rx="1" />
     </svg>
   );
 }
@@ -57,11 +108,13 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
     <>
       <Link
         href="/explore"
-        className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg border border-line bg-transparent px-4 text-sm text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground"
+        aria-label="Explore"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-transparent px-0 text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground md:h-10 md:w-auto md:border-transparent md:px-4 md:hover:border-transparent"
       >
-        Explore
+        <ExploreIcon />
+        <span className="hidden text-[1.04rem] font-bold md:inline">Explore</span>
       </Link>
-      <div className="min-w-[4.5rem] flex-1">
+      <div className="hidden min-w-[4.5rem] flex-1 md:block">
         <label className="sr-only" htmlFor="site-search">
           Search
         </label>
@@ -69,9 +122,12 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
           id="site-search"
           type="search"
           placeholder="Search"
-          className="h-10 w-full rounded-lg border border-fieldBorder bg-field px-4 text-sm text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
+          className="h-10 w-full rounded-lg border border-fieldBorder bg-field px-4 text-[1.04rem] text-foreground placeholder:text-muted focus:border-[#fdd835] focus:outline-none focus:ring-2 focus:ring-[#fdd835]/20"
         />
       </div>
+      <Link href="/explore" className={`${headerActionButtonClasses()} md:hidden`} aria-label="Search">
+        <SearchIcon />
+      </Link>
     </>
   );
 
@@ -81,24 +137,32 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
         {centerControls}
       </div>
 
-      <div className="flex w-full flex-wrap items-center gap-3 px-4 py-4 sm:px-8 lg:min-h-[76px] lg:px-10 lg:py-0">
+      <div className="flex w-full items-center gap-3 px-4 py-4 sm:px-8 lg:min-h-[76px] lg:px-10 lg:py-0">
         <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
           <Link
             href="/"
             className="inline-flex h-11 items-center"
             aria-label="Everplot home"
           >
-            <Image src={logo} alt="Everplot" className="h-14 w-auto sm:h-16" priority />
+            <Image src={logo} alt="Everplot" className="h-9 w-auto md:h-11" priority />
           </Link>
         </div>
 
-        <div className="order-3 flex w-full items-center gap-3 lg:hidden">
-          {centerControls}
-        </div>
-
         <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 lg:absolute lg:right-10 lg:top-1/2 lg:ml-0 lg:-translate-y-1/2">
-          <ButtonLink href="/create" className="h-11 px-4 py-0 sm:px-5">
-            Create Story
+          <div className="flex items-center gap-2 lg:hidden">{centerControls}</div>
+
+          <ButtonLink
+            href="/create"
+            className="h-10 w-10 gap-2 !border-line !bg-transparent px-0 py-0 !text-[#fdd835] hover:!border-[#fdd835]/45 hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-10 md:w-auto md:!border-transparent md:!bg-[#fdd835] md:px-5 md:!text-night md:hover:!bg-[#e6c600] md:hover:!text-night"
+            aria-label="Create Story"
+          >
+            <span className="md:hidden">
+              <PlusIcon />
+            </span>
+            <span className="hidden md:inline">
+              <PlusIcon />
+            </span>
+            <span className="hidden text-[1.04rem] font-bold md:inline">Create Story</span>
           </ButtonLink>
 
           <button type="button" className={headerActionButtonClasses()} aria-label="Notifications">

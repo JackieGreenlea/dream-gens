@@ -418,7 +418,7 @@ export function PlaySessionShell({
                   type="submit"
                   disabled={isSubmitting || !playerAction.trim()}
                   aria-label={isSubmitting ? "Resolving turn" : "Send action"}
-                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-transparent bg-accent text-foreground transition-colors hover:bg-[#007a92] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-transparent bg-accent text-night transition-colors hover:bg-[#e6c600] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h12" strokeLinecap="round" strokeLinejoin="round" />

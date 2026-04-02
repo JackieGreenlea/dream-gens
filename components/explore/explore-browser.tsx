@@ -169,7 +169,7 @@ export function ExploreBrowser({
                 key={story.id}
                 title={story.title}
                 description={story.summary}
-                accent="from-[#0091AD] via-[#00768D] to-slate-950"
+                accent="from-[#fdd835] via-[#c9a800] to-slate-950"
                 authorName={story.authorUsername}
                 authorHref={`/u/${story.authorUsername}`}
                 imageUrl={story.coverImageUrl}
