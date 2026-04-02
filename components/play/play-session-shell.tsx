@@ -21,7 +21,6 @@ export function PlaySessionShell({
   initialCharacter,
 }: PlaySessionShellProps) {
   const router = useRouter();
-  const isDevelopment = process.env.NODE_ENV !== "production";
   const [session, setSession] = useState<Session | null>(initialSession);
   const [world] = useState<World | null>(initialWorld);
   const [character] = useState<PlayerCharacter | null>(initialCharacter);
@@ -30,11 +29,6 @@ export function PlaySessionShell({
   const [streamingStoryText, setStreamingStoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [debugRequestPayload, setDebugRequestPayload] = useState<unknown>(null);
-  const [debugInputMessages, setDebugInputMessages] = useState<unknown>(null);
-  const [debugThreadState, setDebugThreadState] = useState<unknown>(null);
-  const [debugRawResponse, setDebugRawResponse] = useState<unknown>(null);
-  const [debugNormalizedTurn, setDebugNormalizedTurn] = useState<SessionTurn | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -118,21 +112,15 @@ export function PlaySessionShell({
     setPlayerAction("");
 
     try {
-      const requestPayload = {
-        sessionId,
-        playerAction: nextAction,
-      };
-
-      if (isDevelopment) {
-        setDebugRequestPayload(requestPayload);
-      }
-
       const response = await fetch("/api/session/turn", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestPayload),
+        body: JSON.stringify({
+          sessionId,
+          playerAction: nextAction,
+        }),
       });
 
       if (response.status === 401) {
@@ -200,18 +188,6 @@ export function PlaySessionShell({
 
         if (event === "complete" && payload.turn && payload.summary) {
           completed = true;
-
-          if (isDevelopment) {
-            setDebugInputMessages(payload.debug?.inputMessages ?? null);
-            setDebugThreadState({
-              sentPreviousResponseId: payload.debug?.sentPreviousResponseId ?? "",
-              receivedResponseId: payload.debug?.responseId ?? "",
-              storedPreviousResponseId:
-                payload.previousResponseId ?? payload.debug?.responseId ?? "",
-            });
-            setDebugRawResponse(payload.debug?.rawResponse ?? null);
-            setDebugNormalizedTurn(payload.turn);
-          }
 
           setSession((current) =>
             current
@@ -459,62 +435,6 @@ export function PlaySessionShell({
           </div>
         </section>
       </Card>
-
-      {isDevelopment ? (
-        <div>
-          <details className="rounded-3xl border border-warning/35 bg-warning/10 p-6 backdrop-blur">
-            <summary className="cursor-pointer list-none text-sm font-medium text-foreground">
-              Runtime Debug
-            </summary>
-            <div className="mt-4 space-y-4">
-              <Card className="space-y-3 border-warning/35 bg-elevated">
-                <p className="text-sm uppercase tracking-[0.24em] text-warm">Client Request Payload</p>
-                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
-                  {debugRequestPayload
-                    ? JSON.stringify(debugRequestPayload, null, 2)
-                    : "No request submitted yet."}
-                </pre>
-              </Card>
-
-              <Card className="space-y-3 border-warning/35 bg-elevated">
-                <p className="text-sm uppercase tracking-[0.24em] text-warm">Runtime Message Array</p>
-                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
-                  {debugInputMessages
-                    ? JSON.stringify(debugInputMessages, null, 2)
-                    : "No message array captured yet."}
-                </pre>
-              </Card>
-
-              <Card className="space-y-3 border-warning/35 bg-elevated">
-                <p className="text-sm uppercase tracking-[0.24em] text-warm">Thread State</p>
-                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
-                  {debugThreadState
-                    ? JSON.stringify(debugThreadState, null, 2)
-                    : "No thread state captured yet."}
-                </pre>
-              </Card>
-
-              <Card className="space-y-3 border-warning/35 bg-elevated">
-                <p className="text-sm uppercase tracking-[0.24em] text-warm">Raw Runtime Response</p>
-                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
-                  {debugRawResponse
-                    ? JSON.stringify(debugRawResponse, null, 2)
-                    : "No raw response captured yet."}
-                </pre>
-              </Card>
-
-              <Card className="space-y-3 border-warning/35 bg-elevated">
-                <p className="text-sm uppercase tracking-[0.24em] text-warm">Final Normalized Turn</p>
-                <pre className="overflow-x-auto rounded-2xl border border-line bg-page p-4 text-xs leading-6 text-secondary">
-                  {debugNormalizedTurn
-                    ? JSON.stringify(debugNormalizedTurn, null, 2)
-                    : "No normalized turn stored yet."}
-                </pre>
-              </Card>
-            </div>
-          </details>
-        </div>
-      ) : null}
     </div>
   );
 }
