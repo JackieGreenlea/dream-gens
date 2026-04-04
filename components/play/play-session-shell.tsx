@@ -334,16 +334,18 @@ export function PlaySessionShell({
               <>
                 {recentTurns.map((turn) => (
                   <div key={turn.turnNumber} className="space-y-5">
-                    <div className="flex justify-end">
-                      <div className="max-w-[85%] space-y-2 text-right">
-                        <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
-                          You • Turn {turn.turnNumber}
-                        </p>
-                        <p className="text-[1.12rem] leading-[1.95rem] text-foreground">
-                          {turn.playerAction}
-                        </p>
+                    {turn.playerAction ? (
+                      <div className="flex justify-end">
+                        <div className="max-w-[85%] space-y-2 text-right">
+                          <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
+                            You • Turn {turn.turnNumber}
+                          </p>
+                          <p className="text-[1.12rem] leading-[1.95rem] text-foreground">
+                            {turn.playerAction}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
                     <div className="max-w-4xl">{renderStoryText(turn.storyText)}</div>
                   </div>
                 ))}

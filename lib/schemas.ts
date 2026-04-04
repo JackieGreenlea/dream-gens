@@ -16,7 +16,7 @@ export const compileRequestSchema = z.object({
 
 export const sessionTurnSchema = z.object({
   turnNumber: z.number().int().min(1),
-  playerAction: z.string().trim().min(1),
+  playerAction: z.string().trim(),
   storyText: z.string().trim().min(1),
   suggestedActions: z.array(z.string().trim().min(1)).length(3),
   summaryAfterTurn: z.string().trim().min(1),

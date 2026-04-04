@@ -97,7 +97,7 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
               metadata={story.authorName ? ["Published", "Editorial pick"] : ["Featured", "Curated", "4.8 rating"]}
               actionHref={story.actionHref}
               profileHref={story.profileHref}
-              imageAspectClassName="aspect-[4/4.35]"
+              imageAspectClassName="aspect-[4/3.7]"
             />
           </div>
         ))}

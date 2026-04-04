@@ -19,6 +19,25 @@ Requirements:
 - Keep the prose to 1-3 short paragraphs.
 - Avoid one dense block of text.`;
 
+export const RUNTIME_OPENING_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
+
+Requirements:
+- Generate the opening scene for this session before the player has acted.
+- Set the scene around the selected character.
+- Establish tone, motion, and immediate tension.
+- Move directly into an opening beat that invites the player's first action.
+- Do not describe a hidden player action or imply the player already chose something.
+- Keep player agency intact and leave room for the player's first move.
+- Respect POV, tone, story logic, and runtime instructions.
+- Use the character's strengths and weaknesses narratively, not as mechanics.
+- Do not expose internal scaffolding.
+- Return only the narrative story prose for this opening.
+- Do not return JSON.
+- Do not include field names, code fences, labels, or wrapper text.
+- Keep the prose to 1-3 short paragraphs.
+- Do not end responses with explicit player-prompt questions.
+- Avoid one dense block of text.`;
+
 export const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `You are Story World Studio's turn finalizer.
 
 Requirements:
@@ -104,6 +123,7 @@ function buildFirstTurnDeveloperMessage({
   world,
   character,
   session,
+  mode,
 }: {
   world: World;
   character: World["playerCharacters"][number];
@@ -112,6 +132,7 @@ function buildFirstTurnDeveloperMessage({
     pov: World["pov"];
     summary: string;
   };
+  mode: "opening" | "turn";
 }) {
   return [
     "Session Setup:",
@@ -133,8 +154,15 @@ function buildFirstTurnDeveloperMessage({
     "",
     "Launch Notes:",
     `This is the opening runtime turn for this session.`,
-    `The latest user message is the player's hidden first action.`,
-  ].join("\n");
+    mode === "opening"
+      ? `Generate an opening scene that invites the player's first action.`
+      : `The latest user message is the player's action already taken.`,
+    world.firstAction.trim()
+      ? `Optional opening guidance from the story template: ${world.firstAction.trim()}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function buildContinuityDeveloperMessage({
@@ -168,6 +196,7 @@ function buildRuntimeDeveloperMessage({
   world,
   character,
   session,
+  mode,
 }: {
   world: World;
   character: World["playerCharacters"][number];
@@ -177,12 +206,14 @@ function buildRuntimeDeveloperMessage({
     summary: string;
     turnCount: number;
   };
+  mode: "opening" | "turn";
 }) {
   return session.turnCount === 0
     ? buildFirstTurnDeveloperMessage({
         world,
         character,
         session,
+        mode,
       })
     : buildContinuityDeveloperMessage({
         world,
@@ -196,6 +227,7 @@ export function buildRuntimeInputMessages({
   character,
   session,
   playerAction,
+  mode = "turn",
 }: {
   world: World;
   character: World["playerCharacters"][number];
@@ -206,20 +238,29 @@ export function buildRuntimeInputMessages({
     turnCount: number;
   };
   playerAction: string;
+  mode?: "opening" | "turn";
 }) {
   const messages: OpenAIInputMessage[] = [
-    toInputMessage("system", RUNTIME_STORY_SYSTEM_PROMPT),
+    toInputMessage("system", mode === "opening" ? RUNTIME_OPENING_SYSTEM_PROMPT : RUNTIME_STORY_SYSTEM_PROMPT),
     toInputMessage(
       "developer",
       buildRuntimeDeveloperMessage({
         world,
         character,
         session,
+        mode,
       }),
     ),
   ];
 
-  messages.push(toInputMessage("user", playerAction.trim()));
+  messages.push(
+    toInputMessage(
+      "user",
+      mode === "opening"
+        ? "Generate the opening scene for this session. Introduce the selected character, establish the situation, and end by inviting the player's first action."
+        : playerAction.trim(),
+    ),
+  );
 
   return messages;
 }
@@ -230,6 +271,7 @@ export function buildRuntimeTurnFinalizationMessages({
   session,
   playerAction,
   storyText,
+  mode = "turn",
 }: {
   world: World;
   character: World["playerCharacters"][number];
@@ -241,6 +283,7 @@ export function buildRuntimeTurnFinalizationMessages({
   };
   playerAction: string;
   storyText: string;
+  mode?: "opening" | "turn";
 }) {
   return [
     toInputMessage("system", RUNTIME_FINALIZATION_SYSTEM_PROMPT),
@@ -250,18 +293,28 @@ export function buildRuntimeTurnFinalizationMessages({
         world,
         character,
         session,
+        mode,
       }),
     ),
     toInputMessage(
       "user",
-      [
-        `Player action: ${playerAction.trim()}`,
-        "",
-        "Completed story beat:",
-        storyText.trim(),
-        "",
-        "Return JSON with suggestedActions and summary only.",
-      ].join("\n"),
+      mode === "opening"
+        ? [
+            "This is the opening scene for the session.",
+            "",
+            "Completed story beat:",
+            storyText.trim(),
+            "",
+            "Return JSON with suggestedActions and summary only.",
+          ].join("\n")
+        : [
+            `Player action: ${playerAction.trim()}`,
+            "",
+            "Completed story beat:",
+            storyText.trim(),
+            "",
+            "Return JSON with suggestedActions and summary only.",
+          ].join("\n"),
     ),
   ];
 }
@@ -327,11 +380,15 @@ export function createSessionTurn(params: {
   playerAction: string;
   turnNumber: number;
   output: RuntimeTurnOutput;
+  mode?: "opening" | "turn";
 }): SessionTurn {
   return {
     turnNumber: params.turnNumber,
     playerAction: params.playerAction.trim(),
-    storyText: removeRestatedOpening(params.playerAction, params.output.storyText),
+    storyText:
+      params.mode === "opening"
+        ? params.output.storyText.trim()
+        : removeRestatedOpening(params.playerAction, params.output.storyText),
     suggestedActions: normalizeSuggestedActions(params.output.suggestedActions),
     summaryAfterTurn: params.output.summary.trim(),
   };

@@ -36,6 +36,7 @@ async function generateAndPersistSessionTurn(params: {
   sessionId: string;
   playerAction: string;
   userId: string;
+  mode?: "opening" | "turn";
   onTextDelta?: (delta: string) => void | Promise<void>;
 }): Promise<SessionTurnResult> {
   const bundle = await getSessionBundle(params.sessionId, params.userId);
@@ -49,6 +50,7 @@ async function generateAndPersistSessionTurn(params: {
     character: bundle.character,
     session: bundle.session,
     playerAction: params.playerAction,
+    mode: params.mode ?? "turn",
   });
 
   const streamedStory = await streamTextOutputWithMetadata({
@@ -67,6 +69,7 @@ async function generateAndPersistSessionTurn(params: {
       session: bundle.session,
       playerAction: params.playerAction,
       storyText: streamedStory.text,
+      mode: params.mode ?? "turn",
     }),
     model: RUNTIME_MODEL,
     store: false,
@@ -95,6 +98,7 @@ async function generateAndPersistSessionTurn(params: {
     playerAction: params.playerAction,
     turnNumber: bundle.session.turnCount + 1,
     output,
+    mode: params.mode ?? "turn",
   });
   const nextSessionSummary = appendSessionSummary(bundle.session.summary, turn.summaryAfterTurn);
   const nextPreviousResponseId =
@@ -129,6 +133,18 @@ export async function runSessionTurn(params: {
   userId: string;
 }) {
   return generateAndPersistSessionTurn(params);
+}
+
+export async function runSessionOpeningTurn(params: {
+  sessionId: string;
+  userId: string;
+}) {
+  return generateAndPersistSessionTurn({
+    sessionId: params.sessionId,
+    userId: params.userId,
+    playerAction: "",
+    mode: "opening",
+  });
 }
 
 export async function streamSessionTurn(

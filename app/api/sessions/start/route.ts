@@ -5,7 +5,7 @@ import {
   createSessionFromStory,
   resolvePlayableSourceForSessionStart,
 } from "@/lib/db";
-import { runSessionTurn } from "@/lib/session-runtime";
+import { runSessionOpeningTurn } from "@/lib/session-runtime";
 import { sessionStartRequestSchema } from "@/lib/schemas";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { ensureDatabaseUser } from "@/lib/user-sync";
@@ -57,9 +57,8 @@ export async function POST(request: Request) {
     }
 
     try {
-      await runSessionTurn({
+      await runSessionOpeningTurn({
         sessionId: session.id,
-        playerAction: setup.playable.firstAction,
         userId: user.id,
       });
     } catch (openingTurnError) {
