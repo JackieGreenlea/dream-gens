@@ -1,24 +1,8 @@
 import "server-only";
 
-import { ZodError } from "zod";
 import { getSessionBundle, saveTurn } from "@/lib/db";
-import {
-  createStructuredOutputWithMetadata,
-  RUNTIME_MODEL,
-  streamTextOutputWithMetadata,
-} from "@/lib/openai";
-import {
-  appendSessionSummary,
-  buildRuntimeInputMessages,
-  buildRuntimeTurnFinalizationMessages,
-  buildRuntimeTurnOutput,
-  createSessionTurn,
-} from "@/lib/runtime";
-import {
-  runtimeTurnFinalizationJsonSchema,
-  runtimeTurnFinalizationOutputSchema,
-  runtimeTurnOutputSchema,
-} from "@/lib/schemas";
+import { getRuntimeEngine } from "@/lib/runtime-engines";
+import { appendSessionSummary, createSessionTurn } from "@/lib/runtime";
 
 type SessionTurnResult = {
   turn: ReturnType<typeof createSessionTurn>;
@@ -45,64 +29,30 @@ async function generateAndPersistSessionTurn(params: {
     throw new Error("Session context could not be loaded.");
   }
 
-  const inputMessages = buildRuntimeInputMessages({
+  const runtimeEngine = getRuntimeEngine();
+  const engineResult = await runtimeEngine.generateTurn({
     world: bundle.world,
     character: bundle.character,
-    session: bundle.session,
+    session: {
+      objective: bundle.session.objective,
+      pov: bundle.session.pov,
+      summary: bundle.session.summary,
+      turnCount: bundle.session.turnCount,
+      previousResponseId: bundle.session.previousResponseId,
+    },
     playerAction: params.playerAction,
     mode: params.mode ?? "turn",
+    onTextDelta: params.onTextDelta,
   });
-
-  const streamedStory = await streamTextOutputWithMetadata({
-    input: inputMessages,
-    model: RUNTIME_MODEL,
-    previousResponseId: bundle.session.previousResponseId || undefined,
-    onDelta: params.onTextDelta,
-  });
-
-  const finalizationResponse = await createStructuredOutputWithMetadata<unknown>({
-    schemaName: "session_turn_finalize",
-    schema: runtimeTurnFinalizationJsonSchema,
-    input: buildRuntimeTurnFinalizationMessages({
-      world: bundle.world,
-      character: bundle.character,
-      session: bundle.session,
-      playerAction: params.playerAction,
-      storyText: streamedStory.text,
-      mode: params.mode ?? "turn",
-    }),
-    model: RUNTIME_MODEL,
-    store: false,
-  });
-
-  let finalization;
-
-  try {
-    finalization = runtimeTurnFinalizationOutputSchema.parse(finalizationResponse.output);
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new Error("The runtime returned data that did not match the expected turn schema.");
-    }
-
-    throw error;
-  }
-
-  const output = runtimeTurnOutputSchema.parse(
-    buildRuntimeTurnOutput({
-      storyText: streamedStory.text,
-      finalization,
-    }),
-  );
 
   const turn = createSessionTurn({
     playerAction: params.playerAction,
     turnNumber: bundle.session.turnCount + 1,
-    output,
+    output: engineResult.output,
     mode: params.mode ?? "turn",
   });
   const nextSessionSummary = appendSessionSummary(bundle.session.summary, turn.summaryAfterTurn);
-  const nextPreviousResponseId =
-    streamedStory.responseId || bundle.session.previousResponseId || "";
+  const nextPreviousResponseId = engineResult.responseId || bundle.session.previousResponseId || "";
 
   await saveTurn({
     sessionId: bundle.session.id,
@@ -116,13 +66,10 @@ async function generateAndPersistSessionTurn(params: {
     summary: nextSessionSummary,
     previousResponseId: nextPreviousResponseId,
     debug: {
-      inputMessages,
-      sentPreviousResponseId: bundle.session.previousResponseId || "",
+      inputMessages: engineResult.debug.inputMessages,
+      sentPreviousResponseId: engineResult.debug.sentPreviousResponseId,
       responseId: nextPreviousResponseId,
-      rawResponse: {
-        streamEvents: streamedStory.rawEvents,
-        finalization: finalizationResponse.rawResponse,
-      },
+      rawResponse: engineResult.debug.rawResponse,
     },
   };
 }
