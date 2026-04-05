@@ -1,5 +1,5 @@
 import { RuntimeTurnOutput } from "@/lib/schemas";
-import { PlayerCharacter, StoryPov, World } from "@/lib/types";
+import { PlayerCharacter, SessionTurn, StoryPov, World } from "@/lib/types";
 
 export type RuntimeEngineMode = "opening" | "turn";
 
@@ -9,6 +9,7 @@ export type RuntimeEngineSessionContext = {
   summary: string;
   turnCount: number;
   previousResponseId: string;
+  recentTurns: SessionTurn[];
 };
 
 export type RuntimeEngineGenerateTurnParams = {

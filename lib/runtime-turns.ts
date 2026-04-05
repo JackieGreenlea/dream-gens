@@ -99,14 +99,22 @@ export function createSessionTurn(params: {
   playerAction: string;
   turnNumber: number;
   output: RuntimeTurnOutput;
+  background?: string;
   mode?: "opening" | "turn";
 }): SessionTurn {
+  const openingStoryText = [
+    params.background?.trim() ? `Background: ${params.background.trim()}` : "",
+    params.output.storyText.trim() ? `Opening scene: ${params.output.storyText.trim()}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+
   return {
     turnNumber: params.turnNumber,
     playerAction: params.playerAction.trim(),
     storyText:
       params.mode === "opening"
-        ? params.output.storyText.trim()
+        ? openingStoryText || params.output.storyText.trim()
         : removeRestatedOpening(params.playerAction, params.output.storyText),
     suggestedActions: normalizeSuggestedActions(params.output.suggestedActions),
     summaryAfterTurn: params.output.summary.trim(),

@@ -11,6 +11,11 @@ export type RuntimeContextPacket = {
   background: string;
   continuitySummary: string;
   openingGuidance: string;
+  recentTurns: Array<{
+    turnNumber: number;
+    playerAction: string;
+    storyText: string;
+  }>;
   character: {
     name: string;
     description: string;
@@ -27,6 +32,11 @@ export function buildRuntimeContextPacket(params: {
     pov: World["pov"];
     summary: string;
     turnCount: number;
+    recentTurns: Array<{
+      turnNumber: number;
+      playerAction: string;
+      storyText: string;
+    }>;
   };
   mode?: "opening" | "turn";
 }): RuntimeContextPacket {
@@ -41,6 +51,11 @@ export function buildRuntimeContextPacket(params: {
     background: params.world.background,
     continuitySummary: params.session.summary || "The story is just beginning.",
     openingGuidance: params.world.firstAction.trim(),
+    recentTurns: params.session.recentTurns.slice(-3).map((turn) => ({
+      turnNumber: turn.turnNumber,
+      playerAction: turn.playerAction,
+      storyText: turn.storyText,
+    })),
     character: {
       name: params.character.name,
       description: params.character.description,

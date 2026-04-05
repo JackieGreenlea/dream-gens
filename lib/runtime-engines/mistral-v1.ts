@@ -20,24 +20,6 @@ type MistralMessage = {
   content: string;
 };
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are Everplot's session runtime.
-
-Requirements:
-- The latest user message is the action already taken.
-- Continue directly from that action.
-- Use present tense.
-- Do not restate or paraphrase the player's submitted action at the start.
-- Begin with the immediate consequence, reaction, reveal, or next beat.
-- Keep player agency intact and move the scene forward.
-- Respect POV, tone, story logic, and runtime instructions.
-- Use the character's strengths and weaknesses narratively, not as mechanics.
-- Do not expose internal scaffolding.
-- Return only the narrative story prose for this beat.
-- Do not return JSON.
-- Do not include field names, code fences, labels, or wrapper text.
-- Keep the prose to 1-3 short paragraphs.
-- Avoid one dense block of text.`;
-
 const RUNTIME_OPENING_SYSTEM_PROMPT = `You are Everplot's session runtime.
 
 Requirements:
@@ -56,6 +38,20 @@ Requirements:
 - Keep the prose to 1-3 short paragraphs.
 - Do not end responses with explicit player-prompt questions.
 - Avoid one dense block of text.`;
+
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are Everplot's session runtime. Your job is to collaboratively build a story with the user.
+
+Requirements:
+- The user message is the user's latest action taken in the story.
+- Continue the story directly from that action.
+- Use present tense.
+- Do not control or dictate the user's character's dialogue or actions.
+- Do not restate or paraphrase the user's submitted action at the start.
+- Begin with the immediate consequence, reaction, or reveal.
+- Use the setting to inform the scene and character behavior.
+- Create realistic, grounded dialogue that reflects personality and background.
+- Create mannerisms and manners of speaking that are unique to characters based on personality and background, and maintain them consistently.
+- Create tension, conflict, and challenge.`;
 
 const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `You are Everplot's turn finalizer.
 
@@ -116,6 +112,26 @@ function compactText(value: string, maxLength: number) {
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
+function buildRecentTurnsBlock(
+  turns: ReturnType<typeof buildRuntimeContextPacket>["recentTurns"],
+) {
+  if (turns.length === 0) {
+    return "";
+  }
+
+  return [
+    "Recent Turns:",
+    ...turns.flatMap((turn) => [
+      `Turn ${turn.turnNumber}:`,
+      turn.playerAction ? `Player Action: ${turn.playerAction}` : "Player Action: [opening turn]",
+      `Story Beat: ${turn.storyText}`,
+      "",
+    ]),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function buildMistralDeveloperMessage(
   context: ReturnType<typeof buildRuntimeContextPacket>,
 ) {
@@ -153,15 +169,12 @@ function buildMistralDeveloperMessage(
 
   return [
     "Continuity Packet:",
-    `Title: ${context.title}`,
     `POV: ${context.pov.replace("_", " ")}`,
     `Tone / Style: ${context.toneStyle}`,
-    `Objective: ${context.objective}`,
-    `Runtime Instructions: ${compactText(context.instructions, 220)}`,
-    `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `Strengths: ${context.character.strengths.join(", ")}`,
-    `Weaknesses: ${context.character.weaknesses.join(", ")}`,
+    `Runtime Instructions: ${context.instructions}`,
     `Continuity Summary: ${context.continuitySummary}`,
+    "",
+    buildRecentTurnsBlock(context.recentTurns),
   ].join("\n");
 }
 

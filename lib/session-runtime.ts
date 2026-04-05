@@ -39,6 +39,7 @@ async function generateAndPersistSessionTurn(params: {
       summary: bundle.session.summary,
       turnCount: bundle.session.turnCount,
       previousResponseId: bundle.session.previousResponseId,
+      recentTurns: bundle.session.turns,
     },
     playerAction: params.playerAction,
     mode: params.mode ?? "turn",
@@ -49,6 +50,7 @@ async function generateAndPersistSessionTurn(params: {
     playerAction: params.playerAction,
     turnNumber: bundle.session.turnCount + 1,
     output: engineResult.output,
+    background: bundle.world.background,
     mode: params.mode ?? "turn",
   });
   const nextSessionSummary = appendSessionSummary(bundle.session.summary, turn.summaryAfterTurn);
