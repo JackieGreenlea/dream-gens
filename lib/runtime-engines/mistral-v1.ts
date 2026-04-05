@@ -5,6 +5,8 @@ import { buildRuntimeInputMessages, buildRuntimeTurnFinalizationMessages, buildR
 import { runtimeTurnFinalizationOutputSchema, runtimeTurnOutputSchema } from "@/lib/schemas";
 import {
   RuntimeEngine,
+  RuntimeEngineDebugError,
+  RuntimeEngineDebugPayload,
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
@@ -234,10 +236,25 @@ async function finalizeMistralTurn(params: {
     throw new Error("Mistral finalization response did not include JSON content.");
   }
 
+  let parsedOutput: unknown;
+
+  try {
+    parsedOutput = JSON.parse(content) as unknown;
+  } catch {
+    throw new RuntimeEngineDebugError("Mistral finalization returned invalid JSON.", {
+      engineId: "mistral_v1",
+      inputMessages: params.messages,
+      sentPreviousResponseId: "",
+      rawResponse: json,
+      finalizationText: content,
+    });
+  }
+
   return {
-    output: JSON.parse(content) as unknown,
+    output: parsedOutput,
     responseId: json.id || "",
     rawResponse: json,
+    rawText: content,
   };
 }
 
@@ -271,13 +288,31 @@ async function generateMistralTurn(
     ),
   });
 
+  const debugBase: RuntimeEngineDebugPayload = {
+    engineId: "mistral_v1",
+    inputMessages,
+    sentPreviousResponseId: "",
+    rawResponse: {
+      streamEvents: streamedStory.rawEvents,
+      finalization: finalizationResponse.rawResponse,
+    },
+    finalizationText: finalizationResponse.rawText,
+    parsedOutput: finalizationResponse.output,
+  };
+
   let finalization;
 
   try {
     finalization = runtimeTurnFinalizationOutputSchema.parse(finalizationResponse.output);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new Error("The runtime returned data that did not match the expected turn schema.");
+      throw new RuntimeEngineDebugError(
+        "The runtime returned data that did not match the expected turn schema.",
+        {
+          ...debugBase,
+          validationError: error.flatten(),
+        },
+      );
     }
 
     throw error;
@@ -293,14 +328,7 @@ async function generateMistralTurn(
   return {
     output,
     responseId: streamedStory.responseId || finalizationResponse.responseId || "",
-    debug: {
-      inputMessages,
-      sentPreviousResponseId: "",
-      rawResponse: {
-        streamEvents: streamedStory.rawEvents,
-        finalization: finalizationResponse.rawResponse,
-      },
-    },
+    debug: debugBase,
   };
 }
 

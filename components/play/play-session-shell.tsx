@@ -7,6 +7,19 @@ import { LoadingDots } from "@/components/ui/loading";
 import { PlayerCharacter, Session, SessionTurn, World } from "@/lib/types";
 import { buildSuggestedActions } from "@/lib/utils";
 
+const isDevelopment = process.env.NODE_ENV !== "production";
+
+type RuntimeDebugPayload = {
+  engineId?: string;
+  inputMessages?: unknown;
+  sentPreviousResponseId?: string;
+  responseId?: string;
+  rawResponse?: unknown;
+  finalizationText?: string;
+  parsedOutput?: unknown;
+  validationError?: unknown;
+};
+
 type PlaySessionShellProps = {
   sessionId: string;
   initialSession: Session | null;
@@ -29,6 +42,7 @@ export function PlaySessionShell({
   const [streamingStoryText, setStreamingStoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [runtimeDebug, setRuntimeDebug] = useState<RuntimeDebugPayload | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -107,6 +121,7 @@ export function PlaySessionShell({
 
     setIsSubmitting(true);
     setError("");
+    setRuntimeDebug(null);
     setPendingPlayerAction(nextAction);
     setStreamingStoryText("");
     setPlayerAction("");
@@ -178,6 +193,9 @@ export function PlaySessionShell({
             sentPreviousResponseId?: string;
             responseId?: string;
             rawResponse?: unknown;
+            finalizationText?: string;
+            parsedOutput?: unknown;
+            validationError?: unknown;
           };
         };
 
@@ -188,6 +206,7 @@ export function PlaySessionShell({
 
         if (event === "complete" && payload.turn && payload.summary) {
           completed = true;
+          setRuntimeDebug(payload.debug ?? null);
 
           setSession((current) =>
             current
@@ -206,6 +225,7 @@ export function PlaySessionShell({
         }
 
         if (event === "error") {
+          setRuntimeDebug(payload.debug ?? null);
           throw new Error(payload.error || "The session could not generate the next turn.");
         }
       }
@@ -431,6 +451,17 @@ export function PlaySessionShell({
                       ))}
                     </div>
                   ) : null}
+                </div>
+              ) : null}
+
+              {isDevelopment && runtimeDebug ? (
+                <div className="space-y-3 rounded-lg border border-line/80 bg-surface/70 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">
+                    Runtime Debug
+                  </p>
+                  <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85">
+                    {JSON.stringify(runtimeDebug, null, 2)}
+                  </pre>
                 </div>
               ) : null}
             </div>

@@ -18,6 +18,7 @@ import {
 } from "@/lib/schemas";
 import {
   RuntimeEngine,
+  RuntimeEngineDebugPayload,
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
@@ -75,17 +76,20 @@ async function generateOpenAITurn(
     }),
   );
 
+  const debug: RuntimeEngineDebugPayload = {
+    engineId: "openai_v1",
+    inputMessages,
+    sentPreviousResponseId: params.session.previousResponseId || "",
+    rawResponse: {
+      streamEvents: streamedStory.rawEvents,
+      finalization: finalizationResponse.rawResponse,
+    },
+  };
+
   return {
     output,
     responseId: streamedStory.responseId || params.session.previousResponseId || "",
-    debug: {
-      inputMessages,
-      sentPreviousResponseId: params.session.previousResponseId || "",
-      rawResponse: {
-        streamEvents: streamedStory.rawEvents,
-        finalization: finalizationResponse.rawResponse,
-      },
-    },
+    debug,
   };
 }
 

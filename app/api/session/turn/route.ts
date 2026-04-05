@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { RuntimeEngineDebugError } from "@/lib/runtime-engines/types";
 import { streamSessionTurn } from "@/lib/session-runtime";
 import { runtimeTurnRequestSchema } from "@/lib/schemas";
 import { getCurrentUser } from "@/lib/supabase/server";
@@ -60,7 +61,14 @@ export async function POST(request: Request) {
           const message =
             error instanceof Error ? error.message : "Unable to continue session.";
           console.error("[session-turn] stream failure", { message });
-          sendEvent("error", { error: message });
+          sendEvent("error", {
+            error: message,
+            ...(isDevelopment && error instanceof RuntimeEngineDebugError
+              ? {
+                  debug: error.debug,
+                }
+              : {}),
+          });
         } finally {
           controller.close();
         }
