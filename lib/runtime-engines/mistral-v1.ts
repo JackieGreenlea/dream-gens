@@ -1,7 +1,8 @@
 import "server-only";
 
 import { ZodError } from "zod";
-import { buildRuntimeInputMessages, buildRuntimeTurnFinalizationMessages, buildRuntimeTurnOutput } from "@/lib/runtime";
+import { buildRuntimeContextPacket } from "@/lib/runtime-context";
+import { buildRuntimeTurnOutput } from "@/lib/runtime-turns";
 import { runtimeTurnFinalizationOutputSchema, runtimeTurnOutputSchema } from "@/lib/schemas";
 import {
   RuntimeEngine,
@@ -10,7 +11,6 @@ import {
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
-import { OpenAIInputMessage } from "@/lib/openai";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-large-latest";
@@ -19,6 +19,57 @@ type MistralMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
+
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are Everplot's session runtime.
+
+Requirements:
+- The latest user message is the action already taken.
+- Continue directly from that action.
+- Use present tense.
+- Do not restate or paraphrase the player's submitted action at the start.
+- Begin with the immediate consequence, reaction, reveal, or next beat.
+- Keep player agency intact and move the scene forward.
+- Respect POV, tone, story logic, and runtime instructions.
+- Use the character's strengths and weaknesses narratively, not as mechanics.
+- Do not expose internal scaffolding.
+- Return only the narrative story prose for this beat.
+- Do not return JSON.
+- Do not include field names, code fences, labels, or wrapper text.
+- Keep the prose to 1-3 short paragraphs.
+- Avoid one dense block of text.`;
+
+const RUNTIME_OPENING_SYSTEM_PROMPT = `You are Everplot's session runtime.
+
+Requirements:
+- Generate the opening scene for this session before the player has acted.
+- Set the scene around the selected character.
+- Establish tone, motion, and immediate tension.
+- Move directly into an opening beat that invites the player's first action.
+- Do not describe a hidden player action or imply the player already chose something.
+- Keep player agency intact and leave room for the player's first move.
+- Respect POV, tone, story logic, and runtime instructions.
+- Use the character's strengths and weaknesses narratively, not as mechanics.
+- Do not expose internal scaffolding.
+- Return only the narrative story prose for this opening.
+- Do not return JSON.
+- Do not include field names, code fences, labels, or wrapper text.
+- Keep the prose to 1-3 short paragraphs.
+- Do not end responses with explicit player-prompt questions.
+- Avoid one dense block of text.`;
+
+const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `You are Everplot's turn finalizer.
+
+Requirements:
+- Read the completed story beat and return strictly valid JSON matching the requested schema.
+- summary must be a very short continuity note, not a recap paragraph.
+- Keep summary to about 20 words maximum.
+- Prefer one short sentence.
+- summary should capture only what newly happened that still matters.
+- Suggested actions must reflect reasonable next moves in the current scene.
+- Return 2 to 3 suggested actions.
+- Each suggested action must be 1-2 short sentences and no more than 20 words.
+- Start each suggested action with a clear verb when possible.
+- Do not restate the scene or write strategy commentary.`;
 
 type MistralChatResponse = {
   id?: string;
@@ -55,35 +106,125 @@ function getMistralApiKey() {
   return apiKey;
 }
 
-function flattenMessageText(message: OpenAIInputMessage) {
-  return message.content
-    .map((item) => item.text)
-    .join("\n")
-    .trim();
+function compactText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
-function toMistralMessages(messages: OpenAIInputMessage[]): MistralMessage[] {
-  return messages
-    .map((message) => {
-      const content = flattenMessageText(message);
+function buildMistralDeveloperMessage(
+  context: ReturnType<typeof buildRuntimeContextPacket>,
+) {
+  if (context.isFirstTurn) {
+    return [
+      "Session Setup:",
+      `Title: ${context.title}`,
+      `POV: ${context.pov.replace("_", " ")}`,
+      `Tone / Style: ${context.toneStyle}`,
+      `Objective: ${context.objective}`,
+      "",
+      "Story Instructions:",
+      context.instructions,
+      "",
+      "Story Background:",
+      context.background,
+      "",
+      "Selected Playable Character:",
+      `${context.character.name}: ${context.character.description}`,
+      `Strengths: ${context.character.strengths.join(", ")}`,
+      `Weaknesses: ${context.character.weaknesses.join(", ")}`,
+      "",
+      "Launch Notes:",
+      "This is the opening runtime turn for this session.",
+      context.mode === "opening"
+        ? "Generate an opening scene that invites the player's first action."
+        : "The latest user message is the player's action already taken.",
+      context.openingGuidance
+        ? `Optional opening guidance from the story template: ${context.openingGuidance}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
 
-      if (!content) {
-        return null;
-      }
+  return [
+    "Continuity Packet:",
+    `Title: ${context.title}`,
+    `POV: ${context.pov.replace("_", " ")}`,
+    `Tone / Style: ${context.toneStyle}`,
+    `Objective: ${context.objective}`,
+    `Runtime Instructions: ${compactText(context.instructions, 220)}`,
+    `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
+    `Strengths: ${context.character.strengths.join(", ")}`,
+    `Weaknesses: ${context.character.weaknesses.join(", ")}`,
+    `Continuity Summary: ${context.continuitySummary}`,
+  ].join("\n");
+}
 
-      if (message.role === "developer") {
-        return {
-          role: "system" as const,
-          content,
-        };
-      }
+function buildMistralInputMessages(params: {
+  context: ReturnType<typeof buildRuntimeContextPacket>;
+  playerAction: string;
+}): MistralMessage[] {
+  return [
+    {
+      role: "system",
+      content:
+        params.context.mode === "opening" ? RUNTIME_OPENING_SYSTEM_PROMPT : RUNTIME_STORY_SYSTEM_PROMPT,
+    },
+    {
+      role: "system",
+      content: buildMistralDeveloperMessage(params.context),
+    },
+    {
+      role: "user",
+      content:
+        params.context.mode === "opening"
+          ? "Generate the opening scene for this session. Introduce the selected character, establish the situation, and end by inviting the player's first action."
+          : params.playerAction.trim(),
+    },
+  ];
+}
 
-      return {
-        role: message.role,
-        content,
-      };
-    })
-    .filter((message): message is MistralMessage => Boolean(message));
+function buildMistralFinalizationMessages(params: {
+  context: ReturnType<typeof buildRuntimeContextPacket>;
+  playerAction: string;
+  storyText: string;
+}): MistralMessage[] {
+  return [
+    {
+      role: "system",
+      content: RUNTIME_FINALIZATION_SYSTEM_PROMPT,
+    },
+    {
+      role: "system",
+      content: buildMistralDeveloperMessage(params.context),
+    },
+    {
+      role: "user",
+      content:
+        params.context.mode === "opening"
+          ? [
+              "This is the opening scene for the session.",
+              "",
+              "Completed story beat:",
+              params.storyText.trim(),
+              "",
+              "Return JSON with suggestedActions and summary only.",
+            ].join("\n")
+          : [
+              `Player action: ${params.playerAction.trim()}`,
+              "",
+              "Completed story beat:",
+              params.storyText.trim(),
+              "",
+              "Return JSON with suggestedActions and summary only.",
+            ].join("\n"),
+    },
+  ];
 }
 
 function readMistralContent(
@@ -262,30 +403,28 @@ async function generateMistralTurn(
   params: RuntimeEngineGenerateTurnParams,
 ): Promise<RuntimeEngineGenerateTurnResult> {
   const mode = params.mode ?? "turn";
-  const inputMessages = buildRuntimeInputMessages({
+  const context = buildRuntimeContextPacket({
     world: params.world,
     character: params.character,
     session: params.session,
-    playerAction: params.playerAction,
     mode,
+  });
+  const inputMessages = buildMistralInputMessages({
+    context,
+    playerAction: params.playerAction,
   });
 
   const streamedStory = await streamMistralText({
-    messages: toMistralMessages(inputMessages),
+    messages: inputMessages,
     onDelta: params.onTextDelta,
   });
 
   const finalizationResponse = await finalizeMistralTurn({
-    messages: toMistralMessages(
-      buildRuntimeTurnFinalizationMessages({
-        world: params.world,
-        character: params.character,
-        session: params.session,
-        playerAction: params.playerAction,
-        storyText: streamedStory.text,
-        mode,
-      }),
-    ),
+    messages: buildMistralFinalizationMessages({
+      context,
+      playerAction: params.playerAction,
+      storyText: streamedStory.text,
+    }),
   });
 
   const debugBase: RuntimeEngineDebugPayload = {
