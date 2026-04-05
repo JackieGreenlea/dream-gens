@@ -18,7 +18,7 @@ export const sessionTurnSchema = z.object({
   turnNumber: z.number().int().min(1),
   playerAction: z.string().trim(),
   storyText: z.string().trim().min(1),
-  suggestedActions: z.array(z.string().trim().min(1)).length(3),
+  suggestedActions: z.array(z.string().trim().min(1)).min(2).max(3),
   summaryAfterTurn: z.string().trim().min(1),
 });
 
@@ -82,14 +82,14 @@ export type StoredSession = z.infer<typeof sessionSchema>;
 
 export const runtimeTurnOutputSchema = z.object({
   storyText: z.string().trim().min(1),
-  suggestedActions: z.array(z.string().trim().min(1)).length(3),
+  suggestedActions: z.array(z.string().trim().min(1)).min(2).max(3),
   summary: z.string().trim().min(1),
 });
 
 export type RuntimeTurnOutput = z.infer<typeof runtimeTurnOutputSchema>;
 
 export const runtimeTurnFinalizationOutputSchema = z.object({
-  suggestedActions: z.array(z.string().trim().min(1)).length(3),
+  suggestedActions: z.array(z.string().trim().min(1)).min(2).max(3),
   summary: z.string().trim().min(1),
 });
 
@@ -322,7 +322,7 @@ export const runtimeTurnJsonSchema = {
     storyText: { type: "string" },
     suggestedActions: {
       type: "array",
-      minItems: 3,
+      minItems: 2,
       maxItems: 3,
       items: {
         type: "string",
@@ -339,7 +339,7 @@ export const runtimeTurnFinalizationJsonSchema = {
   properties: {
     suggestedActions: {
       type: "array",
-      minItems: 3,
+      minItems: 2,
       maxItems: 3,
       items: {
         type: "string",

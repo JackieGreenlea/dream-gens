@@ -43,6 +43,7 @@ export function PlaySessionShell({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [runtimeDebug, setRuntimeDebug] = useState<RuntimeDebugPayload | null>(null);
+  const [isRuntimeDebugOpen, setIsRuntimeDebugOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -122,6 +123,7 @@ export function PlaySessionShell({
     setIsSubmitting(true);
     setError("");
     setRuntimeDebug(null);
+    setIsRuntimeDebugOpen(false);
     setPendingPlayerAction(nextAction);
     setStreamingStoryText("");
     setPlayerAction("");
@@ -207,6 +209,7 @@ export function PlaySessionShell({
         if (event === "complete" && payload.turn && payload.summary) {
           completed = true;
           setRuntimeDebug(payload.debug ?? null);
+          setIsRuntimeDebugOpen(false);
 
           setSession((current) =>
             current
@@ -226,6 +229,7 @@ export function PlaySessionShell({
 
         if (event === "error") {
           setRuntimeDebug(payload.debug ?? null);
+          setIsRuntimeDebugOpen(false);
           throw new Error(payload.error || "The session could not generate the next turn.");
         }
       }
@@ -455,13 +459,19 @@ export function PlaySessionShell({
               ) : null}
 
               {isDevelopment && runtimeDebug ? (
-                <div className="space-y-3 rounded-lg border border-line/80 bg-surface/70 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary">
-                    Runtime Debug
-                  </p>
-                  <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85">
-                    {JSON.stringify(runtimeDebug, null, 2)}
-                  </pre>
+                <div className="space-y-2 rounded-lg border border-line/80 bg-surface/70 p-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsRuntimeDebugOpen((current) => !current)}
+                    className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-foreground"
+                  >
+                    Runtime Debug {isRuntimeDebugOpen ? "v" : ">"}
+                  </button>
+                  {isRuntimeDebugOpen ? (
+                    <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85">
+                      {JSON.stringify(runtimeDebug, null, 2)}
+                    </pre>
+                  ) : null}
                 </div>
               ) : null}
             </div>

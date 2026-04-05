@@ -48,6 +48,7 @@ Requirements:
 - Prefer one short sentence.
 - summary should capture only what newly happened that still matters.
 - Suggested actions must reflect reasonable next moves in the current scene.
+- Return 2 to 3 suggested actions.
 - Each suggested action must be 1-2 short sentences and no more than 20 words.
 - Start each suggested action with a clear verb when possible.
 - Do not restate the scene or write strategy commentary.`;
@@ -84,16 +85,10 @@ function normalizeSuggestedAction(action: string, fallback: string) {
 }
 
 export function normalizeSuggestedActions(actions: string[]) {
-  const normalized = actions
+  return actions
     .slice(0, 3)
     .map((action, index) => normalizeSuggestedAction(action, FALLBACK_ACTIONS[index]))
     .filter(Boolean);
-
-  while (normalized.length < 3) {
-    normalized.push(FALLBACK_ACTIONS[normalized.length]);
-  }
-
-  return normalized;
 }
 
 function toInputMessage(role: OpenAIInputMessage["role"], text: string): OpenAIInputMessage {
