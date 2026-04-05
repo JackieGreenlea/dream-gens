@@ -292,7 +292,7 @@ export function PlaySessionShell({
 
   return (
     <div className="space-y-6">
-      <Card className="flex h-[calc(100vh-8.5rem)] min-h-[42rem] flex-col overflow-hidden bg-transparent p-0">
+      <Card className="flex h-[calc(100vh-8.5rem)] min-h-[42rem] flex-col overflow-hidden rounded-none border-x-0 border-y-0 bg-transparent p-0 shadow-none sm:rounded-2xl sm:border-x sm:border-y sm:shadow-[0_6px_18px_rgba(0,0,0,0.08)]">
         <section className="relative p-4 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">

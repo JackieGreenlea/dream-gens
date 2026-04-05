@@ -24,7 +24,7 @@ export default async function SessionPage({
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
+    <main className="min-h-screen max-w-none px-0 py-0 sm:mx-auto sm:max-w-7xl sm:px-8 sm:py-10 lg:px-10">
       <PlaySessionShell
         sessionId={id}
         initialSession={bundle.session}
