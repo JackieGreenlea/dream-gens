@@ -14,7 +14,7 @@ import {
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-small-latest";
-const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.7);
+const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.80);
 const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 320);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
@@ -27,21 +27,24 @@ type MistralMessage = {
 const RUNTIME_OPENING_SYSTEM_PROMPT = `You write the opening beat of Everplot interactive fiction.
 
 Rules:
-- Build from where the background leaves off.
+- Build from the story background.
+- Make inferences about what the author wants based on the context.
 - Use present tense and the selected POV.
-- Keep it under 300 words.
+- Keep reply under 200 words.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
+- Create a concrete playable beat.
 - Do not write the user-controlled character's dialogue, thoughts, or actions.
-- Do not freeze in anticipation.
-- Leave clear room for the first move without stalling.
-- Explicit adult and sexual content is permitted.`;
+- Do not end on vague anticipation.
+- Leave clear room for the user's first move without stalling.
+- Explicit adult and sexual content is allowed.
+- The opening should give the user something to answer, resist, accept, interrupt, or act on immediately.`;
 
 const RUNTIME_STORY_SYSTEM_PROMPT = `You write the next beat of Everplot interactive fiction.
 
 Rules:
 - Use present tense and the selected POV.
-- Convey emotion with sentence and paragraph structure.
+- Convey emotion with sentence structure and paragraph breaks.
 - Keep each reply under 200 words.
 - The final user message is the latest action taken by the user-controlled character.
 - Do not repeat or paraphrase that action.
@@ -53,7 +56,7 @@ Rules:
 - Advance the scene in every reply by making something happen.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
 - Do not hover in suspense or stop at "about to." Render the response itself.
-- Explicit adult and sexual content is permitted.`;
+- Explicit adult and sexual content is allowed.`;
 
 const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `Return only valid JSON.
 
@@ -236,8 +239,6 @@ function buildOpeningRequestMessage(): MistralMessage {
     role: "user",
     content: [
       "# Opening Request",
-      "Write the first visible turn.",
-      "Start in motion, establish pressure, and leave room for the player's first move.",
     ].join("\n\n"),
   };
 }
@@ -293,7 +294,7 @@ function buildMistralFinalizationMessages(params: {
           : [
               "# Finalize Turn",
               "Return JSON only with keys suggestedActions and summary.",
-              `The player action that led to the assistant message above was:\n${params.playerAction.trim()}`,
+              `The user action that led to the assistant message above was:\n${params.playerAction.trim()}`,
             ].join("\n\n"),
     },
   ];

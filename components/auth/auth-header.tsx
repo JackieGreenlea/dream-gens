@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import logo from "@/app/logo.png";
 import { signOut } from "@/app/auth/actions";
@@ -107,9 +110,34 @@ function headerActionButtonClasses() {
 }
 
 export function AuthHeader({ user, identity }: AuthHeaderProps) {
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const primaryLabel = identity?.username || user?.email?.split("@")[0] || "Guest";
   const secondaryLabel = identity?.username ? `@${identity.username}` : null;
   const accountLabel = identity?.email ?? user?.email ?? null;
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsAccountMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   const centerControls = (
     <>
       <Link
@@ -143,14 +171,14 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
         {centerControls}
       </div>
 
-      <div className="flex w-full items-center gap-3 px-4 py-4 sm:px-8 lg:min-h-[76px] lg:px-10 lg:py-0">
+      <div className="flex w-full items-center gap-3 px-4 py-3 sm:px-8 lg:min-h-[68px] lg:px-10 lg:py-0">
         <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
           <Link
             href="/"
-            className="inline-flex h-11 items-center"
+            className="inline-flex h-10 items-center"
             aria-label="Everplot home"
           >
-            <Image src={logo} alt="Everplot" className="h-9 w-auto md:h-11" priority />
+            <Image src={logo} alt="Everplot" className="h-8 w-auto md:h-9" priority />
           </Link>
         </div>
 
@@ -175,15 +203,20 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
             <BellIcon />
           </button>
 
-          <details className="group relative">
-            <summary
-              className={`${headerActionButtonClasses()} list-none cursor-pointer`}
+          <div className="relative" ref={accountMenuRef}>
+            <button
+              type="button"
+              className={headerActionButtonClasses()}
               aria-label="Account menu"
+              aria-expanded={isAccountMenuOpen}
+              onClick={() => setIsAccountMenuOpen((open) => !open)}
             >
               <UserIcon />
-            </summary>
+            </button>
 
-            <div className="absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 backdrop-blur">
+            <div
+              className={`${isAccountMenuOpen ? "block" : "hidden"} absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 backdrop-blur`}
+            >
               <div className="flex flex-col">
                 <div className="border-b border-line px-3 pb-3">
                   <p className="text-sm font-medium text-foreground">{primaryLabel}</p>
@@ -195,6 +228,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                   <Link
                     href={`/u/${identity.username}`}
                     className="mt-2 px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                    onClick={() => setIsAccountMenuOpen(false)}
                   >
                     My Profile
                   </Link>
@@ -205,18 +239,21 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                     <Link
                       href="/sessions"
                       className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                      onClick={() => setIsAccountMenuOpen(false)}
                     >
                       My Sessions
                     </Link>
                     <Link
                       href="/stories"
                       className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                      onClick={() => setIsAccountMenuOpen(false)}
                     >
                       My Stories
                     </Link>
                     <Link
                       href="/worlds"
                       className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                      onClick={() => setIsAccountMenuOpen(false)}
                     >
                       My Worlds
                     </Link>
@@ -226,6 +263,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                 <Link
                   href="/settings"
                   className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                  onClick={() => setIsAccountMenuOpen(false)}
                 >
                   Settings
                 </Link>
@@ -244,6 +282,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                     <Link
                       href="/auth/sign-in"
                       className="block px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                      onClick={() => setIsAccountMenuOpen(false)}
                     >
                       Sign in
                     </Link>
@@ -251,7 +290,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                 </div>
               </div>
             </div>
-          </details>
+          </div>
         </div>
       </div>
     </header>
