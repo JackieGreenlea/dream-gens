@@ -76,14 +76,32 @@ export function PlaySessionShell({
 
     return (
       <div className="space-y-4">
-        {content.map((paragraph, index) => (
-          <p
-            key={`${index}-${paragraph.slice(0, 24)}`}
-            className="whitespace-pre-wrap text-[1.14rem] leading-[2.05rem] text-foreground/92"
-          >
-            {paragraph}
-          </p>
-        ))}
+        {content.map((paragraph, index) => {
+          const sectionMatch = paragraph.match(/^(Background|Opening):\n([\s\S]+)$/);
+
+          if (sectionMatch) {
+            const [, label, body] = sectionMatch;
+
+            return (
+              <div
+                key={`${index}-${label}-${body.slice(0, 24)}`}
+                className="space-y-2 text-[1.14rem] leading-[2.05rem] text-foreground/92"
+              >
+                <p className="text-[1.02rem] font-bold tracking-[0.01em] text-foreground">{label}:</p>
+                <p className="whitespace-pre-wrap">{body.trim()}</p>
+              </div>
+            );
+          }
+
+          return (
+            <p
+              key={`${index}-${paragraph.slice(0, 24)}`}
+              className="whitespace-pre-wrap text-[1.14rem] leading-[2.05rem] text-foreground/92"
+            >
+              {paragraph}
+            </p>
+          );
+        })}
       </div>
     );
   }

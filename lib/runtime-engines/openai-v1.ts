@@ -123,9 +123,6 @@ function buildOpenAIDeveloperMessage(
       context.mode === "opening"
         ? "Generate an opening scene that invites the player's first action."
         : "The latest user message is the player's action already taken.",
-      context.openingGuidance
-        ? `Optional opening guidance from the story template: ${context.openingGuidance}`
-        : "",
     ]
       .filter(Boolean)
       .join("\n");

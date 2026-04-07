@@ -103,8 +103,8 @@ export function createSessionTurn(params: {
   mode?: "opening" | "turn";
 }): SessionTurn {
   const openingStoryText = [
-    params.background?.trim() ? `Background: ${params.background.trim()}` : "",
-    params.output.storyText.trim() ? `Opening scene: ${params.output.storyText.trim()}` : "",
+    params.background?.trim() ? `Background:\n${params.background.trim()}` : "",
+    params.output.storyText.trim() ? `Opening:\n${params.output.storyText.trim()}` : "",
   ]
     .filter(Boolean)
     .join("\n\n");

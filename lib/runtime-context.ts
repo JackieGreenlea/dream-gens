@@ -10,7 +10,6 @@ export type RuntimeContextPacket = {
   instructions: string;
   background: string;
   continuitySummary: string;
-  openingGuidance: string;
   recentTurns: Array<{
     turnNumber: number;
     playerAction: string;
@@ -50,7 +49,6 @@ export function buildRuntimeContextPacket(params: {
     instructions: params.world.instructions,
     background: params.world.background,
     continuitySummary: params.session.summary || "The story is just beginning.",
-    openingGuidance: params.world.firstAction.trim(),
     recentTurns: params.session.recentTurns.slice(-3).map((turn) => ({
       turnNumber: turn.turnNumber,
       playerAction: turn.playerAction,
