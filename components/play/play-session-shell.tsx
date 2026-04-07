@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, ReactNode, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
@@ -67,6 +67,25 @@ export function PlaySessionShell({
   }
 
   function renderStoryText(text: string) {
+    function renderInlineEmphasis(value: string): ReactNode[] {
+      const parts = value.split(/(\*[^*\n]+\*|_[^_\n]+_)/g);
+
+      return parts.filter(Boolean).map((part, index) => {
+        const isStarItalic = part.startsWith("*") && part.endsWith("*") && part.length > 2;
+        const isUnderscoreItalic = part.startsWith("_") && part.endsWith("_") && part.length > 2;
+
+        if (isStarItalic || isUnderscoreItalic) {
+          return (
+            <em key={`${index}-${part.slice(1, 12)}`} className="italic">
+              {part.slice(1, -1)}
+            </em>
+          );
+        }
+
+        return <span key={`${index}-${part.slice(0, 12)}`}>{part}</span>;
+      });
+    }
+
     const paragraphs = text
       .split(/\n\s*\n/)
       .map((paragraph) => paragraph.trim())
@@ -77,7 +96,7 @@ export function PlaySessionShell({
     return (
       <div className="space-y-4">
         {content.map((paragraph, index) => {
-          const sectionMatch = paragraph.match(/^(Background|Opening):\n([\s\S]+)$/);
+          const sectionMatch = paragraph.match(/^(BACKGROUND|OPENING):\n([\s\S]+)$/);
 
           if (sectionMatch) {
             const [, label, body] = sectionMatch;
@@ -85,10 +104,12 @@ export function PlaySessionShell({
             return (
               <div
                 key={`${index}-${label}-${body.slice(0, 24)}`}
-                className="space-y-2 text-[1.14rem] leading-[2.05rem] text-foreground/92"
+                className="space-y-2 text-[1.14rem] leading-[2.05rem] text-foreground"
               >
                 <p className="text-[1.02rem] font-bold tracking-[0.01em] text-foreground">{label}:</p>
-                <p className="whitespace-pre-wrap">{body.trim()}</p>
+                <p className="whitespace-pre-wrap font-semibold text-foreground">
+                  {renderInlineEmphasis(body.trim())}
+                </p>
               </div>
             );
           }
@@ -96,9 +117,9 @@ export function PlaySessionShell({
           return (
             <p
               key={`${index}-${paragraph.slice(0, 24)}`}
-              className="whitespace-pre-wrap text-[1.14rem] leading-[2.05rem] text-foreground/92"
+              className="whitespace-pre-wrap text-[1.14rem] font-semibold leading-[2.05rem] text-foreground"
             >
-              {paragraph}
+              {renderInlineEmphasis(paragraph)}
             </p>
           );
         })}
@@ -309,8 +330,8 @@ export function PlaySessionShell({
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="flex h-[calc(100vh-8.5rem)] min-h-[42rem] flex-col overflow-hidden rounded-none border-x-0 border-y-0 bg-transparent p-0 shadow-none sm:rounded-2xl sm:border-x sm:border-y sm:shadow-[0_6px_18px_rgba(0,0,0,0.08)]">
+    <div className="h-full">
+      <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none">
         <section className="relative p-4 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
@@ -362,7 +383,9 @@ export function PlaySessionShell({
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold leading-tight text-foreground sm:text-4xl">{world.title}</h1>
+              <h1 className="text-[1.9rem] font-semibold leading-tight text-foreground sm:text-[2.4rem]">
+                {world.title}
+              </h1>
             </div>
           </div>
         </section>

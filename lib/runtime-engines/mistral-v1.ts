@@ -13,58 +13,54 @@ import {
 } from "@/lib/runtime-engines/types";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
-const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-large-latest";
+const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-small-latest";
+const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.7);
+const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 320);
+const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
+const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
 
 type MistralMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
 
-const RUNTIME_OPENING_SYSTEM_PROMPT = `You are a creative and intelligent AI assistant writing the opening scene for an interactive story with the user in a roleplay format.
+const RUNTIME_OPENING_SYSTEM_PROMPT = `You write the opening beat of Everplot interactive fiction.
 
-Requirements:
-- Build from where the background leaves off.
-- Make inferences about what the author wants based on the context.
-- Create specific pressure, such as action or dialogue by an NPC, that forces immediate action by the user.
-- Do not write the user's dialogue, thoughts, or actions.
-- Do not end with a direct question to the user.
-- Avoid generic openings.
-- Keep it under 200 words.
+Rules:
+- Use present tense and the selected POV.
+- Start in motion around the user-controlled character.
+- Make something happen immediately.
+- Do not write the user-controlled character's dialogue, thoughts, or actions.
+- Do not freeze in anticipation.
+- Leave clear room for the first move without stalling.
 - Explicit adult and sexual content is permitted.`;
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are a creative and intelligent AI assistant writing an interactive story with the user in a roleplay format.
+const RUNTIME_STORY_SYSTEM_PROMPT = `You write the next beat of Everplot interactive fiction.
 
-Requirements:
-- Write about 80-160 words total.
-- Break dialogue onto its own line when natural.
-- Convey emotion with sentence and paragraph structure.
+Rules:
 - Use present tense and the selected POV.
-- Proactively drive the story forward. Advance the scene in every reply by making something happen.
-- Fully inhabit every NPC you voice. Make each NPC feel real and have distinct personalities and voices.
-- Stay in character. Make every NPC speak and behave according to their personality, motives, history, and relationship to the user.
-- Write realistic, lifelike dialogue.
-- Do not hover in atmosphere, suspense, or anticipation. Do not stop at "about to." Render an action.
-- Do not repeat or paraphrase the user's action.
-- Do not write the user's new dialogue, thoughts, or actions.
-- Use concrete dialogue, specific reactions, and real movement, not summary.
-- Adhere to the Runtime Instructions.
-- Explicit adult and sexual content is permitted.
-- Keep track of details like body positioning, clothing, etc.`;
+- Convey emotion with sentence and paragraph structure.
+- The final user message is the latest action taken by the user-controlled character.
+- Do not repeat or paraphrase that action.
+- Do not write new dialogue, thoughts, or actions for the user-controlled character.
+- Write how other characters and the world respond.
+- Stay in character.
+- Advance the scene in every reply by making something happen.
+- Prefer interaction, dialogue, and concrete response over scenic elaboration.
+- Do not hover in suspense or stop at "about to." Render the response itself.
+- Explicit adult and sexual content is permitted.`;
 
+const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `Return only valid JSON.
 
-const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `You are Everplot's turn finalizer.
+Required keys:
+- suggestedActions
+- summary
 
-Requirements:
-- Read the completed story beat and return strictly valid JSON matching the requested schema.
-- summary must be a very short continuity note, not a recap paragraph.
-- Keep summary to about 20 words maximum.
-- Prefer one short sentence.
-- summary should capture only what newly happened that still matters.
-- Suggested actions must reflect reasonable next moves in the current scene.
-- Return 2 to 3 suggested actions.
-- Each suggested action must be 1-2 short sentences and no more than 20 words.
+Rules:
+- summary: one short continuity note, about 20 words max.
+- suggestedActions: 2 to 3 short next moves.
 - Start each suggested action with a clear verb when possible.
-- Do not restate the scene or write strategy commentary.`;
+- Do not include commentary, labels, or recap text outside the JSON object.`;
 
 type MistralChatResponse = {
   id?: string;
@@ -101,6 +97,39 @@ function getMistralApiKey() {
   return apiKey;
 }
 
+function readEnvFloat(name: string, fallback: number) {
+  const raw = process.env[name];
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function readEnvInt(name: string, fallback: number) {
+  const raw = process.env[name];
+
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isInteger(parsed) ? parsed : fallback;
+}
+
+function readOptionalEnvInt(name: string) {
+  const raw = process.env[name];
+
+  if (!raw) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isInteger(parsed) ? parsed : undefined;
+}
+
 function compactText(value: string, maxLength: number) {
   const normalized = value.replace(/\s+/g, " ").trim();
 
@@ -111,91 +140,125 @@ function compactText(value: string, maxLength: number) {
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
-function buildRecentTurnsBlock(
-  turns: ReturnType<typeof buildRuntimeContextPacket>["recentTurns"],
-) {
-  if (turns.length === 0) {
-    return "";
-  }
-
+function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
   return [
-    "Recent Turns:",
-    ...turns.flatMap((turn) => [
-      `Turn ${turn.turnNumber}:`,
-      turn.playerAction ? `Player Action: ${turn.playerAction}` : "Player Action: [opening turn]",
-      `Story Beat: ${turn.storyText}`,
-      "",
-    ]),
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
-function buildMistralDeveloperMessage(
-  context: ReturnType<typeof buildRuntimeContextPacket>,
-) {
-  if (context.isFirstTurn) {
-    return [
-      "Session Setup:",
-      `Title: ${context.title}`,
-      `POV: ${context.pov.replace("_", " ")}`,
-      `Tone / Style: ${context.toneStyle}`,
-      `Objective: ${context.objective}`,
-      "",
-      "Story Instructions:",
-      context.instructions,
-      "",
-      "Story Background:",
-      context.background,
-      "",
-      "The user is playing the character:",
-      `${context.character.name}: ${context.character.description}`,
-      `Strengths: ${context.character.strengths.join(", ")}`,
-      `Weaknesses: ${context.character.weaknesses.join(", ")}`,
-      "",
-      "Launch Notes:",
-      "This is the opening runtime turn for this session.",
-      context.mode === "opening"
-        ? "Generate an opening scene that invites the player's first action."
-        : "The latest user message is the player's action already taken.",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  return [
-    "Continuity Packet:",
-    `POV: ${context.pov.replace("_", " ")}`,
-    `Tone / Style: ${context.toneStyle}`,
-    `Runtime Instructions: ${context.instructions}`,
-    `Continuity Summary: ${context.continuitySummary}`,
-    "",
-    buildRecentTurnsBlock(context.recentTurns),
+    "# Opening State",
+    `- Title: ${context.title}`,
+    `- POV: ${context.pov.replace("_", " ")}`,
+    `- Tone / Style: ${context.toneStyle}`,
+    `- Objective: ${context.objective}`,
+    `- Runtime Instructions: ${context.instructions}`,
+    `- Story Background: ${context.background}`,
+    `- Player Character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
+    `- Strengths: ${context.character.strengths.join(", ")}`,
+    `- Weaknesses: ${context.character.weaknesses.join(", ")}`,
   ].join("\n");
 }
 
-function buildMistralInputMessages(params: {
+function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  return [
+    "# Continuity State",
+    `- POV: ${context.pov.replace("_", " ")}`,
+    `- User's objective in the story: ${context.objective}`,
+    `- Runtime instructions for assistant: ${context.instructions}`,
+    `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
+    `- Continuity Summary: ${context.continuitySummary}`,
+  ].join("\n");
+}
+
+function buildContextPacketMessage(
+  context: ReturnType<typeof buildRuntimeContextPacket>,
+): MistralMessage {
+  return {
+    role: "user",
+    content: context.mode === "opening" ? buildOpeningContextPacket(context) : buildContinuityContextPacket(context),
+  };
+}
+
+function buildHistoricalActionMessage(turnNumber: number, action: string): MistralMessage {
+  return {
+    role: "user",
+    content: [
+      `# Prior Latest Action (Turn ${turnNumber})`,
+      action.trim(),
+    ].join("\n\n"),
+  };
+}
+
+function buildCurrentActionMessage(action: string): MistralMessage {
+  return {
+    role: "user",
+    content: [
+      "# Current Latest Action",
+      "Continue immediately from this action.",
+      action.trim(),
+    ].join("\n\n"),
+  };
+}
+
+function normalizeHistoricalAssistantContent(storyText: string) {
+  const trimmed = storyText.trim();
+  const openingMatch = trimmed.match(/(?:^|\n)Opening:\n([\s\S]+)$/);
+
+  if (openingMatch?.[1]) {
+    return openingMatch[1].trim();
+  }
+
+  return trimmed;
+}
+
+function buildRecentHistoryMessages(
+  turns: ReturnType<typeof buildRuntimeContextPacket>["recentTurns"],
+): MistralMessage[] {
+  return turns.flatMap((turn) => {
+    const messages: MistralMessage[] = [];
+
+    if (turn.playerAction.trim()) {
+      messages.push(buildHistoricalActionMessage(turn.turnNumber, turn.playerAction));
+    }
+
+    messages.push({
+      role: "assistant",
+      content: normalizeHistoricalAssistantContent(turn.storyText),
+    });
+
+    return messages;
+  });
+}
+
+function buildOpeningRequestMessage(): MistralMessage {
+  return {
+    role: "user",
+    content: [
+      "# Opening Request",
+      "Write the first visible turn.",
+      "Start in motion, establish pressure, and leave room for the player's first move.",
+    ].join("\n\n"),
+  };
+}
+
+function buildMistralStoryMessages(params: {
   context: ReturnType<typeof buildRuntimeContextPacket>;
   playerAction: string;
 }): MistralMessage[] {
-  return [
+  const messages: MistralMessage[] = [
     {
       role: "system",
       content:
         params.context.mode === "opening" ? RUNTIME_OPENING_SYSTEM_PROMPT : RUNTIME_STORY_SYSTEM_PROMPT,
     },
-    {
-      role: "system",
-      content: buildMistralDeveloperMessage(params.context),
-    },
-    {
-      role: "user",
-      content:
-        params.context.mode === "opening"
-          ? "Generate the opening scene for this session. Introduce the selected character, establish the situation, and end by inviting the player's first action."
-          : params.playerAction.trim(),
-    },
+    buildContextPacketMessage(params.context),
   ];
+
+  if (params.context.mode === "opening") {
+    messages.push(buildOpeningRequestMessage());
+    return messages;
+  }
+
+  messages.push(...buildRecentHistoryMessages(params.context.recentTurns));
+  messages.push(buildCurrentActionMessage(params.playerAction));
+
+  return messages;
 }
 
 function buildMistralFinalizationMessages(params: {
@@ -208,30 +271,25 @@ function buildMistralFinalizationMessages(params: {
       role: "system",
       content: RUNTIME_FINALIZATION_SYSTEM_PROMPT,
     },
+    buildContextPacketMessage(params.context),
     {
-      role: "system",
-      content: buildMistralDeveloperMessage(params.context),
+      role: "assistant",
+      content: params.storyText.trim(),
     },
     {
       role: "user",
       content:
         params.context.mode === "opening"
           ? [
-              "This is the opening scene for the session.",
-              "",
-              "Completed story beat:",
-              params.storyText.trim(),
-              "",
-              "Return JSON with suggestedActions and summary only.",
-            ].join("\n")
+              "# Finalize Opening Turn",
+              "Return JSON only with keys suggestedActions and summary.",
+              "The assistant message above is the opening scene.",
+            ].join("\n\n")
           : [
-              `Player action: ${params.playerAction.trim()}`,
-              "",
-              "Completed story beat:",
-              params.storyText.trim(),
-              "",
-              "Return JSON with suggestedActions and summary only.",
-            ].join("\n"),
+              "# Finalize Turn",
+              "Return JSON only with keys suggestedActions and summary.",
+              `The player action that led to the assistant message above was:\n${params.playerAction.trim()}`,
+            ].join("\n\n"),
     },
   ];
 }
@@ -257,20 +315,27 @@ async function streamMistralText(params: {
   messages: MistralMessage[];
   onDelta?: (delta: string) => void | Promise<void>;
 }) {
+  const requestBody = {
+    model: MISTRAL_RUNTIME_MODEL,
+    stream: true,
+    temperature: MISTRAL_RUNTIME_TEMPERATURE,
+    max_tokens: MISTRAL_RUNTIME_MAX_TOKENS,
+    ...(typeof MISTRAL_RUNTIME_RANDOM_SEED === "number"
+      ? { random_seed: MISTRAL_RUNTIME_RANDOM_SEED }
+      : {}),
+    response_format: {
+      type: "text" as const,
+    },
+    messages: params.messages,
+  };
+
   const response = await fetch(MISTRAL_CHAT_COMPLETIONS_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${getMistralApiKey()}`,
     },
-    body: JSON.stringify({
-      model: MISTRAL_RUNTIME_MODEL,
-      stream: true,
-      response_format: {
-        type: "text",
-      },
-      messages: params.messages,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
@@ -286,6 +351,7 @@ async function streamMistralText(params: {
   const decoder = new TextDecoder();
   const rawEvents: MistralStreamEvent[] = [];
   let responseId = "";
+  let finishReason = "";
   let text = "";
   let buffer = "";
 
@@ -320,6 +386,12 @@ async function streamMistralText(params: {
       responseId = event.id;
     }
 
+    const eventFinishReason = event.choices?.[0]?.finish_reason;
+
+    if (typeof eventFinishReason === "string" && eventFinishReason.length > 0) {
+      finishReason = eventFinishReason;
+    }
+
     const deltaText = readMistralContent(event.choices?.[0]?.delta?.content);
 
     if (deltaText) {
@@ -351,6 +423,7 @@ async function streamMistralText(params: {
   return {
     text: text.trim(),
     responseId,
+    finishReason,
     rawEvents,
   };
 }
@@ -358,20 +431,26 @@ async function streamMistralText(params: {
 async function finalizeMistralTurn(params: {
   messages: MistralMessage[];
 }) {
+  const requestBody = {
+    model: MISTRAL_RUNTIME_MODEL,
+    temperature: 0,
+    max_tokens: MISTRAL_FINALIZER_MAX_TOKENS,
+    ...(typeof MISTRAL_RUNTIME_RANDOM_SEED === "number"
+      ? { random_seed: MISTRAL_RUNTIME_RANDOM_SEED }
+      : {}),
+    response_format: {
+      type: "json_object" as const,
+    },
+    messages: params.messages,
+  };
+
   const response = await fetch(MISTRAL_CHAT_COMPLETIONS_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${getMistralApiKey()}`,
     },
-    body: JSON.stringify({
-      model: MISTRAL_RUNTIME_MODEL,
-      temperature: 0,
-      response_format: {
-        type: "json_object",
-      },
-      messages: params.messages,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   const json = (await response.json()) as MistralChatResponse;
@@ -418,7 +497,7 @@ async function generateMistralTurn(
     session: params.session,
     mode,
   });
-  const inputMessages = buildMistralInputMessages({
+  const inputMessages = buildMistralStoryMessages({
     context,
     playerAction: params.playerAction,
   });
@@ -441,6 +520,7 @@ async function generateMistralTurn(
     inputMessages,
     sentPreviousResponseId: "",
     rawResponse: {
+      finishReason: streamedStory.finishReason,
       streamEvents: streamedStory.rawEvents,
       finalization: finalizationResponse.rawResponse,
     },
