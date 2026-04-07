@@ -134,7 +134,7 @@ function buildOpenAIDeveloperMessage(
     `POV: ${context.pov.replace("_", " ")}`,
     `Tone / Style: ${context.toneStyle}`,
     `Objective: ${context.objective}`,
-    `Runtime Instructions: ${compactText(context.instructions, 220)}`,
+    `Runtime Instructions: ${context.instructions}`,
     `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
     `Strengths: ${context.character.strengths.join(", ")}`,
     `Weaknesses: ${context.character.weaknesses.join(", ")}`,

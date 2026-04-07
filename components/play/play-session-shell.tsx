@@ -104,9 +104,9 @@ export function PlaySessionShell({
             return (
               <div
                 key={`${index}-${label}-${body.slice(0, 24)}`}
-                className="space-y-2 text-[1.40rem] leading-[2.05rem] text-foreground"
+                className="space-y-2 text-[1.12rem] leading-[1.82rem] text-foreground sm:text-[1.48rem] sm:leading-[2.12rem]"
               >
-                <p className="text-[1.24rem] font-bold tracking-[0.01em] text-foreground">{label}:</p>
+                <p className="text-[1.04rem] font-bold tracking-[0.01em] text-foreground sm:text-[1.28rem]">{label}:</p>
                 <p className="whitespace-pre-wrap font-semibold text-foreground">
                   {renderInlineEmphasis(body.trim())}
                 </p>
@@ -117,7 +117,7 @@ export function PlaySessionShell({
           return (
             <p
               key={`${index}-${paragraph.slice(0, 24)}`}
-              className="whitespace-pre-wrap text-[1.14rem] font-semibold leading-[2.05rem] text-foreground"
+              className="whitespace-pre-wrap text-[1.06rem] font-semibold leading-[1.82rem] text-foreground sm:text-[1.2rem] sm:leading-[2.12rem]"
             >
               {renderInlineEmphasis(paragraph)}
             </p>
@@ -146,7 +146,7 @@ export function PlaySessionShell({
 
   if (!session || !world || !character) {
     return (
-      <Card>
+      <Card className="h-full overflow-hidden">
         <p className="text-foreground">Session not found.</p>
       </Card>
     );
@@ -330,9 +330,9 @@ export function PlaySessionShell({
   }
 
   return (
-    <div className="h-full">
+    <div className="h-full overflow-hidden overscroll-none">
       <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none">
-        <section className="relative p-4 sm:p-6">
+        <section className="relative px-2.5 pb-3 pt-2 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3 text-sm text-secondary">
@@ -383,17 +383,17 @@ export function PlaySessionShell({
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-[1.9rem] font-semibold leading-tight text-foreground sm:text-[2.4rem]">
+              <h1 className="text-[1.65rem] font-semibold leading-tight text-foreground sm:text-[2.4rem]">
                 {world.title}
               </h1>
             </div>
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-1 flex-col border-t border-line">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line">
           <div
             ref={threadRef}
-            className="min-h-0 flex-1 space-y-10 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6"
+            className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain px-2.5 py-4 sm:px-6 sm:py-6"
           >
             {recentTurns.length > 0 || pendingPlayerAction ? (
               <>
@@ -402,13 +402,13 @@ export function PlaySessionShell({
                     {turn.playerAction ? (
                       <div className="flex justify-end">
                         <div className="max-w-[85%] text-right">
-                          <p className="text-[1.12rem] font-semibold leading-[1.95rem] text-accent">
+                          <p className="text-[0.98rem] font-semibold leading-[1.6rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
                             {turn.playerAction}
                           </p>
                         </div>
                       </div>
                     ) : null}
-                    <div className="max-w-4xl">{renderStoryText(turn.storyText)}</div>
+                    <div className="max-w-none sm:max-w-4xl">{renderStoryText(turn.storyText)}</div>
                   </div>
                 ))}
 
@@ -416,12 +416,12 @@ export function PlaySessionShell({
                   <div className="space-y-5">
                     <div className="flex justify-end">
                       <div className="max-w-[85%] text-right">
-                        <p className="text-[1.12rem] font-semibold leading-[1.95rem] text-accent">
+                        <p className="text-[0.98rem] font-semibold leading-[1.6rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
                           {pendingPlayerAction}
                         </p>
                       </div>
                     </div>
-                    <div className="max-w-4xl space-y-4">
+                    <div className="max-w-none space-y-4 sm:max-w-4xl">
                       {streamingStoryText ? (
                         renderStoryText(streamingStoryText)
                       ) : (
@@ -432,30 +432,30 @@ export function PlaySessionShell({
                 ) : null}
               </>
             ) : (
-              <div className="max-w-3xl py-6">
-                <p className="text-[1.14rem] leading-[2.05rem] text-secondary">
+              <div className="max-w-none py-4 sm:max-w-3xl sm:py-6">
+                <p className="text-[1.06rem] leading-[1.82rem] text-secondary sm:text-[1.2rem] sm:leading-[2.12rem]">
                   Preparing the opening scene for this session.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="px-4 py-4 sm:px-6 sm:py-5">
+          <div className="px-2.5 py-3 sm:px-6 sm:py-5">
             <div className="space-y-4">
-              <form className="flex items-end gap-3" onSubmit={handleSubmit}>
+              <form className="relative" onSubmit={handleSubmit}>
                 <textarea
                   value={playerAction}
                   onChange={(event) => setPlayerAction(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                   disabled={isSubmitting}
-                  className="min-h-[3.75rem] max-h-48 flex-1 resize-y rounded-lg bg-field px-4 py-3 text-[1.08rem] leading-[1.95rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[1.08rem] leading-[1.95rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="Type what your character does next..."
                 />
                 <button
                   type="submit"
                   disabled={isSubmitting || !playerAction.trim()}
                   aria-label={isSubmitting ? "Resolving turn" : "Send action"}
-                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-transparent bg-accent text-night transition-colors hover:bg-[#e6c600] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="absolute bottom-2.5 right-2.5 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent bg-accent text-night transition-colors hover:bg-[#e6c600] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h12" strokeLinecap="round" strokeLinejoin="round" />

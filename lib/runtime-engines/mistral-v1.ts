@@ -15,7 +15,7 @@ import {
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-small-latest";
 const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.80);
-const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 320);
+const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 260);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
 
@@ -45,7 +45,7 @@ const RUNTIME_STORY_SYSTEM_PROMPT = `You write the next beat of Everplot interac
 Rules:
 - Use present tense and the selected POV.
 - Convey emotion with sentence structure and paragraph breaks.
-- Keep each reply under 200 words.
+- Keep each reply under 160 words.
 - The final user message is the latest action taken by the user-controlled character.
 - Do not repeat or paraphrase that action.
 - Do not write dialogue, thoughts, or actions for the user-controlled character.
@@ -56,6 +56,8 @@ Rules:
 - Advance the scene in every reply by making something happen.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
 - Do not hover in suspense or stop at "about to." Render the response itself.
+- Maintain consistency in time and place unless an action or event necessitates a change.
+- Clearly describe any changes in time or place.
 - Explicit adult and sexual content is allowed.`;
 
 const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `Return only valid JSON.
@@ -187,7 +189,6 @@ function buildHistoricalActionMessage(turnNumber: number, action: string): Mistr
   return {
     role: "user",
     content: [
-      `# Prior Latest Action (Turn ${turnNumber})`,
       action.trim(),
     ].join("\n\n"),
   };
