@@ -27,7 +27,9 @@ type MistralMessage = {
 const RUNTIME_OPENING_SYSTEM_PROMPT = `You write the opening beat of Everplot interactive fiction.
 
 Rules:
+- Build from where the background leaves off.
 - Use present tense and the selected POV.
+- Keep it under 300 words.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
 - Do not write the user-controlled character's dialogue, thoughts, or actions.
@@ -40,11 +42,14 @@ const RUNTIME_STORY_SYSTEM_PROMPT = `You write the next beat of Everplot interac
 Rules:
 - Use present tense and the selected POV.
 - Convey emotion with sentence and paragraph structure.
+- Keep each reply under 200 words.
 - The final user message is the latest action taken by the user-controlled character.
 - Do not repeat or paraphrase that action.
-- Do not write new dialogue, thoughts, or actions for the user-controlled character.
+- Do not write dialogue, thoughts, or actions for the user-controlled character.
 - Write how other characters and the world respond.
 - Stay in character.
+- Ensure each NPC has a distinct voice, personality, and mannerisms.
+- Make sure each NPC's dialogue and actions reflect their unique personality and background.
 - Advance the scene in every reply by making something happen.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
 - Do not hover in suspense or stop at "about to." Render the response itself.
@@ -146,12 +151,12 @@ function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContex
     `- Title: ${context.title}`,
     `- POV: ${context.pov.replace("_", " ")}`,
     `- Tone / Style: ${context.toneStyle}`,
-    `- Objective: ${context.objective}`,
+    `- User-controlled character objective in the story: ${context.objective}`,
     `- Runtime Instructions: ${context.instructions}`,
     `- Story Background: ${context.background}`,
-    `- Player Character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `- Strengths: ${context.character.strengths.join(", ")}`,
-    `- Weaknesses: ${context.character.weaknesses.join(", ")}`,
+    `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
+    `- User-controlled character's strengths: ${context.character.strengths.join(", ")}`,
+    `- User-controlled character's weaknesses: ${context.character.weaknesses.join(", ")}`,
   ].join("\n");
 }
 

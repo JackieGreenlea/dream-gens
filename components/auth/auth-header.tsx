@@ -85,22 +85,25 @@ function SearchIcon() {
   );
 }
 
-function PlusIcon() {
+function SparklesIcon({ className = "" }: { className?: string }) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[1.95rem] w-[1.95rem]"
+      className={`h-[1.95rem] w-[1.95rem] ${className}`.trim()}
       fill="currentColor"
     >
-      <rect x="10" y="4.5" width="4" height="15" rx="1" />
-      <rect x="4.5" y="10" width="15" height="4" rx="1" />
+      <path
+        fillRule="evenodd"
+        d="M9 4.5a.75.75 0 0 1 .721.544l.813 2.846a3.75 3.75 0 0 0 2.576 2.576l2.846.813a.75.75 0 0 1 0 1.442l-2.846.813a3.75 3.75 0 0 0-2.576 2.576l-.813 2.846a.75.75 0 0 1-1.442 0l-.813-2.846a3.75 3.75 0 0 0-2.576-2.576l-2.846-.813a.75.75 0 0 1 0-1.442l2.846-.813A3.75 3.75 0 0 0 7.466 7.89l.813-2.846A.75.75 0 0 1 9 4.5Zm9-3a.75.75 0 0 1 .728.568l.258 1.036c.236.94.97 1.674 1.91 1.91l1.036.258a.75.75 0 0 1 0 1.456l-1.036.258c-.94.236-1.674.97-1.91 1.91l-.258 1.036a.75.75 0 0 1-1.456 0l-.258-1.036a2.625 2.625 0 0 0-1.91-1.91l-1.036-.258a.75.75 0 0 1 0-1.456l1.036-.258a2.625 2.625 0 0 0 1.91-1.91l.258-1.036A.75.75 0 0 1 18 1.5Zm-1.5 13.5a.75.75 0 0 1 .712.513l.394 1.183c.15.447.5.799.948.948l1.183.395a.75.75 0 0 1 0 1.422l-1.183.395c-.447.15-.799.5-.948.948l-.395 1.183a.75.75 0 0 1-1.422 0l-.395-1.183a1.5 1.5 0 0 0-.948-.948l-1.183-.395a.75.75 0 0 1 0-1.422l1.183-.395c.447-.15.799-.5.948-.948l.395-1.183A.75.75 0 0 1 16.5 15Z"
+        clipRule="evenodd"
+      />
     </svg>
   );
 }
 
 function headerActionButtonClasses() {
-  return "inline-flex h-10 w-10 items-center justify-center rounded-lg border border-line bg-transparent text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground";
+  return "inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent bg-transparent text-secondary transition hover:bg-surface hover:text-foreground";
 }
 
 export function AuthHeader({ user, identity }: AuthHeaderProps) {
@@ -112,7 +115,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
       <Link
         href="/explore"
         aria-label="Explore"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-line bg-transparent px-0 text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground md:h-10 md:w-auto md:border-transparent md:px-4 md:hover:border-transparent"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-transparent px-0 py-0 text-secondary transition hover:bg-surface hover:text-foreground md:h-10 md:w-auto md:px-4 md:py-2.5"
       >
         <ExploreIcon />
         <span className="hidden text-[1.04rem] font-bold md:inline">Explore</span>
@@ -156,14 +159,14 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
 
           <ButtonLink
             href="/create"
-            className="h-10 w-10 gap-2 !border-line !bg-transparent px-0 py-0 !text-[#fdd835] hover:!border-[#fdd835]/45 hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-10 md:w-auto md:!border-transparent md:!bg-[#fdd835] md:px-5 md:!text-night md:hover:!bg-[#e6c600] md:hover:!text-night"
+            className="h-10 w-10 gap-2 !border-transparent !bg-transparent px-0 py-0 !text-[#fdd835] hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-10 md:w-auto md:!border-transparent md:!bg-transparent md:px-5 md:!text-[#fdd835] md:hover:!bg-[#fdd835]/10 md:hover:!text-[#fdd835]"
             aria-label="Create Story"
           >
             <span className="md:hidden">
-              <PlusIcon />
+              <SparklesIcon className="text-[#fdd835]" />
             </span>
             <span className="hidden md:inline">
-              <PlusIcon />
+              <SparklesIcon className="text-[#fdd835]" />
             </span>
             <span className="hidden text-[1.04rem] font-bold md:inline">Create Story</span>
           </ButtonLink>

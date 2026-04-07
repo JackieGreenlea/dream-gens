@@ -104,9 +104,9 @@ export function PlaySessionShell({
             return (
               <div
                 key={`${index}-${label}-${body.slice(0, 24)}`}
-                className="space-y-2 text-[1.14rem] leading-[2.05rem] text-foreground"
+                className="space-y-2 text-[1.40rem] leading-[2.05rem] text-foreground"
               >
-                <p className="text-[1.02rem] font-bold tracking-[0.01em] text-foreground">{label}:</p>
+                <p className="text-[1.24rem] font-bold tracking-[0.01em] text-foreground">{label}:</p>
                 <p className="whitespace-pre-wrap font-semibold text-foreground">
                   {renderInlineEmphasis(body.trim())}
                 </p>
@@ -401,11 +401,8 @@ export function PlaySessionShell({
                   <div key={turn.turnNumber} className="space-y-5">
                     {turn.playerAction ? (
                       <div className="flex justify-end">
-                        <div className="max-w-[85%] space-y-2 text-right">
-                          <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
-                            You • Turn {turn.turnNumber}
-                          </p>
-                          <p className="text-[1.12rem] leading-[1.95rem] text-foreground">
+                        <div className="max-w-[85%] text-right">
+                          <p className="text-[1.12rem] font-semibold leading-[1.95rem] text-accent">
                             {turn.playerAction}
                           </p>
                         </div>
@@ -418,11 +415,8 @@ export function PlaySessionShell({
                 {pendingPlayerAction ? (
                   <div className="space-y-5">
                     <div className="flex justify-end">
-                      <div className="max-w-[85%] space-y-2 text-right">
-                        <p className="text-[0.72rem] uppercase tracking-[0.18em] text-muted">
-                          You • Turn {session.turnCount + 1}
-                        </p>
-                        <p className="text-[1.12rem] leading-[1.95rem] text-foreground">
+                      <div className="max-w-[85%] text-right">
+                        <p className="text-[1.12rem] font-semibold leading-[1.95rem] text-accent">
                           {pendingPlayerAction}
                         </p>
                       </div>
