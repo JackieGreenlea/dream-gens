@@ -171,14 +171,14 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
         {centerControls}
       </div>
 
-      <div className="flex w-full items-center gap-3 px-4 py-3 sm:px-8 lg:min-h-[68px] lg:px-10 lg:py-0">
+      <div className="flex w-full items-center gap-3 px-4 py-2 sm:px-8 lg:min-h-[68px] lg:px-10 lg:py-0">
         <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
           <Link
             href="/"
-            className="inline-flex h-10 items-center"
+            className="inline-flex h-8 items-center sm:h-10"
             aria-label="Everplot home"
           >
-            <Image src={logo} alt="Everplot" className="h-8 w-auto md:h-9" priority />
+            <Image src={logo} alt="Everplot" className="h-6 w-auto sm:h-8 md:h-9" priority />
           </Link>
         </div>
 

@@ -104,9 +104,9 @@ export function PlaySessionShell({
             return (
               <div
                 key={`${index}-${label}-${body.slice(0, 24)}`}
-                className="space-y-2 text-[1.12rem] leading-[1.82rem] text-foreground sm:text-[1.48rem] sm:leading-[2.12rem]"
+                className="space-y-2 text-[0.94rem] leading-[1.58rem] text-foreground sm:text-[1.48rem] sm:leading-[2.12rem]"
               >
-                <p className="text-[1.04rem] font-bold tracking-[0.01em] text-foreground sm:text-[1.28rem]">{label}:</p>
+                <p className="text-[0.9rem] font-bold tracking-[0.01em] text-foreground sm:text-[1.28rem]">{label}:</p>
                 <p className="whitespace-pre-wrap font-semibold text-foreground">
                   {renderInlineEmphasis(body.trim())}
                 </p>
@@ -117,7 +117,7 @@ export function PlaySessionShell({
           return (
             <p
               key={`${index}-${paragraph.slice(0, 24)}`}
-              className="whitespace-pre-wrap text-[1.06rem] font-semibold leading-[1.82rem] text-foreground sm:text-[1.2rem] sm:leading-[2.12rem]"
+              className="whitespace-pre-wrap text-[0.9rem] font-semibold leading-[1.58rem] text-foreground sm:text-[1.2rem] sm:leading-[2.12rem]"
             >
               {renderInlineEmphasis(paragraph)}
             </p>
@@ -332,20 +332,20 @@ export function PlaySessionShell({
   return (
     <div className="h-full overflow-hidden overscroll-none">
       <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none">
-        <section className="relative px-2.5 pb-3 pt-2 sm:p-6">
-          <div className="space-y-4">
+        <section className="relative px-1.5 pb-1.5 pt-1 sm:px-6 sm:pb-3 sm:pt-3">
+          <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3 text-sm text-secondary">
-                <span className="rounded-md border border-line/70 px-2.5 py-1">
+              <div className="flex flex-wrap items-center gap-2 text-[0.78rem] text-secondary sm:text-sm">
+                <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">
                   Turn {session.turnCount}
                 </span>
-                <span className="rounded-md border border-line/70 px-2.5 py-1">{character.name}</span>
+                <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">{character.name}</span>
               </div>
               <div className="relative shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsDetailsOpen((current) => !current)}
-                  className="rounded-lg border border-line bg-transparent px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground"
+                  className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em]"
                 >
                   {isDetailsOpen ? "Hide" : "Details"}
                 </button>
@@ -382,8 +382,8 @@ export function PlaySessionShell({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h1 className="text-[1.65rem] font-semibold leading-tight text-foreground sm:text-[2.4rem]">
+            <div className="space-y-1">
+              <h1 className="text-[1.38rem] font-semibold leading-tight text-foreground sm:text-[2.4rem]">
                 {world.title}
               </h1>
             </div>
@@ -393,7 +393,7 @@ export function PlaySessionShell({
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line">
           <div
             ref={threadRef}
-            className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain px-2.5 py-4 sm:px-6 sm:py-6"
+            className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain px-1.5 py-3 sm:px-6 sm:py-6"
           >
             {recentTurns.length > 0 || pendingPlayerAction ? (
               <>
@@ -402,7 +402,7 @@ export function PlaySessionShell({
                     {turn.playerAction ? (
                       <div className="flex justify-end">
                         <div className="max-w-[85%] text-right">
-                          <p className="text-[0.98rem] font-semibold leading-[1.6rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
+                          <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
                             {turn.playerAction}
                           </p>
                         </div>
@@ -416,7 +416,7 @@ export function PlaySessionShell({
                   <div className="space-y-5">
                     <div className="flex justify-end">
                       <div className="max-w-[85%] text-right">
-                        <p className="text-[0.98rem] font-semibold leading-[1.6rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
+                        <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
                           {pendingPlayerAction}
                         </p>
                       </div>
@@ -433,29 +433,29 @@ export function PlaySessionShell({
               </>
             ) : (
               <div className="max-w-none py-4 sm:max-w-3xl sm:py-6">
-                <p className="text-[1.06rem] leading-[1.82rem] text-secondary sm:text-[1.2rem] sm:leading-[2.12rem]">
+                <p className="text-[0.9rem] leading-[1.58rem] text-secondary sm:text-[1.2rem] sm:leading-[2.12rem]">
                   Preparing the opening scene for this session.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="px-2.5 py-3 sm:px-6 sm:py-5">
-            <div className="space-y-4">
+          <div className="px-1.5 py-2.5 sm:px-6 sm:py-5">
+            <div className="space-y-2">
               <form className="relative" onSubmit={handleSubmit}>
                 <textarea
                   value={playerAction}
                   onChange={(event) => setPlayerAction(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                   disabled={isSubmitting}
-                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[1.08rem] leading-[1.95rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[0.84rem] leading-[1.2rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[1.02rem] sm:leading-[1.7rem]"
                   placeholder="Type what your character does next..."
                 />
                 <button
                   type="submit"
                   disabled={isSubmitting || !playerAction.trim()}
                   aria-label={isSubmitting ? "Resolving turn" : "Send action"}
-                  className="absolute bottom-2.5 right-2.5 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent bg-accent text-night transition-colors hover:bg-[#e6c600] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="absolute bottom-2.5 right-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-accent text-night transition-colors hover:bg-[#e6c600] focus:outline-none focus:ring-2 focus:ring-focus/30 disabled:cursor-not-allowed disabled:opacity-60 sm:h-9 sm:w-9"
                 >
                   <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M5 12h12" strokeLinecap="round" strokeLinejoin="round" />
