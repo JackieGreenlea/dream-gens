@@ -49,7 +49,7 @@ export function buildRuntimeContextPacket(params: {
     instructions: params.world.instructions,
     background: params.world.background,
     continuitySummary: params.session.summary || "The story is just beginning.",
-    recentTurns: params.session.recentTurns.slice(-3).map((turn) => ({
+    recentTurns: params.session.recentTurns.slice(-10).map((turn) => ({
       turnNumber: turn.turnNumber,
       playerAction: turn.playerAction,
       storyText: turn.storyText,

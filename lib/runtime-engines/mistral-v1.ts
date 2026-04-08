@@ -15,7 +15,7 @@ import {
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-small-latest";
 const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.80);
-const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 260);
+const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 280);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
 
@@ -170,7 +170,7 @@ function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeCon
     "# Continuity State",
     `- POV: ${context.pov.replace("_", " ")}`,
     `- User's objective in the story: ${context.objective}`,
-    `- Runtime instructions for assistant: ${context.instructions}`,
+    `- Story instructions for assistant: ${context.instructions}`,
     `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
     `- Continuity Summary: ${context.continuitySummary}`,
   ].join("\n");
@@ -198,8 +198,6 @@ function buildCurrentActionMessage(action: string): MistralMessage {
   return {
     role: "user",
     content: [
-      "# Current Latest Action",
-      "Continue immediately from this action.",
       action.trim(),
     ].join("\n\n"),
   };

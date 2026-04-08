@@ -178,7 +178,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
             className="inline-flex h-8 items-center sm:h-10"
             aria-label="Everplot home"
           >
-            <Image src={logo} alt="Everplot" className="h-6 w-auto sm:h-8 md:h-9" priority />
+            <Image src={logo} alt="Everplot" className="h-6 w-auto sm:h-8 md:h-8" priority />
           </Link>
         </div>
 
