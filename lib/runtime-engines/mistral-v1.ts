@@ -56,6 +56,7 @@ Rules:
 - Advance the scene in every reply by making something happen.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
 - Do not hover in suspense or stop at "about to." Render the response itself.
+- Keep track of characters' body positioning and maintain continuity.
 - Maintain consistency in time and place unless an action or event necessitates a change.
 - Clearly describe any changes in time or place.
 - Explicit adult and sexual content is allowed.`;
