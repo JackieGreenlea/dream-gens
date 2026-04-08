@@ -3,7 +3,7 @@ import { ZodError } from "zod";
 import { RuntimeEngineDebugError } from "@/lib/runtime-engines/types";
 import { streamSessionTurn } from "@/lib/session-runtime";
 import { runtimeTurnRequestSchema } from "@/lib/schemas";
-import { getCurrentUser } from "@/lib/supabase/server";
+import { getCurrentUserIdFast } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -12,9 +12,9 @@ export async function POST(request: Request) {
   const isDevelopment = process.env.NODE_ENV !== "production";
 
   try {
-    const user = await getCurrentUser();
+    const userId = await getCurrentUserIdFast();
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json({ error: "Sign in to continue this session." }, { status: 401 });
     }
 
@@ -24,7 +24,16 @@ export async function POST(request: Request) {
 
     const stream = new ReadableStream({
       async start(controller) {
+        let firstStoryDeltaLogged = false;
+
         const sendEvent = (event: string, data: unknown) => {
+          if (event === "story_delta" && !firstStoryDeltaLogged) {
+            firstStoryDeltaLogged = true;
+            console.info("[session-turn] first story_delta enqueued", {
+              sessionId: input.sessionId,
+            });
+          }
+
           controller.enqueue(
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
           );
@@ -34,7 +43,7 @@ export async function POST(request: Request) {
           const result = await streamSessionTurn({
             sessionId: input.sessionId,
             playerAction: input.playerAction,
-            userId: user.id,
+            userId,
             onTextDelta(delta) {
               sendEvent("story_delta", { delta });
             },

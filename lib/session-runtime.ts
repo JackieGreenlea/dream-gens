@@ -22,13 +22,20 @@ async function generateAndPersistSessionTurn(params: {
   mode?: "opening" | "turn";
   onTextDelta?: (delta: string) => void | Promise<void>;
 }): Promise<SessionTurnResult> {
+  const requestStartMs = Date.now();
   const bundle = await getSessionBundle(params.sessionId, params.userId);
+  console.info("[session-runtime] bundle loaded", {
+    sessionId: params.sessionId,
+    mode: params.mode ?? "turn",
+    elapsedMs: Date.now() - requestStartMs,
+  });
 
   if (!bundle || !bundle.character) {
     throw new Error("Session context could not be loaded.");
   }
 
   const runtimeEngine = getRuntimeEngine();
+  const engineStartMs = Date.now();
   const engineResult = await runtimeEngine.generateTurn({
     world: bundle.world,
     character: bundle.character,
@@ -42,6 +49,12 @@ async function generateAndPersistSessionTurn(params: {
     playerAction: params.playerAction,
     mode: params.mode ?? "turn",
     onTextDelta: params.onTextDelta,
+  });
+  console.info("[session-runtime] engine completed", {
+    sessionId: params.sessionId,
+    mode: params.mode ?? "turn",
+    elapsedMs: Date.now() - engineStartMs,
+    totalElapsedMs: Date.now() - requestStartMs,
   });
 
   const turn = createSessionTurn({
@@ -57,6 +70,11 @@ async function generateAndPersistSessionTurn(params: {
     sessionId: bundle.session.id,
     turn,
     previousResponseId: nextPreviousResponseId,
+  });
+  console.info("[session-runtime] turn saved", {
+    sessionId: params.sessionId,
+    turnNumber: turn.turnNumber,
+    elapsedMs: Date.now() - requestStartMs,
   });
 
   return {

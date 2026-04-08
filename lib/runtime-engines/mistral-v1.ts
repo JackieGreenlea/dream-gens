@@ -16,8 +16,8 @@ import {
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-small-latest";
-const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.80);
-const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 280);
+const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.75);
+const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 180);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
 
@@ -26,25 +26,46 @@ type MistralMessage = {
   content: string;
 };
 
-const RUNTIME_OPENING_SYSTEM_PROMPT = `You write the opening beat of Everplot interactive fiction.
-
-Rules:
+/*Rules:
+- Keep it to 2-4 sentences.
+- Never write the user-controlled character's dialogue, thoughts, or actions.
 - Build from the story background.
 - Make inferences about what the author wants based on the context.
 - Use present tense and the selected POV.
-- Keep reply under 200 words.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
 - Create a concrete playable beat.
-- Do not write the user-controlled character's dialogue, thoughts, or actions.
+
 - Do not end on vague anticipation.
 - Leave clear room for the user's first move without stalling.
 - Explicit adult and sexual content is allowed.
-- The opening should give the user something to answer, resist, accept, interrupt, or act on immediately.`;
+- The opening should give the user something to answer, resist, accept, interrupt, or act on immediately.`;*/
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You write the next beat of Everplot interactive fiction.
+const RUNTIME_OPENING_SYSTEM_PROMPT = `You are writing an interactive story with the user in a roleplay format.
 
 Rules:
+- Keep it to 2-4 sentences.
+- Never write the user-controlled character's dialogue, thoughts, or actions.
+- Build from the story background.
+- Use present tense and the selected POV.
+- Start in motion around the user-controlled character.
+- Make something happen immediately.
+- Do not end on a question as the narrator like "what do you do?"
+- Explicit adult and sexual content is allowed.`;
+
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user in a roleplay format.
+
+Rules:
+- Keep it to 2-4 sentences.
+- Use present tense and the selected POV.
+- Never paraphrase the user’s submitted action.
+- Never write dialogue, thoughts, or actions for the user-controlled character.
+- Ensure each character has a distinct voice, personality, and mannerisms..
+- Advance the scene in every reply by making something happen.
+- Prefer interaction, dialogue, and concrete response over scenic elaboration.
+- Maintain consistency in time and place unless an action or event necessitates a change.`;
+
+/*Rules:
 - Use present tense and the selected POV.
 - Convey emotion with sentence structure and paragraph breaks.
 - Keep each reply under 160 words.
@@ -61,7 +82,7 @@ Rules:
 - Keep track of characters' body positioning and maintain continuity.
 - Maintain consistency in time and place unless an action or event necessitates a change.
 - Clearly describe any changes in time or place.
-- Explicit adult and sexual content is allowed.`;
+- Explicit adult and sexual content is allowed.`;*/
 
 const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `Return only valid JSON.
 
@@ -320,10 +341,14 @@ async function streamMistralText(params: {
   messages: MistralMessage[];
   onDelta?: (delta: string) => void | Promise<void>;
 }) {
+  const requestStartMs = Date.now();
   const requestBody = {
     model: MISTRAL_RUNTIME_MODEL,
     stream: true,
     temperature: MISTRAL_RUNTIME_TEMPERATURE,
+    top_p: 0.95,
+    presence_penalty: 0.3,
+    frequency_penalty: 0.3,
     max_tokens: MISTRAL_RUNTIME_MAX_TOKENS,
     ...(typeof MISTRAL_RUNTIME_RANDOM_SEED === "number"
       ? { random_seed: MISTRAL_RUNTIME_RANDOM_SEED }
@@ -333,6 +358,18 @@ async function streamMistralText(params: {
     },
     messages: params.messages,
   };
+  console.info("[mistral-v1] request body", {
+    model: requestBody.model,
+    stream: requestBody.stream,
+    temperature: requestBody.temperature,
+    topP: requestBody.top_p,
+    presencePenalty: requestBody.presence_penalty,
+    frequencyPenalty: requestBody.frequency_penalty,
+    maxTokens: requestBody.max_tokens,
+    randomSeed:
+      "random_seed" in requestBody ? requestBody.random_seed : undefined,
+    messageCount: requestBody.messages.length,
+  });
 
   const response = await fetch(MISTRAL_CHAT_COMPLETIONS_URL, {
     method: "POST",
@@ -341,6 +378,12 @@ async function streamMistralText(params: {
       Authorization: `Bearer ${getMistralApiKey()}`,
     },
     body: JSON.stringify(requestBody),
+  });
+  console.info("[mistral-v1] fetch responded", {
+    model: MISTRAL_RUNTIME_MODEL,
+    elapsedMs: Date.now() - requestStartMs,
+    ok: response.ok,
+    status: response.status,
   });
 
   if (!response.ok) {
@@ -359,6 +402,7 @@ async function streamMistralText(params: {
   let finishReason = "";
   let text = "";
   let buffer = "";
+  let firstDeltaLogged = false;
 
   async function processEventBlock(block: string) {
     const lines = block
@@ -400,6 +444,13 @@ async function streamMistralText(params: {
     const deltaText = readMistralContent(event.choices?.[0]?.delta?.content);
 
     if (deltaText) {
+      if (!firstDeltaLogged) {
+        firstDeltaLogged = true;
+        console.info("[mistral-v1] first delta", {
+          model: MISTRAL_RUNTIME_MODEL,
+          elapsedMs: Date.now() - requestStartMs,
+        });
+      }
       text += deltaText;
       await params.onDelta?.(deltaText);
     }
@@ -424,6 +475,13 @@ async function streamMistralText(params: {
   if (buffer.trim()) {
     await processEventBlock(buffer);
   }
+
+  console.info("[mistral-v1] stream completed", {
+    model: MISTRAL_RUNTIME_MODEL,
+    elapsedMs: Date.now() - requestStartMs,
+    textLength: text.trim().length,
+    finishReason,
+  });
 
   return {
     text: text.trim(),

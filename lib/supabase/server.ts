@@ -39,3 +39,22 @@ export async function getCurrentUser(): Promise<User | null> {
 
   return user;
 }
+
+export async function getCurrentUserIdFast(): Promise<string | null> {
+  const supabase = await createClient();
+  const claimsResult = await supabase.auth.getClaims();
+  const userId =
+    claimsResult.data && "claims" in claimsResult.data && typeof claimsResult.data.claims?.sub === "string"
+      ? claimsResult.data.claims.sub
+      : null;
+
+  if (userId) {
+    return userId;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user?.id ?? null;
+}

@@ -47,6 +47,9 @@ export function PlaySessionShell({
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
+  const firstChunkReceivedLoggedRef = useRef(false);
+  const firstStoryDeltaReceivedLoggedRef = useRef(false);
+  const firstStoryDeltaRenderedLoggedRef = useRef(false);
 
   const suggestedActions = session?.turns.at(-1)?.suggestedActions ?? [];
   const recentTurns = session?.turns ?? [];
@@ -140,6 +143,18 @@ export function PlaySessionShell({
     setAreSuggestedActionsOpen(false);
   }, [session?.turns.length]);
 
+  useEffect(() => {
+    if (!streamingStoryText || firstStoryDeltaRenderedLoggedRef.current) {
+      return;
+    }
+
+    firstStoryDeltaRenderedLoggedRef.current = true;
+    console.info("[client] first story_delta rendered", {
+      sessionId,
+      textLength: streamingStoryText.length,
+    });
+  }, [sessionId, streamingStoryText]);
+
   if (!session || !world || !character) {
     return (
       <Card className="h-full overflow-hidden">
@@ -161,7 +176,13 @@ export function PlaySessionShell({
     setIsRuntimeDebugOpen(false);
     setPendingPlayerAction(nextAction);
     setStreamingStoryText("");
+    firstChunkReceivedLoggedRef.current = false;
+    firstStoryDeltaReceivedLoggedRef.current = false;
+    firstStoryDeltaRenderedLoggedRef.current = false;
     setPlayerAction("");
+    console.info("[client] submit clicked", {
+      sessionId,
+    });
 
     try {
       const response = await fetch("/api/session/turn", {
@@ -235,6 +256,14 @@ export function PlaySessionShell({
         };
 
         if (event === "story_delta" && typeof payload.delta === "string") {
+          if (!firstStoryDeltaReceivedLoggedRef.current) {
+            firstStoryDeltaReceivedLoggedRef.current = true;
+            console.info("[client] first story_delta received", {
+              sessionId,
+              textLength: payload.delta.length,
+            });
+          }
+
           setStreamingStoryText((current) => sanitizeStreamingStoryText(current + payload.delta));
           return;
         }
@@ -268,6 +297,15 @@ export function PlaySessionShell({
 
       while (true) {
         const { value, done } = await reader.read();
+
+        if (value && value.length > 0 && !firstChunkReceivedLoggedRef.current) {
+          firstChunkReceivedLoggedRef.current = true;
+          console.info("[client] first chunk received", {
+            sessionId,
+            byteLength: value.length,
+          });
+        }
+
         buffer += decoder.decode(value, { stream: !done });
 
         const blocks = buffer.split("\n\n");
