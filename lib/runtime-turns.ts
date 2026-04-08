@@ -1,4 +1,4 @@
-import { RuntimeTurnFinalizationOutput, RuntimeTurnOutput } from "@/lib/schemas";
+import { RuntimeTurnOutput } from "@/lib/schemas";
 import { SessionTurn } from "@/lib/types";
 
 const FALLBACK_ACTIONS = [
@@ -116,52 +116,14 @@ export function createSessionTurn(params: {
       params.mode === "opening"
         ? openingStoryText || params.output.storyText.trim()
         : removeRestatedOpening(params.playerAction, params.output.storyText),
-    suggestedActions: normalizeSuggestedActions(params.output.suggestedActions),
-    summaryAfterTurn: params.output.summary.trim(),
+    suggestedActions: [],
   };
 }
 
 export function buildRuntimeTurnOutput(params: {
   storyText: string;
-  finalization: RuntimeTurnFinalizationOutput;
 }): RuntimeTurnOutput {
   return {
     storyText: params.storyText.trim(),
-    suggestedActions: params.finalization.suggestedActions,
-    summary: params.finalization.summary.trim(),
   };
-}
-
-const SESSION_SUMMARY_CAP = 2400;
-
-function normalizeSummaryChunk(chunk: string) {
-  return chunk.replace(/\s+/g, " ").trim();
-}
-
-export function appendSessionSummary(existingSummary: string, nextChunk: string) {
-  const normalizedChunk = normalizeSummaryChunk(nextChunk);
-
-  if (!normalizedChunk) {
-    return existingSummary.trim();
-  }
-
-  const chunks = existingSummary
-    .split("\n")
-    .map(normalizeSummaryChunk)
-    .filter(Boolean);
-
-  chunks.push(normalizedChunk);
-
-  let combined = chunks.join("\n");
-
-  while (combined.length > SESSION_SUMMARY_CAP && chunks.length > 1) {
-    chunks.shift();
-    combined = chunks.join("\n");
-  }
-
-  if (combined.length > SESSION_SUMMARY_CAP) {
-    return normalizedChunk.slice(0, SESSION_SUMMARY_CAP).trim();
-  }
-
-  return combined;
 }

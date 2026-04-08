@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
 import { PlayerCharacter, Session, SessionTurn, World } from "@/lib/types";
-import { buildSuggestedActions } from "@/lib/utils";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -41,6 +40,7 @@ export function PlaySessionShell({
   const [pendingPlayerAction, setPendingPlayerAction] = useState("");
   const [streamingStoryText, setStreamingStoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingSuggestedActions, setIsGeneratingSuggestedActions] = useState(false);
   const [error, setError] = useState("");
   const [runtimeDebug, setRuntimeDebug] = useState<RuntimeDebugPayload | null>(null);
   const [isRuntimeDebugOpen, setIsRuntimeDebugOpen] = useState(false);
@@ -48,10 +48,7 @@ export function PlaySessionShell({
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
 
-  const suggestedActions =
-    session && world && character
-      ? session.turns.at(-1)?.suggestedActions ?? buildSuggestedActions(world, character)
-      : [];
+  const suggestedActions = session?.turns.at(-1)?.suggestedActions ?? [];
   const recentTurns = session?.turns ?? [];
 
   function sanitizeStreamingStoryText(text: string) {
@@ -61,7 +58,6 @@ export function PlaySessionShell({
       .replace(/^\s*\{\s*"storyText"\s*:\s*/i, "")
       .replace(/^\s*"storyText"\s*:\s*/i, "")
       .replace(/\n?\s*"suggestedActions"\s*:\s*\[[\s\S]*$/i, "")
-      .replace(/\n?\s*"summary"\s*:\s*[\s\S]*$/i, "")
       .replace(/\}\s*$/g, "")
       .trimStart();
   }
@@ -225,8 +221,6 @@ export function PlaySessionShell({
         const payload = JSON.parse(data) as {
           delta?: string;
           turn?: SessionTurn;
-          summary?: string;
-          suggestedActions?: string[];
           previousResponseId?: string;
           error?: string;
           debug?: {
@@ -245,7 +239,7 @@ export function PlaySessionShell({
           return;
         }
 
-        if (event === "complete" && payload.turn && payload.summary) {
+        if (event === "complete" && payload.turn) {
           completed = true;
           setRuntimeDebug(payload.debug ?? null);
           setIsRuntimeDebugOpen(false);
@@ -256,8 +250,7 @@ export function PlaySessionShell({
                   ...current,
                   turnCount: payload.turn!.turnNumber,
                   previousResponseId: payload.previousResponseId ?? current.previousResponseId,
-                  summary: payload.summary!,
-                  turns: [...current.turns, payload.turn!].slice(-5),
+                  turns: [...current.turns, payload.turn!].slice(-10),
                 }
               : current,
           );
@@ -313,6 +306,66 @@ export function PlaySessionShell({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await submitAction(playerAction);
+  }
+
+  async function generateSuggestedActions() {
+    if (!session || isGeneratingSuggestedActions || isSubmitting) {
+      return;
+    }
+
+    setIsGeneratingSuggestedActions(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/session/suggested-actions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionId,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        turnNumber?: number;
+        suggestedActions?: string[];
+        error?: string;
+        debug?: RuntimeDebugPayload;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Unable to generate suggested actions.");
+      }
+
+      if (typeof payload.turnNumber !== "number" || !Array.isArray(payload.suggestedActions)) {
+        throw new Error("Suggested actions response was malformed.");
+      }
+
+      setRuntimeDebug(payload.debug ?? null);
+      setIsRuntimeDebugOpen(false);
+      setSession((current) =>
+        current
+          ? {
+              ...current,
+              turns: current.turns.map((turn) =>
+                turn.turnNumber === payload.turnNumber
+                  ? { ...turn, suggestedActions: payload.suggestedActions ?? [] }
+                  : turn,
+              ),
+            }
+          : current,
+      );
+      setAreSuggestedActionsOpen(true);
+    } catch (generateError) {
+      setError(
+        generateError instanceof Error
+          ? generateError.message
+          : "Unable to generate suggested actions.",
+      );
+    } finally {
+      setIsGeneratingSuggestedActions(false);
+    }
   }
 
   function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -490,6 +543,19 @@ export function PlaySessionShell({
                       ))}
                     </div>
                   ) : null}
+                </div>
+              ) : null}
+
+              {!isSubmitting && suggestedActions.length === 0 && recentTurns.length > 0 ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    disabled={isGeneratingSuggestedActions}
+                    onClick={() => void generateSuggestedActions()}
+                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isGeneratingSuggestedActions ? "Generating Suggested Actions..." : "Generate Suggested Actions"}
+                  </button>
                 </div>
               ) : null}
 

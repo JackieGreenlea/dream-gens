@@ -8,6 +8,8 @@ import {
   RuntimeEngine,
   RuntimeEngineDebugError,
   RuntimeEngineDebugPayload,
+  RuntimeEngineGenerateSuggestedActionsParams,
+  RuntimeEngineGenerateSuggestedActionsResult,
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
@@ -61,14 +63,12 @@ Rules:
 - Clearly describe any changes in time or place.
 - Explicit adult and sexual content is allowed.`;
 
-const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `Return only valid JSON.
+const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `Return only valid JSON.
 
 Required keys:
 - suggestedActions
-- summary
 
 Rules:
-- summary: one short continuity note, about 20 words max.
 - suggestedActions: 2 to 3 short next moves.
 - Start each suggested action with a clear verb when possible.
 - Do not include commentary, labels, or recap text outside the JSON object.`;
@@ -173,7 +173,6 @@ function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeCon
     `- User's objective in the story: ${context.objective}`,
     `- Story instructions for assistant: ${context.instructions}`,
     `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `- Continuity Summary: ${context.continuitySummary}`,
   ].join("\n");
 }
 
@@ -275,7 +274,7 @@ function buildMistralFinalizationMessages(params: {
   return [
     {
       role: "system",
-      content: RUNTIME_FINALIZATION_SYSTEM_PROMPT,
+      content: RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT,
     },
     buildContextPacketMessage(params.context),
     {
@@ -287,13 +286,13 @@ function buildMistralFinalizationMessages(params: {
       content:
         params.context.mode === "opening"
           ? [
-              "# Finalize Opening Turn",
-              "Return JSON only with keys suggestedActions and summary.",
+              "# Suggested Actions",
+              "Return JSON only with key suggestedActions.",
               "The assistant message above is the opening scene.",
             ].join("\n\n")
           : [
-              "# Finalize Turn",
-              "Return JSON only with keys suggestedActions and summary.",
+              "# Suggested Actions",
+              "Return JSON only with key suggestedActions.",
               `The user action that led to the assistant message above was:\n${params.playerAction.trim()}`,
             ].join("\n\n"),
     },
@@ -512,38 +511,61 @@ async function generateMistralTurn(
     messages: inputMessages,
     onDelta: params.onTextDelta,
   });
-
-  const finalizationResponse = await finalizeMistralTurn({
-    messages: buildMistralFinalizationMessages({
-      context,
-      playerAction: params.playerAction,
+  const output = runtimeTurnOutputSchema.parse(
+    buildRuntimeTurnOutput({
       storyText: streamedStory.text,
     }),
+  );
+
+  return {
+    output,
+    responseId: streamedStory.responseId || params.session.previousResponseId || "",
+    debug: {
+      engineId: "mistral_v1",
+      inputMessages,
+      sentPreviousResponseId: "",
+      rawResponse: {
+        finishReason: streamedStory.finishReason,
+        streamEvents: streamedStory.rawEvents,
+      },
+    },
+  };
+}
+
+async function generateMistralSuggestedActions(
+  params: RuntimeEngineGenerateSuggestedActionsParams,
+): Promise<RuntimeEngineGenerateSuggestedActionsResult> {
+  const mode = params.turn.playerAction.trim() ? "turn" : "opening";
+  const context = buildRuntimeContextPacket({
+    world: params.world,
+    character: params.character,
+    session: params.session,
+    mode,
+  });
+  const inputMessages = buildMistralFinalizationMessages({
+    context,
+    playerAction: params.turn.playerAction,
+    storyText: params.turn.storyText,
+  });
+  const response = await finalizeMistralTurn({
+    messages: inputMessages,
   });
 
-  const debugBase: RuntimeEngineDebugPayload = {
-    engineId: "mistral_v1",
-    inputMessages,
-    sentPreviousResponseId: "",
-    rawResponse: {
-      finishReason: streamedStory.finishReason,
-      streamEvents: streamedStory.rawEvents,
-      finalization: finalizationResponse.rawResponse,
-    },
-    finalizationText: finalizationResponse.rawText,
-    parsedOutput: finalizationResponse.output,
-  };
-
-  let finalization;
+  let output;
 
   try {
-    finalization = runtimeTurnFinalizationOutputSchema.parse(finalizationResponse.output);
+    output = runtimeTurnFinalizationOutputSchema.parse(response.output);
   } catch (error) {
     if (error instanceof ZodError) {
       throw new RuntimeEngineDebugError(
-        "The runtime returned data that did not match the expected turn schema.",
+        "The runtime returned data that did not match the expected suggested-actions schema.",
         {
-          ...debugBase,
+          engineId: "mistral_v1",
+          inputMessages,
+          sentPreviousResponseId: "",
+          rawResponse: response.rawResponse,
+          finalizationText: response.rawText,
+          parsedOutput: response.output,
           validationError: error.flatten(),
         },
       );
@@ -552,21 +574,21 @@ async function generateMistralTurn(
     throw error;
   }
 
-  const output = runtimeTurnOutputSchema.parse(
-    buildRuntimeTurnOutput({
-      storyText: streamedStory.text,
-      finalization,
-    }),
-  );
-
   return {
-    output,
-    responseId: streamedStory.responseId || finalizationResponse.responseId || "",
-    debug: debugBase,
+    suggestedActions: output.suggestedActions,
+    debug: {
+      engineId: "mistral_v1",
+      inputMessages,
+      sentPreviousResponseId: "",
+      rawResponse: response.rawResponse,
+      finalizationText: response.rawText,
+      parsedOutput: response.output,
+    },
   };
 }
 
 export const mistralV1RuntimeEngine: RuntimeEngine = {
   id: "mistral_v1",
   generateTurn: generateMistralTurn,
+  generateSuggestedActions: generateMistralSuggestedActions,
 };

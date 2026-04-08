@@ -86,7 +86,6 @@ export type Session = {
   characterStrengths?: string[] | null;
   characterWeaknesses?: string[] | null;
   previousResponseId: string;
-  summary: string;
   turns: SessionTurn[];
 };
 
@@ -102,5 +101,4 @@ export type SessionTurn = {
   playerAction: string;
   storyText: string;
   suggestedActions: string[];
-  summaryAfterTurn: string;
 };

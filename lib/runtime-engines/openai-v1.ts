@@ -17,6 +17,8 @@ import {
 import {
   RuntimeEngine,
   RuntimeEngineDebugPayload,
+  RuntimeEngineGenerateSuggestedActionsParams,
+  RuntimeEngineGenerateSuggestedActionsResult,
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
@@ -58,14 +60,10 @@ Requirements:
 - Do not end responses with explicit player-prompt questions.
 - Avoid one dense block of text.`;
 
-const RUNTIME_FINALIZATION_SYSTEM_PROMPT = `You are Story World Studio's turn finalizer.
+const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `You are Story World Studio's suggested-actions generator.
 
 Requirements:
 - Read the completed story beat and return strictly valid JSON matching the requested schema.
-- summary must be a very short continuity note, not a recap paragraph.
-- Keep summary to about 20 words maximum.
-- Prefer one short sentence.
-- summary should capture only what newly happened that still matters.
 - Suggested actions must reflect reasonable next moves in the current scene.
 - Return 2 to 3 suggested actions.
 - Each suggested action must be 1-2 short sentences and no more than 20 words.
@@ -138,7 +136,6 @@ function buildOpenAIDeveloperMessage(
     `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
     `Strengths: ${context.character.strengths.join(", ")}`,
     `Weaknesses: ${context.character.weaknesses.join(", ")}`,
-    `Continuity Summary: ${context.continuitySummary}`,
   ].join("\n");
 }
 
@@ -167,7 +164,7 @@ function buildOpenAIFinalizationMessages(params: {
   storyText: string;
 }): OpenAIInputMessage[] {
   return [
-    toInputMessage("system", RUNTIME_FINALIZATION_SYSTEM_PROMPT),
+    toInputMessage("system", RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT),
     toInputMessage("developer", buildOpenAIDeveloperMessage(params.context)),
     toInputMessage(
       "user",
@@ -178,7 +175,7 @@ function buildOpenAIFinalizationMessages(params: {
             "Completed story beat:",
             params.storyText.trim(),
             "",
-            "Return JSON with suggestedActions and summary only.",
+            "Return JSON with suggestedActions only.",
           ].join("\n")
         : [
             `Player action: ${params.playerAction.trim()}`,
@@ -186,7 +183,7 @@ function buildOpenAIFinalizationMessages(params: {
             "Completed story beat:",
             params.storyText.trim(),
             "",
-            "Return JSON with suggestedActions and summary only.",
+            "Return JSON with suggestedActions only.",
           ].join("\n"),
     ),
   ];
@@ -213,35 +210,9 @@ async function generateOpenAITurn(
     previousResponseId: params.session.previousResponseId || undefined,
     onDelta: params.onTextDelta,
   });
-
-  const finalizationResponse = await createStructuredOutputWithMetadata<unknown>({
-    schemaName: "session_turn_finalize",
-    schema: runtimeTurnFinalizationJsonSchema,
-    input: buildOpenAIFinalizationMessages({
-      context,
-      playerAction: params.playerAction,
-      storyText: streamedStory.text,
-    }),
-    model: RUNTIME_MODEL,
-    store: false,
-  });
-
-  let finalization;
-
-  try {
-    finalization = runtimeTurnFinalizationOutputSchema.parse(finalizationResponse.output);
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new Error("The runtime returned data that did not match the expected turn schema.");
-    }
-
-    throw error;
-  }
-
   const output = runtimeTurnOutputSchema.parse(
     buildRuntimeTurnOutput({
       storyText: streamedStory.text,
-      finalization,
     }),
   );
 
@@ -251,7 +222,6 @@ async function generateOpenAITurn(
     sentPreviousResponseId: params.session.previousResponseId || "",
     rawResponse: {
       streamEvents: streamedStory.rawEvents,
-      finalization: finalizationResponse.rawResponse,
     },
   };
 
@@ -262,7 +232,55 @@ async function generateOpenAITurn(
   };
 }
 
+async function generateOpenAISuggestedActions(
+  params: RuntimeEngineGenerateSuggestedActionsParams,
+): Promise<RuntimeEngineGenerateSuggestedActionsResult> {
+  const mode = params.turn.playerAction.trim() ? "turn" : "opening";
+  const context = buildRuntimeContextPacket({
+    world: params.world,
+    character: params.character,
+    session: params.session,
+    mode,
+  });
+  const inputMessages = buildOpenAIFinalizationMessages({
+    context,
+    playerAction: params.turn.playerAction,
+    storyText: params.turn.storyText,
+  });
+
+  const response = await createStructuredOutputWithMetadata<unknown>({
+    schemaName: "session_turn_suggested_actions",
+    schema: runtimeTurnFinalizationJsonSchema,
+    input: inputMessages,
+    model: RUNTIME_MODEL,
+    store: false,
+  });
+
+  let output;
+
+  try {
+    output = runtimeTurnFinalizationOutputSchema.parse(response.output);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new Error("The runtime returned data that did not match the expected suggested-actions schema.");
+    }
+
+    throw error;
+  }
+
+  return {
+    suggestedActions: output.suggestedActions,
+    debug: {
+      engineId: "openai_v1",
+      inputMessages,
+      sentPreviousResponseId: params.session.previousResponseId || "",
+      rawResponse: response.rawResponse,
+    },
+  };
+}
+
 export const openaiV1RuntimeEngine: RuntimeEngine = {
   id: "openai_v1",
   generateTurn: generateOpenAITurn,
+  generateSuggestedActions: generateOpenAISuggestedActions,
 };

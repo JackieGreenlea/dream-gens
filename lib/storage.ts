@@ -6,7 +6,7 @@ import { createId } from "@/lib/utils";
 
 const WORLDS_KEY = "story-world-studio.worlds";
 const SESSIONS_KEY = "story-world-studio.sessions";
-const MAX_SESSION_TURNS = 5;
+const MAX_SESSION_TURNS = 10;
 
 function canUseStorage() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -110,7 +110,6 @@ function normalizeSession(session: LegacyStoredSession): Session {
       playerAction: turn.playerAction ?? "",
       storyText: turn.storyText ?? "",
       suggestedActions: (turn.suggestedActions ?? []).slice(0, 3),
-      summaryAfterTurn: turn.summaryAfterTurn ?? "",
     })) ?? [];
 
   return {
@@ -121,7 +120,6 @@ function normalizeSession(session: LegacyStoredSession): Session {
     objective: session.objective ?? "",
     pov: normalizePov(session.pov),
     previousResponseId: session.previousResponseId ?? "",
-    summary: session.summary ?? "",
     turns: normalizedTurns.slice(-MAX_SESSION_TURNS),
   };
 }
@@ -162,7 +160,6 @@ export function createSession(worldId: string, characterId: string) {
     objective: world?.objective ?? "",
     pov: normalizePov(world?.pov),
     previousResponseId: "",
-    summary: "",
     turns: [],
   };
 

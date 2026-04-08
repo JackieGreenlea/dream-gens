@@ -20,7 +20,7 @@ import {
 } from "@/lib/types";
 import { createId, slugify } from "@/lib/utils";
 
-const RECENT_TURN_LIMIT = 5;
+const RECENT_TURN_LIMIT = 10;
 
 const worldInclude = {
   playerCharacters: {
@@ -371,14 +371,12 @@ function mapTurn(record: {
   playerAction: string;
   storyText: string;
   suggestedActions: Prisma.JsonValue;
-  summaryAfterTurn: string;
 }): SessionTurn {
   return {
     turnNumber: record.turnNumber,
     playerAction: record.playerAction,
     storyText: record.storyText,
     suggestedActions: readStringArray(record.suggestedActions),
-    summaryAfterTurn: record.summaryAfterTurn,
   };
 }
 
@@ -408,7 +406,6 @@ function mapSession(record: DbSession): Session {
     characterStrengths: readStringArray(record.characterStrengths ?? [], []),
     characterWeaknesses: readStringArray(record.characterWeaknesses ?? [], []),
     previousResponseId: record.previousResponseId ?? "",
-    summary: record.summary,
     turns: [...record.turns].reverse().map(mapTurn),
   };
 }
@@ -1380,7 +1377,6 @@ export async function createSessionFromLegacyWorld(params: {
       currentObjective: sanitizeTextForDatabase(world.objective),
       pov: world.pov,
       ...buildSessionSnapshot(playable, selectedCharacter),
-      summary: "",
       previousResponseId: "",
     },
     include: recentTurnsInclude,
@@ -1464,7 +1460,6 @@ export async function createSessionFromStory(params: {
       currentObjective: sanitizeTextForDatabase(story.objective),
       pov: story.pov,
       ...buildSessionSnapshot(mapStoryRecord(story), mapCharacter(selectedCharacter)),
-      summary: "",
       previousResponseId: "",
     },
     include: recentTurnsInclude,
@@ -1760,7 +1755,6 @@ export async function deleteSessionForUser(sessionId: string, userId: string) {
 export async function saveTurn(params: {
   sessionId: string;
   turn: SessionTurn;
-  summary: string;
   previousResponseId: string;
 }) {
   // Postgres text columns reject embedded null characters, so strip them before writes.
@@ -1772,7 +1766,7 @@ export async function saveTurn(params: {
         playerAction: sanitizeTextForDatabase(params.turn.playerAction),
         storyText: sanitizeTextForDatabase(params.turn.storyText),
         suggestedActions: sanitizeTextArrayForDatabase(params.turn.suggestedActions),
-        summaryAfterTurn: sanitizeTextForDatabase(params.turn.summaryAfterTurn),
+        summaryAfterTurn: "",
       },
     });
 
@@ -1780,10 +1774,47 @@ export async function saveTurn(params: {
       where: { id: params.sessionId },
       data: {
         turnCount: params.turn.turnNumber,
-        summary: sanitizeTextForDatabase(params.summary),
         previousResponseId: params.previousResponseId,
       },
     });
+  });
+
+  const savedSession = await prisma.session.findUnique({
+    where: { id: params.sessionId },
+    include: recentTurnsInclude,
+  });
+
+  return savedSession ? mapSession(savedSession) : null;
+}
+
+export async function updateTurnSuggestedActions(params: {
+  sessionId: string;
+  userId: string;
+  turnNumber: number;
+  suggestedActions: string[];
+}) {
+  const existingSession = await prisma.session.findFirst({
+    where: {
+      id: params.sessionId,
+      userId: params.userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingSession) {
+    return null;
+  }
+
+  await prisma.turn.updateMany({
+    where: {
+      sessionId: params.sessionId,
+      turnNumber: params.turnNumber,
+    },
+    data: {
+      suggestedActions: sanitizeTextArrayForDatabase(params.suggestedActions),
+    },
   });
 
   const savedSession = await prisma.session.findUnique({

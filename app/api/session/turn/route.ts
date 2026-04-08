@@ -48,8 +48,6 @@ export async function POST(request: Request) {
 
           sendEvent("complete", {
             turn: result.turn,
-            summary: result.summary,
-            suggestedActions: result.turn.suggestedActions,
             previousResponseId: result.previousResponseId,
             ...(isDevelopment
               ? {

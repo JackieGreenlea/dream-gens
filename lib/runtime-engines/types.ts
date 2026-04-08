@@ -6,7 +6,6 @@ export type RuntimeEngineMode = "opening" | "turn";
 export type RuntimeEngineSessionContext = {
   objective: string;
   pov: StoryPov;
-  summary: string;
   turnCount: number;
   previousResponseId: string;
   recentTurns: SessionTurn[];
@@ -37,11 +36,26 @@ export type RuntimeEngineGenerateTurnResult = {
   debug: RuntimeEngineDebugPayload;
 };
 
+export type RuntimeEngineGenerateSuggestedActionsParams = {
+  world: World;
+  character: PlayerCharacter;
+  session: RuntimeEngineSessionContext;
+  turn: SessionTurn;
+};
+
+export type RuntimeEngineGenerateSuggestedActionsResult = {
+  suggestedActions: string[];
+  debug: RuntimeEngineDebugPayload;
+};
+
 export interface RuntimeEngine {
   id: string;
   generateTurn(
     params: RuntimeEngineGenerateTurnParams,
   ): Promise<RuntimeEngineGenerateTurnResult>;
+  generateSuggestedActions(
+    params: RuntimeEngineGenerateSuggestedActionsParams,
+  ): Promise<RuntimeEngineGenerateSuggestedActionsResult>;
 }
 
 export class RuntimeEngineDebugError extends Error {

@@ -18,8 +18,7 @@ export const sessionTurnSchema = z.object({
   turnNumber: z.number().int().min(1),
   playerAction: z.string().trim(),
   storyText: z.string().trim().min(1),
-  suggestedActions: z.array(z.string().trim().min(1)).min(2).max(3),
-  summaryAfterTurn: z.string().trim().min(1),
+  suggestedActions: z.array(z.string().trim().min(1)).max(3).default([]),
 });
 
 export const sessionSchema = z.object({
@@ -47,7 +46,6 @@ export const sessionSchema = z.object({
   characterStrengths: z.array(z.string().trim().min(1)).nullable().optional(),
   characterWeaknesses: z.array(z.string().trim().min(1)).nullable().optional(),
   previousResponseId: z.string().default(""),
-  summary: z.string(),
   turns: z.array(sessionTurnSchema),
 });
 
@@ -82,15 +80,12 @@ export type StoredSession = z.infer<typeof sessionSchema>;
 
 export const runtimeTurnOutputSchema = z.object({
   storyText: z.string().trim().min(1),
-  suggestedActions: z.array(z.string().trim().min(1)).min(2).max(3),
-  summary: z.string().trim().min(1),
 });
 
 export type RuntimeTurnOutput = z.infer<typeof runtimeTurnOutputSchema>;
 
 export const runtimeTurnFinalizationOutputSchema = z.object({
   suggestedActions: z.array(z.string().trim().min(1)).min(2).max(3),
-  summary: z.string().trim().min(1),
 });
 
 export type RuntimeTurnFinalizationOutput = z.infer<typeof runtimeTurnFinalizationOutputSchema>;
@@ -98,6 +93,10 @@ export type RuntimeTurnFinalizationOutput = z.infer<typeof runtimeTurnFinalizati
 export const runtimeTurnRequestSchema = z.object({
   sessionId: z.string().trim().min(1),
   playerAction: z.string().trim().min(1),
+});
+
+export const sessionSuggestedActionsRequestSchema = z.object({
+  sessionId: z.string().trim().min(1),
 });
 
 export const persistedWorldSchema = compiledWorldSchema.extend({
@@ -317,25 +316,16 @@ export const compiledStoryJsonSchema = {
 export const runtimeTurnJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["storyText", "suggestedActions", "summary"],
+  required: ["storyText"],
   properties: {
     storyText: { type: "string" },
-    suggestedActions: {
-      type: "array",
-      minItems: 2,
-      maxItems: 3,
-      items: {
-        type: "string",
-      },
-    },
-    summary: { type: "string" },
   },
 } as const;
 
 export const runtimeTurnFinalizationJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["suggestedActions", "summary"],
+  required: ["suggestedActions"],
   properties: {
     suggestedActions: {
       type: "array",
@@ -345,7 +335,6 @@ export const runtimeTurnFinalizationJsonSchema = {
         type: "string",
       },
     },
-    summary: { type: "string" },
   },
 } as const;
 

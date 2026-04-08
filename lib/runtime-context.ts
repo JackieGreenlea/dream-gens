@@ -9,7 +9,6 @@ export type RuntimeContextPacket = {
   objective: string;
   instructions: string;
   background: string;
-  continuitySummary: string;
   recentTurns: Array<{
     turnNumber: number;
     playerAction: string;
@@ -29,7 +28,6 @@ export function buildRuntimeContextPacket(params: {
   session: {
     objective: string;
     pov: World["pov"];
-    summary: string;
     turnCount: number;
     recentTurns: Array<{
       turnNumber: number;
@@ -48,7 +46,6 @@ export function buildRuntimeContextPacket(params: {
     objective: params.session.objective,
     instructions: params.world.instructions,
     background: params.world.background,
-    continuitySummary: params.session.summary || "The story is just beginning.",
     recentTurns: params.session.recentTurns.slice(-10).map((turn) => ({
       turnNumber: turn.turnNumber,
       playerAction: turn.playerAction,
