@@ -389,6 +389,7 @@ function mapSession(record: DbSession): Session {
     turnCount: record.turnCount,
     objective: record.storyObjective ?? record.objective,
     pov: normalizePov(record.storyPov ?? record.pov),
+    summary: record.summary ?? "",
     storyTitle: record.storyTitle ?? null,
     storySummary: record.storySummary ?? null,
     storyBackground: record.storyBackground ?? null,
@@ -1785,6 +1786,73 @@ export async function saveTurn(params: {
   });
 
   return savedSession ? mapSession(savedSession) : null;
+}
+
+export async function getSessionTurnBlock(params: {
+  sessionId: string;
+  userId: string;
+  startTurnNumber: number;
+  endTurnNumber: number;
+}) {
+  const session = await prisma.session.findFirst({
+    where: {
+      id: params.sessionId,
+      userId: params.userId,
+    },
+    select: {
+      turns: {
+        where: {
+          turnNumber: {
+            gte: params.startTurnNumber,
+            lte: params.endTurnNumber,
+          },
+        },
+        orderBy: {
+          turnNumber: "asc",
+        },
+        select: {
+          turnNumber: true,
+          playerAction: true,
+          storyText: true,
+          suggestedActions: true,
+        },
+      },
+    },
+  });
+
+  return session?.turns.map(mapTurn) ?? null;
+}
+
+export async function updateSessionSummary(params: {
+  sessionId: string;
+  userId: string;
+  summary: string;
+}) {
+  const existingSession = await prisma.session.findFirst({
+    where: {
+      id: params.sessionId,
+      userId: params.userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingSession) {
+    return null;
+  }
+
+  const savedSession = await prisma.session.update({
+    where: {
+      id: params.sessionId,
+    },
+    data: {
+      summary: sanitizeTextForDatabase(params.summary),
+    },
+    include: recentTurnsInclude,
+  });
+
+  return mapSession(savedSession);
 }
 
 export async function updateTurnSuggestedActions(params: {

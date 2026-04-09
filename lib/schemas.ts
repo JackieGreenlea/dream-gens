@@ -29,6 +29,7 @@ export const sessionSchema = z.object({
   turnCount: z.number().int().min(0),
   objective: z.string().trim().min(1),
   pov: povSchema.default("second_person"),
+  summary: z.string().default(""),
   storyTitle: z.string().trim().nullable().optional(),
   storySummary: z.string().trim().nullable().optional(),
   storyBackground: z.string().trim().nullable().optional(),

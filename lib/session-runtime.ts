@@ -1,8 +1,20 @@
 import "server-only";
 
-import { getSessionBundle, saveTurn, updateTurnSuggestedActions } from "@/lib/db";
+import {
+  getSessionBundle,
+  getSessionTurnBlock,
+  saveTurn,
+  updateSessionSummary,
+  updateTurnSuggestedActions,
+} from "@/lib/db";
 import { getRuntimeEngine } from "@/lib/runtime-engines";
 import { createSessionTurn, normalizeSuggestedActions } from "@/lib/runtime";
+import {
+  getRollingSummaryBlockBounds,
+  isRollingSummaryRefreshTurn,
+  summarizeTurnBlock,
+  synthesizeRollingStorySummary,
+} from "@/lib/session-summary";
 
 type SessionTurnResult = {
   turn: ReturnType<typeof createSessionTurn>;
@@ -14,6 +26,61 @@ type SessionTurnResult = {
     rawResponse: unknown;
   };
 };
+
+async function refreshRollingSessionSummary(params: {
+  sessionId: string;
+  userId: string;
+  completedTurnNumber: number;
+  previousSummary: string;
+}) {
+  if (!isRollingSummaryRefreshTurn(params.completedTurnNumber)) {
+    return;
+  }
+
+  const { startTurnNumber, endTurnNumber } = getRollingSummaryBlockBounds(params.completedTurnNumber);
+  const blockTurns = await getSessionTurnBlock({
+    sessionId: params.sessionId,
+    userId: params.userId,
+    startTurnNumber,
+    endTurnNumber,
+  });
+
+  if (!blockTurns || blockTurns.length !== 8) {
+    console.warn("[session-summary] skipped refresh due to incomplete block", {
+      sessionId: params.sessionId,
+      completedTurnNumber: params.completedTurnNumber,
+      expectedTurns: 8,
+      actualTurns: blockTurns?.length ?? 0,
+    });
+    return;
+  }
+
+  console.info("[session-summary] refresh start", {
+    sessionId: params.sessionId,
+    startTurnNumber,
+    endTurnNumber,
+  });
+
+  const blockSummary = await summarizeTurnBlock(blockTurns);
+  const nextSummary = params.previousSummary.trim()
+    ? await synthesizeRollingStorySummary({
+        previousSummary: params.previousSummary,
+        latestBlockSummary: blockSummary,
+      })
+    : blockSummary;
+
+  await updateSessionSummary({
+    sessionId: params.sessionId,
+    userId: params.userId,
+    summary: nextSummary,
+  });
+
+  console.info("[session-summary] refresh success", {
+    sessionId: params.sessionId,
+    completedTurnNumber: params.completedTurnNumber,
+    summaryLength: nextSummary.length,
+  });
+}
 
 async function generateAndPersistSessionTurn(params: {
   sessionId: string;
@@ -42,6 +109,7 @@ async function generateAndPersistSessionTurn(params: {
     session: {
       objective: bundle.session.objective,
       pov: bundle.session.pov,
+      summary: bundle.session.summary,
       turnCount: bundle.session.turnCount,
       previousResponseId: bundle.session.previousResponseId,
       recentTurns: bundle.session.turns,
@@ -76,6 +144,22 @@ async function generateAndPersistSessionTurn(params: {
     turnNumber: turn.turnNumber,
     elapsedMs: Date.now() - requestStartMs,
   });
+
+  try {
+    await refreshRollingSessionSummary({
+      sessionId: bundle.session.id,
+      userId: params.userId,
+      completedTurnNumber: turn.turnNumber,
+      previousSummary: bundle.session.summary,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown rolling-summary failure.";
+    console.error("[session-summary] refresh failure", {
+      sessionId: params.sessionId,
+      completedTurnNumber: turn.turnNumber,
+      message,
+    });
+  }
 
   return {
     turn,
@@ -138,6 +222,7 @@ export async function generateSessionSuggestedActions(params: {
     session: {
       objective: bundle.session.objective,
       pov: bundle.session.pov,
+      summary: bundle.session.summary,
       turnCount: bundle.session.turnCount,
       previousResponseId: bundle.session.previousResponseId,
       recentTurns: bundle.session.turns,

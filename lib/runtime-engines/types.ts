@@ -6,6 +6,7 @@ export type RuntimeEngineMode = "opening" | "turn";
 export type RuntimeEngineSessionContext = {
   objective: string;
   pov: StoryPov;
+  summary: string;
   turnCount: number;
   previousResponseId: string;
   recentTurns: SessionTurn[];

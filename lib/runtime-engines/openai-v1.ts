@@ -132,6 +132,7 @@ function buildOpenAIDeveloperMessage(
     `POV: ${context.pov.replace("_", " ")}`,
     `Tone / Style: ${context.toneStyle}`,
     `Objective: ${context.objective}`,
+    `Continuity Summary: ${context.continuitySummary}`,
     `Runtime Instructions: ${context.instructions}`,
     `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
     `Strengths: ${context.character.strengths.join(", ")}`,

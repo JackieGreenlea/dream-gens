@@ -119,6 +119,7 @@ function normalizeSession(session: LegacyStoredSession): Session {
     turnCount: session.turnCount ?? normalizedTurns.length,
     objective: session.objective ?? "",
     pov: normalizePov(session.pov),
+    summary: session.summary ?? "",
     previousResponseId: session.previousResponseId ?? "",
     turns: normalizedTurns.slice(-MAX_SESSION_TURNS),
   };
@@ -159,6 +160,7 @@ export function createSession(worldId: string, characterId: string) {
     turnCount: 0,
     objective: world?.objective ?? "",
     pov: normalizePov(world?.pov),
+    summary: "",
     previousResponseId: "",
     turns: [],
   };

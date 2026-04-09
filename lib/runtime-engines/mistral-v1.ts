@@ -194,6 +194,7 @@ function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeCon
     `- User's objective in the story: ${context.objective}`,
     `- Story instructions for assistant: ${context.instructions}`,
     `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
+    `- Continuity Summary: ${context.continuitySummary}`,
   ].join("\n");
 }
 

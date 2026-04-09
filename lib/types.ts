@@ -69,6 +69,7 @@ export type Session = {
   turnCount: number;
   objective: string;
   pov: StoryPov;
+  summary: string;
   storyTitle?: string | null;
   storySummary?: string | null;
   storyBackground?: string | null;
