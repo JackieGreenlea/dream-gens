@@ -66,7 +66,7 @@ export function DiscoveryStoryCard({
     return (
       <article
         className={cn(
-          "overflow-hidden rounded-[1rem] border border-white/[0.04] bg-surface/[0.9] shadow-[0_4px_14px_rgba(0,0,0,0.07)] md:grid md:grid-cols-[minmax(16rem,24rem)_minmax(0,1fr)]",
+          "overflow-hidden rounded-[1rem] border border-white/[0.04] bg-night/50 shadow-[0_4px_14px_rgba(0,0,0,0.07)] md:grid md:grid-cols-[minmax(16rem,24rem)_minmax(0,1fr)]",
           className,
         )}
       >
@@ -131,7 +131,7 @@ export function DiscoveryStoryCard({
   return (
     <article
       className={cn(
-        "overflow-hidden rounded-[0.95rem] border border-white/[0.04] bg-surface/[0.08] shadow-[0_4px_14px_rgba(0,0,0,0.07)]",
+        "overflow-hidden rounded-[0.95rem] border border-white/[0.04] bg-night/50 shadow-[0_4px_14px_rgba(0,0,0,0.07)]",
         className,
       )}
     >

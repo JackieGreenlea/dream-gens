@@ -69,7 +69,12 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
       return;
     }
 
-    const amount = Math.max(scroller.clientWidth * 0.72, 280);
+    const firstCard = scroller.querySelector<HTMLElement>("[data-story-card]");
+    const gap = Number.parseFloat(window.getComputedStyle(scroller).columnGap || "0")
+      || Number.parseFloat(window.getComputedStyle(scroller).gap || "0")
+      || 0;
+    const amount = firstCard ? firstCard.getBoundingClientRect().width + gap : Math.max(scroller.clientWidth * 0.72, 280);
+
     scroller.scrollBy({
       left: direction === "right" ? amount : -amount,
       behavior: "smooth",
@@ -80,12 +85,13 @@ export function ExploreStoriesCarousel({ stories }: ExploreStoriesCarouselProps)
     <div className="relative">
       <div
         ref={scrollerRef}
-        className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {stories.map((story) => (
           <div
             key={story.id ?? story.title}
-            className="min-w-0 flex-none basis-[85%] sm:basis-[calc((100%-1rem)/2)] lg:basis-[calc((100%-2rem)/3)] xl:basis-[calc((100%-3rem)/4)]"
+            data-story-card
+            className="min-w-0 shrink-0 snap-start w-[17rem] sm:w-[18rem] lg:w-[19rem] xl:w-[20rem]"
           >
             <DiscoveryStoryCard
               title={story.title}

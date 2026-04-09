@@ -106,7 +106,7 @@ function SparklesIcon({ className = "" }: { className?: string }) {
 }
 
 function headerActionButtonClasses() {
-  return "inline-flex h-10 w-10 items-center justify-center rounded-lg border border-transparent bg-transparent text-secondary transition hover:bg-surface hover:text-foreground";
+  return "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-transparent text-secondary transition hover:bg-surface hover:text-foreground";
 }
 
 export function AuthHeader({ user, identity }: AuthHeaderProps) {
@@ -143,12 +143,12 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
       <Link
         href="/explore"
         aria-label="Explore"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-transparent px-0 py-0 text-secondary transition hover:bg-surface hover:text-foreground md:h-10 md:w-auto md:px-4 md:py-2.5"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-transparent px-0 py-0 text-secondary transition hover:bg-surface hover:text-foreground md:h-9 md:w-auto md:px-3 md:py-2"
       >
         <ExploreIcon />
-        <span className="hidden text-[1.04rem] font-bold md:inline">Explore</span>
+        <span className="hidden text-[0.92rem] font-bold md:inline">Explore</span>
       </Link>
-      <div className="hidden min-w-[4.5rem] flex-1 md:block">
+      <div className="hidden w-full max-w-[34rem] min-w-[4.5rem] flex-1 md:block">
         <label className="sr-only" htmlFor="site-search">
           Search
         </label>
@@ -156,7 +156,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
           id="site-search"
           type="search"
           placeholder="Search"
-          className="h-10 w-full rounded-lg border border-fieldBorder bg-field px-4 text-[1.04rem] text-foreground placeholder:text-muted focus:border-[#fdd835] focus:outline-none focus:ring-2 focus:ring-[#fdd835]/20"
+          className="h-9 w-full rounded-lg border border-fieldBorder bg-field px-4 text-[0.92rem] text-foreground placeholder:text-muted focus:border-[#fdd835] focus:outline-none focus:ring-2 focus:ring-[#fdd835]/20"
         />
       </div>
       <Link href="/explore" className={`${headerActionButtonClasses()} md:hidden`} aria-label="Search">
@@ -166,28 +166,26 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-night/95 backdrop-blur">
-      <div className="absolute left-1/2 top-1/2 hidden w-[clamp(11rem,54vw,52rem)] -translate-x-1/2 -translate-y-1/2 items-center gap-3 lg:flex">
-        {centerControls}
-      </div>
-
-      <div className="flex w-full items-center gap-3 px-4 py-2 sm:px-8 lg:min-h-[68px] lg:px-10 lg:py-0">
-        <div className="flex min-w-0 items-center justify-start lg:absolute lg:left-10 lg:top-1/2 lg:-translate-y-1/2">
+    <header className="sticky top-0 z-50 border-b border-line/80 bg-night/75 backdrop-blur">
+      <div className="flex w-full items-center gap-3 px-4 py-2 sm:px-8 lg:mx-auto lg:grid lg:min-h-[58px] lg:max-w-[1440px] lg:grid-cols-[auto_minmax(0,40rem)_auto] lg:items-center lg:gap-6 lg:px-8 lg:py-0">
+        <div className="flex min-w-0 items-center justify-start">
           <Link
             href="/"
-            className="inline-flex h-8 items-center sm:h-10"
+            className="inline-flex h-8 items-center sm:h-9"
             aria-label="Everplot home"
           >
-            <Image src={logo} alt="Everplot" className="h-6 w-auto sm:h-8 md:h-8" priority />
+            <Image src={logo} alt="Everplot" className="h-6 w-auto sm:h-7 md:h-7" priority />
           </Link>
         </div>
 
-        <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 lg:absolute lg:right-10 lg:top-1/2 lg:ml-0 lg:-translate-y-1/2">
+        <div className="hidden min-w-0 items-center justify-self-center lg:flex">{centerControls}</div>
+
+        <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 lg:ml-0">
           <div className="flex items-center gap-2 lg:hidden">{centerControls}</div>
 
           <ButtonLink
             href="/create"
-            className="h-10 w-10 gap-2 !border-transparent !bg-transparent px-0 py-0 !text-[#fdd835] hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-10 md:w-auto md:!border-transparent md:!bg-transparent md:px-5 md:!text-[#fdd835] md:hover:!bg-[#fdd835]/10 md:hover:!text-[#fdd835]"
+            className="h-9 w-9 gap-2 !border-transparent !bg-transparent px-0 py-0 !text-[#fdd835] hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-9 md:w-auto md:!border-transparent md:!bg-transparent md:px-4 md:!text-[#fdd835] md:hover:!bg-[#fdd835]/10 md:hover:!text-[#fdd835]"
             aria-label="Create Story"
           >
             <span className="md:hidden">
@@ -196,7 +194,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
             <span className="hidden md:inline">
               <SparklesIcon className="text-[#fdd835]" />
             </span>
-            <span className="hidden text-[1.04rem] font-bold md:inline">Create Story</span>
+            <span className="hidden text-[0.92rem] font-bold md:inline">Create Story</span>
           </ButtonLink>
 
           <button type="button" className={headerActionButtonClasses()} aria-label="Notifications">

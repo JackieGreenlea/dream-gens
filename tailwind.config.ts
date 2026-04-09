@@ -9,10 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        page: "#111418",
-        night: "#0D1014",
-        surface: "#1A1F27",
-        elevated: "#222834",
+        page: "#1b1b1b",
+        night: "#070707",
+        surface: "#22262a",
+        elevated: "#2b3f5c",
         line: "#2B3340",
         foreground: "#F5F7FA",
         secondary: "#C2C9D3",
@@ -34,10 +34,7 @@ const config: Config = {
       boxShadow: {
         glow: "0 8px 24px rgba(0, 0, 0, 0.12)",
       },
-      backgroundImage: {
-        "celestial-fade":
-          "radial-gradient(circle at top, rgba(253, 216, 53, 0.1), transparent 48%), linear-gradient(180deg, #111418 0%, #111418 100%)",
-      },
+
     },
   },
   plugins: [],

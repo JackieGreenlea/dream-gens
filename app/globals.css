@@ -4,10 +4,10 @@
 
 :root {
   color-scheme: dark;
-  --color-page: #111418;
-  --color-night: #0d1014;
-  --color-surface: #1a1f27;
-  --color-elevated: #222834;
+  --page: #141414;
+  --night: #070707;
+  --surface: #22262a;
+  --elevated: #2b3f5c;
   --color-line: #2b3340;
   --color-foreground: #f5f7fa;
   --color-secondary: #c2c9d3;
