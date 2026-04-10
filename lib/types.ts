@@ -1,5 +1,6 @@
 export type StoryPov = "second_person" | "first_person" | "third_person";
 export type StoryVisibility = "private" | "public";
+export type StoryCardType = "character" | "location" | "faction" | "story_event";
 
 export type PlayerCharacter = {
   id: string;
@@ -7,6 +8,14 @@ export type PlayerCharacter = {
   description: string;
   strengths: string[];
   weaknesses: string[];
+};
+
+export type StoryCard = {
+  id: string;
+  type: StoryCardType;
+  title: string;
+  description: string;
+  triggerKeywords: string[];
 };
 
 export type WorldCastMember = {
@@ -40,7 +49,9 @@ type PlayableStoryFields = {
   objective: string;
   pov: StoryPov;
   instructions: string;
+  toneStyle: string;
   authorStyle: string;
+  storyCards: StoryCard[];
   victoryCondition: string;
   victoryEnabled: boolean;
   defeatCondition: string;

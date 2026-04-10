@@ -12,7 +12,9 @@ import {
   Session,
   SessionTurn,
   Story,
+  StoryCard,
   StoryPov,
+  StoryCardType,
   StoryVisibility,
   World,
   WorldCanon,
@@ -46,7 +48,9 @@ const storySelect = {
   objective: true,
   pov: true,
   instructions: true,
+  toneStyle: true,
   authorStyle: true,
+  storyCards: true,
   victoryCondition: true,
   victoryEnabled: true,
   defeatCondition: true,
@@ -235,6 +239,51 @@ function readCastMembers(value: Prisma.JsonValue): WorldCastMember[] {
   return members;
 }
 
+function isStoryCardType(value: string): value is StoryCardType {
+  return (
+    value === "character" ||
+    value === "location" ||
+    value === "faction" ||
+    value === "story_event"
+  );
+}
+
+function readStoryCards(value: Prisma.JsonValue): StoryCard[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const cards: StoryCard[] = [];
+
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      continue;
+    }
+
+    const id = typeof item.id === "string" ? item.id.trim() : "";
+    const type = typeof item.type === "string" ? item.type.trim() : "";
+    const title = typeof item.title === "string" ? item.title.trim() : "";
+    const description = typeof item.description === "string" ? item.description.trim() : "";
+    const triggerKeywords = readStringArray(
+      "triggerKeywords" in item ? (item.triggerKeywords as Prisma.JsonValue) : [],
+    );
+
+    if (!id || !isStoryCardType(type) || !title || !description) {
+      continue;
+    }
+
+    cards.push({
+      id,
+      type,
+      title,
+      description,
+      triggerKeywords,
+    });
+  }
+
+  return cards;
+}
+
 function mapCharacter(record: {
   id: string;
   name: string;
@@ -261,7 +310,9 @@ function mapWorld(record: DbWorld): World {
     objective: record.objective,
     pov: normalizePov(record.pov),
     instructions: record.instructions,
-    authorStyle: record.authorStyle,
+    toneStyle: record.toneStyle || record.authorStyle,
+    authorStyle: record.authorStyle || record.toneStyle || "",
+    storyCards: readStoryCards(record.storyCards ?? []),
     victoryCondition: record.victoryCondition,
     victoryEnabled: record.victoryEnabled,
     defeatCondition: record.defeatCondition,
@@ -286,7 +337,9 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     objective: record.objective,
     pov: normalizePov(record.pov),
     instructions: record.instructions,
-    authorStyle: record.authorStyle,
+    toneStyle: record.toneStyle || record.authorStyle,
+    authorStyle: record.authorStyle || record.toneStyle || "",
+    storyCards: readStoryCards(record.storyCards ?? []),
     victoryCondition: record.victoryCondition,
     victoryEnabled: record.victoryEnabled,
     defeatCondition: record.defeatCondition,
@@ -301,8 +354,7 @@ function getStoryPublishValidationError(story: Story) {
   if (!story.background.trim()) return "Background is required before publishing.";
   if (!story.firstAction.trim()) return "A first action is required before publishing.";
   if (!story.objective.trim()) return "An objective is required before publishing.";
-  if (!story.instructions.trim()) return "Instructions are required before publishing.";
-  if (!story.authorStyle.trim()) return "Author style is required before publishing.";
+  if (!story.toneStyle.trim()) return "Tone style is required before publishing.";
   if (story.playerCharacters.length === 0) {
     return "Add at least one playable character before publishing.";
   }
@@ -419,7 +471,7 @@ function buildSessionSnapshot(playable: World, character: PlayerCharacter) {
     storyFirstAction: sanitizeTextForDatabase(playable.firstAction),
     storyObjective: sanitizeTextForDatabase(playable.objective),
     storyInstructions: sanitizeTextForDatabase(playable.instructions),
-    storyAuthorStyle: sanitizeTextForDatabase(playable.authorStyle),
+    storyAuthorStyle: sanitizeTextForDatabase(playable.authorStyle || playable.toneStyle),
     storyPov: playable.pov,
     victoryCondition: sanitizeTextForDatabase(playable.victoryCondition),
     victoryEnabled: playable.victoryEnabled,
@@ -461,7 +513,9 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
       objective: record.storyObjective,
       pov: normalizePov(record.storyPov),
       instructions: record.storyInstructions,
+      toneStyle: record.storyAuthorStyle,
       authorStyle: record.storyAuthorStyle,
+      storyCards: [],
       victoryCondition: record.victoryCondition ?? "",
       victoryEnabled: record.victoryEnabled ?? true,
       defeatCondition: record.defeatCondition ?? "",
@@ -496,7 +550,15 @@ function worldPersistenceData(world: World) {
     objective: sanitizeTextForDatabase(world.objective),
     pov: world.pov,
     instructions: sanitizeTextForDatabase(world.instructions),
-    authorStyle: sanitizeTextForDatabase(world.authorStyle),
+    toneStyle: sanitizeTextForDatabase(world.toneStyle),
+    authorStyle: sanitizeTextForDatabase(world.authorStyle || world.toneStyle),
+    storyCards: world.storyCards.map((card) => ({
+      id: sanitizeTextForDatabase(card.id),
+      type: card.type,
+      title: sanitizeTextForDatabase(card.title),
+      description: sanitizeTextForDatabase(card.description),
+      triggerKeywords: sanitizeTextArrayForDatabase(card.triggerKeywords),
+    })),
     victoryCondition: sanitizeTextForDatabase(world.victoryCondition),
     victoryEnabled: world.victoryEnabled,
     defeatCondition: sanitizeTextForDatabase(world.defeatCondition),
@@ -525,7 +587,9 @@ function worldCanonPersistenceData(world: WorldCanon) {
     objective: "",
     pov: "second_person" as const,
     instructions: "",
+    toneStyle: "",
     authorStyle: "",
+    storyCards: [],
     victoryCondition: "",
     victoryEnabled: true,
     defeatCondition: "",
@@ -545,7 +609,15 @@ function storyPersistenceData(story: Story) {
     objective: sanitizeTextForDatabase(story.objective),
     pov: story.pov,
     instructions: sanitizeTextForDatabase(story.instructions),
-    authorStyle: sanitizeTextForDatabase(story.authorStyle),
+    toneStyle: sanitizeTextForDatabase(story.toneStyle),
+    authorStyle: sanitizeTextForDatabase(story.authorStyle || story.toneStyle),
+    storyCards: story.storyCards.map((card) => ({
+      id: sanitizeTextForDatabase(card.id),
+      type: card.type,
+      title: sanitizeTextForDatabase(card.title),
+      description: sanitizeTextForDatabase(card.description),
+      triggerKeywords: sanitizeTextArrayForDatabase(card.triggerKeywords),
+    })),
     victoryCondition: sanitizeTextForDatabase(story.victoryCondition),
     victoryEnabled: story.victoryEnabled,
     defeatCondition: sanitizeTextForDatabase(story.defeatCondition),
@@ -565,7 +637,9 @@ function storyFromPlayableInput(world: World, worldId: string | null = null): St
     objective: world.objective,
     pov: world.pov,
     instructions: world.instructions,
+    toneStyle: world.toneStyle,
     authorStyle: world.authorStyle,
+    storyCards: world.storyCards,
     victoryCondition: world.victoryCondition,
     victoryEnabled: world.victoryEnabled,
     defeatCondition: world.defeatCondition,

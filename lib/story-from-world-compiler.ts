@@ -63,17 +63,15 @@ Objective:
 - If there is exactly one playable character, Objective may be specific to that protagonist.
 - If there are two or more playable characters, Objective must stay general enough to make sense for any listed playable character.
 
-Instructions:
-- Write this field as a hidden story brief for the runtime model.
-- Explain the context of the story, describing the setting, what the game is about, and what part the player character will play.
-- Describe the central characters, their personalities, motivations, and dynamics.
-- Describe the world conditions, social rules, and tensions that should shape the story.   
-- Describe the kinds of scenes, pressures, and consequences that belong in this story.
-- Describe the tone, how the story should feel, how it should be told, and what elements should be included.
-- Keep it usable, not bloated.
+ToneStyle:
+- Concise, practical guidance for how the story should feel and read.
+- Keep it short and usable.
 
-AuthorStyle:
-- Concise, practical style guidance for the runtime.
+StoryCards:
+- Return a compact set of recurring story cards for important characters, locations, factions, and major story events.
+- Use only these types: character, location, faction, story_event.
+- Each card needs a title, a concise description, and useful trigger keywords.
+- Keep cards focused on elements likely to matter again during play.
 
 PlayerCharacters:
 - Aim for 1-3 distinct playable characters by default.

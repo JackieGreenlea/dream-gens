@@ -15,8 +15,11 @@ export const sampleWorlds: World[] = [
     pov: "second_person",
     instructions:
       "Keep scenes tense, tactile, and focused on difficult tradeoffs. Reward curiosity and improvisation.",
+    toneStyle:
+      "Moody fantasy with crisp sensory details, lived-in pressure, and grounded character choices.",
     authorStyle:
       "Moody fantasy with crisp sensory details and grounded character choices.",
+    storyCards: [],
     victoryCondition:
       "The lighthouse ritual is restored and the city survives the storm with its key alliances intact.",
     victoryEnabled: true,
@@ -56,8 +59,11 @@ export const sampleWorlds: World[] = [
     pov: "second_person",
     instructions:
       "Blend political intrigue with stylish tech fantasy. Let information be a weapon.",
+    toneStyle:
+      "Elegant high-pressure science fantasy with sharp dialogue, political tension, and flashes of spectacle.",
     authorStyle:
       "Elegant, high-pressure scenes with smart dialogue and occasional flashes of spectacle.",
+    storyCards: [],
     victoryCondition:
       "The oracle's logic is revealed and the city is forced to confront a better future.",
     victoryEnabled: true,

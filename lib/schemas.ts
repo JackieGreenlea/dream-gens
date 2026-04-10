@@ -6,6 +6,7 @@ const optionalCompilerFieldSchema = z.string().trim().max(400).optional().defaul
 const optionalStoryLinkSchema = z.string().trim().min(1).nullable().optional();
 const storyTagSchema = z.string().trim().min(1);
 const compilerGenreTagSchema = z.enum(COMPILER_GENRE_TAG_OPTIONS);
+const storyCardTypeSchema = z.enum(["character", "location", "faction", "story_event"]);
 
 export const compileRequestSchema = z.object({
   premise: z.string().trim().min(1, "Premise is required."),
@@ -58,14 +59,22 @@ export const playerCharacterSchema = z.object({
   weaknesses: z.array(z.string().trim().min(1)).length(2),
 });
 
+export const storyCardSchema = z.object({
+  id: z.string().trim().min(1),
+  type: storyCardTypeSchema,
+  title: z.string().trim().min(1),
+  description: z.string().trim().min(1),
+  triggerKeywords: z.array(z.string().trim().min(1)).max(12).default([]),
+});
+
 export const compiledWorldSchema = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).max(600),
   background: z.string().trim().min(1),
   firstAction: z.string().trim().min(1),
   objective: z.string().trim().min(1),
-  instructions: z.string().trim().min(1),
-  authorStyle: z.string().trim().min(1),
+  toneStyle: z.string().trim().min(1),
+  storyCards: z.array(storyCardSchema).default([]),
   victoryCondition: z.string().trim().min(1),
   defeatCondition: z.string().trim().min(1),
   playerCharacters: z.array(playerCharacterSchema).min(1).max(6),
@@ -103,6 +112,10 @@ export const sessionSuggestedActionsRequestSchema = z.object({
 export const persistedWorldSchema = compiledWorldSchema.extend({
   id: z.string().trim().min(1),
   pov: povSchema.default("second_person"),
+  instructions: z.string().trim().default(""),
+  toneStyle: z.string().trim().default(""),
+  authorStyle: z.string().trim().default(""),
+  storyCards: z.array(storyCardSchema).default([]),
   victoryEnabled: z.boolean().default(true),
   defeatEnabled: z.boolean().default(true),
 });
@@ -195,8 +208,8 @@ export const compiledWorldJsonSchema = {
     "background",
     "firstAction",
     "objective",
-    "instructions",
-    "authorStyle",
+    "toneStyle",
+    "storyCards",
     "victoryCondition",
     "defeatCondition",
     "playerCharacters",
@@ -207,8 +220,30 @@ export const compiledWorldJsonSchema = {
     background: { type: "string" },
     firstAction: { type: "string" },
     objective: { type: "string" },
-    instructions: { type: "string" },
-    authorStyle: { type: "string" },
+    toneStyle: { type: "string" },
+    storyCards: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "type", "title", "description", "triggerKeywords"],
+        properties: {
+          id: { type: "string" },
+          type: {
+            type: "string",
+            enum: ["character", "location", "faction", "story_event"],
+          },
+          title: { type: "string" },
+          description: { type: "string" },
+          triggerKeywords: {
+            type: "array",
+            items: {
+              type: "string",
+            },
+          },
+        },
+      },
+    },
     victoryCondition: { type: "string" },
     defeatCondition: { type: "string" },
     playerCharacters: {
@@ -255,8 +290,8 @@ export const compiledStoryJsonSchema = {
     "tags",
     "firstAction",
     "objective",
-    "instructions",
-    "authorStyle",
+    "toneStyle",
+    "storyCards",
     "victoryCondition",
     "defeatCondition",
     "playerCharacters",
@@ -276,8 +311,30 @@ export const compiledStoryJsonSchema = {
     },
     firstAction: { type: "string" },
     objective: { type: "string" },
-    instructions: { type: "string" },
-    authorStyle: { type: "string" },
+    toneStyle: { type: "string" },
+    storyCards: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "type", "title", "description", "triggerKeywords"],
+        properties: {
+          id: { type: "string" },
+          type: {
+            type: "string",
+            enum: ["character", "location", "faction", "story_event"],
+          },
+          title: { type: "string" },
+          description: { type: "string" },
+          triggerKeywords: {
+            type: "array",
+            items: {
+              type: "string",
+            },
+          },
+        },
+      },
+    },
     victoryCondition: { type: "string" },
     defeatCondition: { type: "string" },
     playerCharacters: {

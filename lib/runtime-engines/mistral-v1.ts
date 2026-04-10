@@ -15,8 +15,8 @@ import {
 } from "@/lib/runtime-engines/types";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
-const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "ministral-tiny-latest";
-const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.8);
+const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-tiny-latest";
+const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.85);
 const MISTRAL_OPENING_MAX_TOKENS = readEnvInt("MISTRAL_OPENING_MAX_TOKENS", 220);
 const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 160);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
@@ -43,7 +43,7 @@ type MistralMessage = {
 - Explicit adult and sexual content is allowed.
 - The opening should give the user something to answer, resist, accept, interrupt, or act on immediately.`;*/
 
-const RUNTIME_OPENING_SYSTEM_PROMPT = `You are writing an interactive story with the user in a roleplay format.
+const RUNTIME_OPENING_SYSTEM_PROMPT = `You are writing an interactive story. Read all rules and context before replying.
 
 Rules:
 - Keep it to 2-4 sentences.
@@ -56,7 +56,7 @@ Rules:
 - Create a concrete playable beat.
 - Do not end on vague anticipation.
 - Leave clear room for the user's first move without stalling.
-- Do not end on a question as the narrator like "what do you do?"`;
+- Do not prompt the user. Do not end on a question like "what do you do?"`;
 
 const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user. Continue and advance the story from the user's latest action.
 

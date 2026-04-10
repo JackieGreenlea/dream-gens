@@ -65,17 +65,16 @@ Objective:
 - If there is exactly one playable character, Objective may be specific to that protagonist.
 - If there are two or more playable characters, Objective must stay general enough to make sense for any listed playable character.
 
-Instructions:
-- Write this field as a hidden story brief for the runtime model.
-- Explain the context of the story, describing the setting, what the story is about, and what part the user will play.
-- Describe the central characters, their personalities, motivations, and dynamics.
-- Describe the kinds of scenes, tensions, and consequences that belong in this story.
-- Describe the tone and pacing.
-- Keep it usable, not bloated.
+ToneStyle:
+- Short description of the story's tone and writing style.
+- Keep it concise, practical, and usable by downstream systems.
 
-AuthorStyle:
-- Short description of the writing style/tone the runtime should emulate.
-- Keep it concise and practical.
+StoryCards:
+- Return a compact set of persistent story cards for the most important recurring elements.
+- Use only these card types: character, location, faction, story_event.
+- Include cards only for elements that are likely to matter again during play.
+- Each card needs a clear title, a concise description, and useful trigger keywords.
+- Keep trigger keywords short and searchable.
 
 PlayerCharacters:
 - Aim for 1-3 distinct playable characters by default.
@@ -131,6 +130,20 @@ function normalizeCharacterId(id: string) {
   return normalized.startsWith("pc-") ? normalized : `pc-${normalized}`;
 }
 
+function normalizeStoryCardId(id: string) {
+  const normalized = id
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!normalized) {
+    return createId("card");
+  }
+
+  return normalized.startsWith("card-") ? normalized : `card-${normalized}`;
+}
+
 export function buildCompilerUserPrompt(input: CompileRequest) {
   return [
     `Premise: ${input.premise.trim()}`,
@@ -143,6 +156,8 @@ export function buildCompilerUserPrompt(input: CompileRequest) {
 
 export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
   const usedCharacterIds = new Set<string>();
+  const usedCardIds = new Set<string>();
+  const toneStyle = output.toneStyle.trim();
 
   return {
     id: createId("story"),
@@ -153,8 +168,26 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
     firstAction: output.firstAction.trim(),
     objective: output.objective.trim(),
     pov: "second_person",
-    instructions: output.instructions.trim(),
-    authorStyle: output.authorStyle.trim(),
+    instructions: "",
+    toneStyle,
+    authorStyle: toneStyle,
+    storyCards: output.storyCards.map((card) => {
+      let nextId = normalizeStoryCardId(card.id);
+
+      while (usedCardIds.has(nextId)) {
+        nextId = createId("card");
+      }
+
+      usedCardIds.add(nextId);
+
+      return {
+        id: nextId,
+        type: card.type,
+        title: card.title.trim(),
+        description: card.description.trim(),
+        triggerKeywords: [...new Set(card.triggerKeywords.map((keyword) => keyword.trim()).filter(Boolean))],
+      };
+    }),
     victoryCondition: output.victoryCondition.trim(),
     victoryEnabled: true,
     defeatCondition: output.defeatCondition.trim(),

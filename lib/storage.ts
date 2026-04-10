@@ -99,6 +99,10 @@ function normalizeWorld(world: StoredWorld): World {
     pov: normalizePov(world.pov),
     victoryEnabled: world.victoryEnabled ?? true,
     defeatEnabled: world.defeatEnabled ?? true,
+    instructions: world.instructions ?? "",
+    toneStyle: world.toneStyle ?? world.authorStyle ?? "",
+    authorStyle: world.authorStyle ?? world.toneStyle ?? "",
+    storyCards: world.storyCards ?? [],
     playerCharacters: world.playerCharacters.map(normalizeCharacter),
   };
 }

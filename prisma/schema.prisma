@@ -55,7 +55,9 @@ model World {
   objective         String
   pov               StoryPov          @default(second_person)
   instructions      String
+  toneStyle         String            @default("")
   authorStyle       String
+  storyCards        Json              @default("[]")
   victoryCondition  String
   victoryEnabled    Boolean           @default(true)
   defeatCondition   String
@@ -101,7 +103,9 @@ model Story {
   objective         String
   pov               StoryPov         @default(second_person)
   instructions      String
+  toneStyle         String           @default("")
   authorStyle       String
+  storyCards        Json             @default("[]")
   victoryCondition  String
   victoryEnabled    Boolean          @default(true)
   defeatCondition   String

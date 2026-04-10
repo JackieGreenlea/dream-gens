@@ -46,7 +46,7 @@ export function buildRuntimeContextPacket(params: {
     turnCount: params.session.turnCount,
     title: params.world.title,
     pov: params.session.pov,
-    toneStyle: params.world.authorStyle,
+    toneStyle: params.world.toneStyle || params.world.authorStyle,
     objective: params.session.objective,
     continuitySummary: params.session.summary.trim() || "The story is just beginning.",
     instructions: params.world.instructions,

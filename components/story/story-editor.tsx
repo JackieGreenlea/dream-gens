@@ -11,8 +11,15 @@ import {
   isAllowedStoryCoverType,
   MAX_STORY_COVER_BYTES,
 } from "@/lib/supabase/storage";
-import { PlayerCharacter, Story } from "@/lib/types";
+import { PlayerCharacter, Story, StoryCardType } from "@/lib/types";
 import { formatLineList, parseLineList } from "@/lib/utils";
+
+const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
+  character: "Characters",
+  location: "Locations",
+  faction: "Factions",
+  story_event: "Story Events",
+};
 
 type StoryEditorProps = {
   initialStory: Story | null;
@@ -129,6 +136,12 @@ export function StoryEditor({
       </div>
     );
   }
+
+  const groupedStoryCards = (Object.keys(STORY_CARD_TYPE_LABELS) as StoryCardType[]).map((type) => ({
+    type,
+    title: STORY_CARD_TYPE_LABELS[type],
+    cards: story.storyCards.filter((card) => card.type === type),
+  }));
 
   async function persistStory(nextStep?: "characters" | "exit") {
     if (!story || isSaving) {
@@ -667,6 +680,76 @@ export function StoryEditor({
             </div>
           </div>
 
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">Story Cards</p>
+              <p className="text-sm text-secondary">
+                Generated continuity cards for the people, places, factions, and major events in this story.
+              </p>
+            </div>
+            {story.storyCards.length > 0 ? (
+              <div className="grid gap-4">
+                {groupedStoryCards.map((group) =>
+                  group.cards.length > 0 ? (
+                    <div
+                      key={group.type}
+                      className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5"
+                    >
+                      <div className="space-y-4">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-foreground">{group.title}</p>
+                          <p className="text-sm text-secondary">
+                            {group.cards.length} card{group.cards.length === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                        <div className="grid gap-3">
+                          {group.cards.map((card) => (
+                            <div
+                              key={card.id}
+                              className="rounded-xl border border-line/60 bg-night/30 p-4"
+                            >
+                              <div className="space-y-3">
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-foreground">{card.title}</p>
+                                  <p className="text-sm leading-7 text-secondary">
+                                    {card.description}
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted">
+                                    Trigger Keywords
+                                  </p>
+                                  {card.triggerKeywords.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                      {card.triggerKeywords.map((keyword) => (
+                                        <span
+                                          key={`${card.id}-${keyword}`}
+                                          className="rounded-full border border-line/70 px-2.5 py-1 text-xs text-secondary"
+                                        >
+                                          {keyword}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-secondary">No trigger keywords.</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null,
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-line/70 bg-transparent p-4 sm:p-5">
+                <p className="text-sm text-secondary">No story cards generated yet.</p>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-4 border-t border-line pt-6">
             {isAdvancedOpen ? (
               <div className="flex justify-end">
@@ -730,10 +813,20 @@ export function StoryEditor({
               </div>
 
               <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
-                <Field label="Author Style">
+                <Field label="Tone Style">
                   <Textarea
-                    value={story.authorStyle}
-                    onChange={(event) => updateField("authorStyle", event.target.value)}
+                    value={story.toneStyle}
+                    onChange={(event) =>
+                      setStory((current) =>
+                        current
+                          ? {
+                              ...current,
+                              toneStyle: event.target.value,
+                              authorStyle: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
                   />
                 </Field>
               </div>
