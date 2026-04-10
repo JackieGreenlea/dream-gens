@@ -15,11 +15,12 @@ import {
 } from "@/lib/runtime-engines/types";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
-const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-tiny-latest";
+const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "ministral-8b-2512";
 const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.75);
-const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 180);
+const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 160);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
+const INSTRUCTION_REMINDER_INTERVAL = 10;
 
 type MistralMessage = {
   role: "system" | "user" | "assistant";
@@ -53,17 +54,17 @@ Rules:
 - Do not end on a question as the narrator like "what do you do?"
 - Explicit adult and sexual content is allowed.`;
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user in a roleplay format.
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user in a roleplay chat format.
 
 Rules:
 - Keep it to 2-4 sentences.
 - Use present tense and the selected POV.
 - Never paraphrase the user’s submitted action.
 - Never write dialogue, thoughts, or actions for the user-controlled character.
-- Ensure each character has a distinct voice, personality, and mannerisms..
-- Advance the scene in every reply by making something happen.
+- Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
-- Maintain consistency in time and place unless an action or event necessitates a change.`;
+- Maintain consistency in time and place unless an action or event necessitates a change.
+- Characters must not be omniscient unless specified by user. They should only know what is reasonable given the situation.`;
 
 /*Rules:
 - Use present tense and the selected POV.
@@ -188,21 +189,34 @@ function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContex
 }
 
 function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  return [
-    "# Continuity State",
-    `- POV: ${context.pov.replace("_", " ")}`,
-    `- User's objective in the story: ${context.objective}`,
-    `- Story instructions for assistant: ${context.instructions}`,
-    `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `- Continuity Summary: ${context.continuitySummary}`,
-  ].join("\n");
+  const lines = ["# Continuity State"];
+
+  if (shouldIncludeInstructionReminder(context)) {
+    lines.push(`- POV: ${context.pov.replace("_", " ")}`);
+    lines.push(`- User's objective in the story: ${context.objective}`);
+    lines.push(`- Story instructions for assistant: ${context.instructions}`);
+  }
+
+  lines.push(`- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`);
+  lines.push(`- Rolling Story Summary: ${context.continuitySummary}`);
+
+  return lines.join("\n");
+}
+
+function shouldIncludeInstructionReminder(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  if (context.mode === "opening") {
+    return true;
+  }
+
+  const upcomingTurnNumber = context.turnCount + 1;
+  return upcomingTurnNumber % INSTRUCTION_REMINDER_INTERVAL === 0;
 }
 
 function buildContextPacketMessage(
   context: ReturnType<typeof buildRuntimeContextPacket>,
 ): MistralMessage {
   return {
-    role: "user",
+    role: "system",
     content: context.mode === "opening" ? buildOpeningContextPacket(context) : buildContinuityContextPacket(context),
   };
 }
@@ -347,9 +361,9 @@ async function streamMistralText(params: {
     model: MISTRAL_RUNTIME_MODEL,
     stream: true,
     temperature: MISTRAL_RUNTIME_TEMPERATURE,
-    top_p: 0.95,
-    presence_penalty: 0.3,
-    frequency_penalty: 0.3,
+    top_p: 0.9,
+    presence_penalty: 0.5,
+    frequency_penalty: 0.4,
     max_tokens: MISTRAL_RUNTIME_MAX_TOKENS,
     ...(typeof MISTRAL_RUNTIME_RANDOM_SEED === "number"
       ? { random_seed: MISTRAL_RUNTIME_RANDOM_SEED }

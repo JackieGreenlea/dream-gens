@@ -52,7 +52,7 @@ export default async function HomePage({
 
   return (
     <main className="min-h-screen bg-page">
-      <div className="mx-auto flex min-h-screen max-w-[1540px] flex-col gap-6 px-4 pb-8 pt-4 sm:px-6 sm:pb-8 sm:pt-5 lg:px-8 lg:pb-8 lg:pt-6">
+      <div className="mx-auto flex min-h-screen max-w-[1540px] flex-col gap-6 px-4 pb-8 pt-2 sm:px-6 sm:pb-8 sm:pt-3 lg:px-8 lg:pb-8 lg:pt-4">
         <section className="relative overflow-hidden rounded-[2rem] border border-line/70">
           <div
             className="absolute inset-0 flex items-center justify-center"

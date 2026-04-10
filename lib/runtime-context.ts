@@ -3,6 +3,7 @@ import { World } from "@/lib/types";
 export type RuntimeContextPacket = {
   mode: "opening" | "turn";
   isFirstTurn: boolean;
+  turnCount: number;
   title: string;
   pov: World["pov"];
   toneStyle: string;
@@ -42,6 +43,7 @@ export function buildRuntimeContextPacket(params: {
   return {
     mode: params.mode ?? "turn",
     isFirstTurn: params.session.turnCount === 0,
+    turnCount: params.session.turnCount,
     title: params.world.title,
     pov: params.session.pov,
     toneStyle: params.world.authorStyle,

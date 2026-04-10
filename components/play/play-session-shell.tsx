@@ -103,9 +103,9 @@ export function PlaySessionShell({
             return (
               <div
                 key={`${index}-${label}-${body.slice(0, 24)}`}
-                className="space-y-2 text-[0.94rem] leading-[1.58rem] text-foreground sm:text-[1.48rem] sm:leading-[2.12rem]"
+                className="space-y-2 text-[0.94rem] leading-[1.58rem] text-foreground sm:text-[1.48rem] sm:leading-[2.12rem] lg:text-[1.18rem] lg:leading-[1.8rem]"
               >
-                <p className="text-[0.9rem] font-bold tracking-[0.01em] text-foreground sm:text-[1.28rem]">{label}:</p>
+                <p className="text-[0.9rem] font-bold tracking-[0.01em] text-foreground sm:text-[1.28rem] lg:text-[1.02rem]">{label}:</p>
                 <p className="whitespace-pre-wrap font-semibold text-foreground">
                   {renderInlineEmphasis(body.trim())}
                 </p>
@@ -116,7 +116,7 @@ export function PlaySessionShell({
           return (
             <p
               key={`${index}-${paragraph.slice(0, 24)}`}
-              className="whitespace-pre-wrap text-[0.9rem] font-semibold leading-[1.58rem] text-foreground sm:text-[1.2rem] sm:leading-[2.12rem]"
+              className="whitespace-pre-wrap text-[0.9rem] font-semibold leading-[1.58rem] text-foreground sm:text-[1.2rem] sm:leading-[2.12rem] lg:text-[1rem] lg:leading-[1.75rem]"
             >
               {renderInlineEmphasis(paragraph)}
             </p>
@@ -426,7 +426,7 @@ export function PlaySessionShell({
         <section className="relative px-1.5 pb-1.5 pt-1 sm:px-6 sm:pb-3 sm:pt-3">
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-[0.78rem] text-secondary sm:text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-[0.78rem] text-secondary sm:text-sm lg:text-[0.82rem]">
                 <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">
                   Turn {session.turnCount}
                 </span>
@@ -436,7 +436,7 @@ export function PlaySessionShell({
                 <button
                   type="button"
                   onClick={() => setIsDetailsOpen((current) => !current)}
-                  className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em]"
+                  className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
                 >
                   {isDetailsOpen ? "Hide" : "Details"}
                 </button>
@@ -444,28 +444,28 @@ export function PlaySessionShell({
                 {isDetailsOpen ? (
                   <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-5 backdrop-blur sm:w-[22rem]">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-foreground">Details</p>
+                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">Details</p>
                       <button
                         type="button"
                         onClick={() => setIsDetailsOpen(false)}
-                        className="text-xs uppercase tracking-[0.18em] text-secondary transition hover:text-foreground"
+                        className="text-xs uppercase tracking-[0.18em] text-secondary transition hover:text-foreground lg:text-[0.68rem]"
                       >
                         Close
                       </button>
                     </div>
                     <div className="mt-4 space-y-5">
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Character</p>
-                        <p className="text-lg font-medium text-foreground">{character.name}</p>
-                        <p className="text-sm leading-6 text-secondary">{character.description}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Character</p>
+                        <p className="text-lg font-medium text-foreground lg:text-[1rem]">{character.name}</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{character.description}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Objective</p>
-                        <p className="text-sm leading-6 text-secondary">{session.objective}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Objective</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{session.objective}</p>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary">Story Summary</p>
-                        <p className="text-sm leading-6 text-secondary">{world.summary}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Summary</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.summary}</p>
                       </div>
                     </div>
                   </div>
@@ -474,7 +474,7 @@ export function PlaySessionShell({
             </div>
 
             <div className="space-y-1">
-              <h1 className="text-[1.38rem] font-semibold leading-tight text-foreground sm:text-[2.4rem]">
+              <h1 className="text-[1.38rem] font-semibold leading-tight text-foreground sm:text-[2.4rem] lg:text-[2rem]">
                 {world.title}
               </h1>
             </div>
@@ -493,7 +493,7 @@ export function PlaySessionShell({
                     {turn.playerAction ? (
                       <div className="flex justify-end">
                         <div className="max-w-[85%] text-right">
-                          <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
+                          <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem] lg:text-[0.98rem] lg:leading-[1.6rem]">
                             {turn.playerAction}
                           </p>
                         </div>
@@ -507,7 +507,7 @@ export function PlaySessionShell({
                   <div className="space-y-5">
                     <div className="flex justify-end">
                       <div className="max-w-[85%] text-right">
-                        <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem]">
+                        <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem] lg:text-[0.98rem] lg:leading-[1.6rem]">
                           {pendingPlayerAction}
                         </p>
                       </div>
@@ -524,7 +524,7 @@ export function PlaySessionShell({
               </>
             ) : (
               <div className="max-w-none py-4 sm:max-w-3xl sm:py-6">
-                <p className="text-[0.9rem] leading-[1.58rem] text-secondary sm:text-[1.2rem] sm:leading-[2.12rem]">
+                <p className="text-[0.9rem] leading-[1.58rem] text-secondary sm:text-[1.2rem] sm:leading-[2.12rem] lg:text-[1rem] lg:leading-[1.7rem]">
                   Preparing the opening scene for this session.
                 </p>
               </div>
@@ -539,7 +539,7 @@ export function PlaySessionShell({
                   onChange={(event) => setPlayerAction(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                   disabled={isSubmitting}
-                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[0.84rem] leading-[1.2rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[1.02rem] sm:leading-[1.7rem]"
+                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[0.84rem] leading-[1.2rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[1.02rem] sm:leading-[1.7rem] lg:text-[0.92rem] lg:leading-[1.45rem]"
                   placeholder="Type what your character does next..."
                 />
                 <button
@@ -555,14 +555,14 @@ export function PlaySessionShell({
                 </button>
               </form>
 
-              {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground">{error}</div> : null}
+              {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground lg:text-[0.88rem]">{error}</div> : null}
 
               {!isSubmitting && suggestedActions.length > 0 ? (
                 <div className="space-y-2">
                   <button
                     type="button"
                     onClick={() => setAreSuggestedActionsOpen((current) => !current)}
-                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground"
+                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground lg:text-[0.68rem]"
                   >
                     Suggested Actions {areSuggestedActionsOpen ? "v" : ">"}
                   </button>
@@ -574,7 +574,7 @@ export function PlaySessionShell({
                           type="button"
                           disabled={isSubmitting}
                           onClick={() => submitAction(action)}
-                          className="text-[1rem] leading-7 text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                          className="text-[1rem] leading-7 text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 lg:text-[0.9rem] lg:leading-6"
                         >
                           {action}
                         </button>
@@ -590,7 +590,7 @@ export function PlaySessionShell({
                     type="button"
                     disabled={isGeneratingSuggestedActions}
                     onClick={() => void generateSuggestedActions()}
-                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 lg:text-[0.68rem]"
                   >
                     {isGeneratingSuggestedActions ? "Generating Suggested Actions..." : "Generate Suggested Actions"}
                   </button>
@@ -602,12 +602,12 @@ export function PlaySessionShell({
                   <button
                     type="button"
                     onClick={() => setIsRuntimeDebugOpen((current) => !current)}
-                    className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-foreground"
+                    className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-foreground lg:text-[0.68rem]"
                   >
                     Runtime Debug {isRuntimeDebugOpen ? "v" : ">"}
                   </button>
                   {isRuntimeDebugOpen ? (
-                    <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85">
+                    <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85 lg:text-[0.68rem] lg:leading-5">
                       {JSON.stringify(runtimeDebug, null, 2)}
                     </pre>
                   ) : null}
