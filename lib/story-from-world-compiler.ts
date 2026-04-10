@@ -70,6 +70,8 @@ ToneStyle:
 StoryCards:
 - Return a compact set of recurring story cards for important characters, locations, factions, and major story events.
 - Use only these types: character, location, faction, story_event.
+- Include exactly 3 to 5 cards of type story_event.
+- story_event cards should capture major incidents, revelations, tensions, or future pressures that are likely to matter again during play.
 - Each card needs a title, a concise description, and useful trigger keywords.
 - Keep cards focused on elements likely to matter again during play.
 

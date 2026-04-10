@@ -73,6 +73,8 @@ StoryCards:
 - Return a compact set of persistent story cards for the most important recurring elements.
 - Use only these card types: character, location, faction, story_event.
 - Include cards only for elements that are likely to matter again during play.
+- Include exactly 3 to 5 cards of type story_event.
+- story_event cards should represent major turning points, revelations, incidents, or looming developments that may recur or echo during play.
 - Each card needs a clear title, a concise description, and useful trigger keywords.
 - Keep trigger keywords short and searchable.
 
@@ -171,7 +173,7 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
     instructions: "",
     toneStyle,
     authorStyle: toneStyle,
-    storyCards: output.storyCards.map((card) => {
+    storyCards: output.storyCards.map((card: CompiledWorldOutput["storyCards"][number]) => {
       let nextId = normalizeStoryCardId(card.id);
 
       while (usedCardIds.has(nextId)) {
@@ -185,7 +187,13 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
         type: card.type,
         title: card.title.trim(),
         description: card.description.trim(),
-        triggerKeywords: [...new Set(card.triggerKeywords.map((keyword) => keyword.trim()).filter(Boolean))],
+        triggerKeywords: [
+          ...new Set(
+            card.triggerKeywords
+              .map((keyword: string) => keyword.trim())
+              .filter(Boolean),
+          ),
+        ],
       };
     }),
     victoryCondition: output.victoryCondition.trim(),
@@ -197,7 +205,8 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
     slug: null,
     publishedAt: null,
     coverImageUrl: null,
-    playerCharacters: output.playerCharacters.map((character) => {
+    playerCharacters: output.playerCharacters.map(
+      (character: CompiledWorldOutput["playerCharacters"][number]) => {
       let nextId = normalizeCharacterId(character.id);
 
       while (usedCharacterIds.has(nextId)) {
@@ -210,9 +219,10 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
         id: nextId,
         name: character.name.trim(),
         description: character.description.trim(),
-        strengths: character.strengths.map((strength) => strength.trim()),
-        weaknesses: character.weaknesses.map((weakness) => weakness.trim()),
+        strengths: character.strengths.map((strength: string) => strength.trim()),
+        weaknesses: character.weaknesses.map((weakness: string) => weakness.trim()),
       };
-    }),
+      },
+    ),
   };
 }

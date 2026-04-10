@@ -11,8 +11,8 @@ import {
   isAllowedStoryCoverType,
   MAX_STORY_COVER_BYTES,
 } from "@/lib/supabase/storage";
-import { PlayerCharacter, Story, StoryCardType } from "@/lib/types";
-import { formatLineList, parseLineList } from "@/lib/utils";
+import { PlayerCharacter, Story, StoryCard, StoryCardType } from "@/lib/types";
+import { createId, formatLineList, parseLineList } from "@/lib/utils";
 
 const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
   character: "Characters",
@@ -92,6 +92,56 @@ export function StoryEditor({
           }
         : current,
     );
+  }
+
+  function updateStoryCard(cardId: string, updater: (card: StoryCard) => StoryCard) {
+    setStory((current) =>
+      current
+        ? {
+            ...current,
+            storyCards: current.storyCards.map((card) => (card.id === cardId ? updater(card) : card)),
+          }
+        : current,
+    );
+  }
+
+  function addStoryCard(type: StoryCardType) {
+    setStory((current) =>
+      current
+        ? {
+            ...current,
+            storyCards: [
+              ...current.storyCards,
+              {
+                id: createId("card"),
+                type,
+                title: `New ${STORY_CARD_TYPE_LABELS[type].slice(0, -1)}`,
+                description: "Add card details.",
+                triggerKeywords: [],
+              },
+            ],
+          }
+        : current,
+    );
+  }
+
+  function removeStoryCard(cardId: string) {
+    setStory((current) =>
+      current
+        ? {
+            ...current,
+            storyCards: current.storyCards.filter((card) => card.id !== cardId),
+          }
+        : current,
+    );
+  }
+
+  function parseKeywordList(value: string) {
+    return value
+      .split("\n")
+      .map((keyword) => keyword.trim())
+      .filter(Boolean)
+      .slice(0, 12);
   }
 
   function handleAddTag() {
@@ -687,67 +737,91 @@ export function StoryEditor({
                 Generated continuity cards for the people, places, factions, and major events in this story.
               </p>
             </div>
-            {story.storyCards.length > 0 ? (
-              <div className="grid gap-4">
-                {groupedStoryCards.map((group) =>
-                  group.cards.length > 0 ? (
-                    <div
-                      key={group.type}
-                      className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5"
-                    >
-                      <div className="space-y-4">
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-foreground">{group.title}</p>
-                          <p className="text-sm text-secondary">
-                            {group.cards.length} card{group.cards.length === 1 ? "" : "s"}
-                          </p>
-                        </div>
-                        <div className="grid gap-3">
-                          {group.cards.map((card) => (
-                            <div
-                              key={card.id}
-                              className="rounded-xl border border-line/60 bg-night/30 p-4"
-                            >
-                              <div className="space-y-3">
-                                <div className="space-y-1">
-                                  <p className="text-sm font-medium text-foreground">{card.title}</p>
-                                  <p className="text-sm leading-7 text-secondary">
-                                    {card.description}
-                                  </p>
-                                </div>
-                                <div className="space-y-1">
-                                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-muted">
-                                    Trigger Keywords
-                                  </p>
-                                  {card.triggerKeywords.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                      {card.triggerKeywords.map((keyword) => (
-                                        <span
-                                          key={`${card.id}-${keyword}`}
-                                          className="rounded-full border border-line/70 px-2.5 py-1 text-xs text-secondary"
-                                        >
-                                          {keyword}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm text-secondary">No trigger keywords.</p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+            <div className="grid gap-4">
+              {groupedStoryCards.map((group) => (
+                <div
+                  key={group.type}
+                  className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5"
+                >
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-foreground">{group.title}</p>
+                        <p className="text-sm text-secondary">
+                          {group.cards.length} card{group.cards.length === 1 ? "" : "s"}
+                        </p>
                       </div>
+                      <Button type="button" variant="ghost" onClick={() => addStoryCard(group.type)}>
+                        Add {group.title.slice(0, -1)}
+                      </Button>
                     </div>
-                  ) : null,
-                )}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-line/70 bg-transparent p-4 sm:p-5">
-                <p className="text-sm text-secondary">No story cards generated yet.</p>
-              </div>
-            )}
+                    {group.cards.length > 0 ? (
+                      <div className="grid gap-3">
+                        {group.cards.map((card) => (
+                          <div
+                            key={card.id}
+                            className="rounded-xl border border-line/60 bg-night/30 p-4"
+                          >
+                            <div className="space-y-4">
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => removeStoryCard(card.id)}
+                                >
+                                  Remove card
+                                </Button>
+                              </div>
+                              <Field label="Title">
+                                <Input
+                                  value={card.title}
+                                  onChange={(event) =>
+                                    updateStoryCard(card.id, (current) => ({
+                                      ...current,
+                                      title: event.target.value,
+                                    }))
+                                  }
+                                />
+                              </Field>
+                              <Field label="Description">
+                                <Textarea
+                                  value={card.description}
+                                  onChange={(event) =>
+                                    updateStoryCard(card.id, (current) => ({
+                                      ...current,
+                                      description: event.target.value,
+                                    }))
+                                  }
+                                />
+                              </Field>
+                              <Field
+                                label="Trigger Keywords"
+                                hint="One per line. These are read-only runtime candidates for later phases."
+                              >
+                                <Textarea
+                                  value={formatLineList(card.triggerKeywords)}
+                                  onChange={(event) =>
+                                    updateStoryCard(card.id, (current) => ({
+                                      ...current,
+                                      triggerKeywords: parseKeywordList(event.target.value),
+                                    }))
+                                  }
+                                  className="min-h-24"
+                                />
+                              </Field>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-line/70 bg-transparent p-4">
+                        <p className="text-sm text-secondary">No {group.title.toLowerCase()} yet.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-4 border-t border-line pt-6">

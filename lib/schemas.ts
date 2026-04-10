@@ -67,7 +67,7 @@ export const storyCardSchema = z.object({
   triggerKeywords: z.array(z.string().trim().min(1)).max(12).default([]),
 });
 
-export const compiledWorldSchema = z.object({
+const compiledWorldSchemaBase = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).max(600),
   background: z.string().trim().min(1),
@@ -80,9 +80,31 @@ export const compiledWorldSchema = z.object({
   playerCharacters: z.array(playerCharacterSchema).min(1).max(6),
 });
 
+export const compiledWorldSchema = compiledWorldSchemaBase.superRefine((output, context) => {
+  const storyEventCount = output.storyCards.filter((card) => card.type === "story_event").length;
+
+  if (storyEventCount < 3 || storyEventCount > 5) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["storyCards"],
+      message: "Compiler output must include between 3 and 5 story_event cards.",
+    });
+  }
+});
+
 export type CompileRequest = z.infer<typeof compileRequestSchema>;
-export const compiledStorySchema = compiledWorldSchema.extend({
+export const compiledStorySchema = compiledWorldSchemaBase.extend({
   tags: z.array(compilerGenreTagSchema).length(1),
+}).superRefine((output, context) => {
+  const storyEventCount = output.storyCards.filter((card) => card.type === "story_event").length;
+
+  if (storyEventCount < 3 || storyEventCount > 5) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["storyCards"],
+      message: "Compiler output must include between 3 and 5 story_event cards.",
+    });
+  }
 });
 
 export type CompiledWorldOutput = z.infer<typeof compiledStorySchema>;
@@ -109,7 +131,7 @@ export const sessionSuggestedActionsRequestSchema = z.object({
   sessionId: z.string().trim().min(1),
 });
 
-export const persistedWorldSchema = compiledWorldSchema.extend({
+export const persistedWorldSchema = compiledWorldSchemaBase.extend({
   id: z.string().trim().min(1),
   pov: povSchema.default("second_person"),
   instructions: z.string().trim().default(""),
