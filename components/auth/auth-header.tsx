@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import logo from "@/app/logo.png";
@@ -110,6 +111,10 @@ function headerActionButtonClasses() {
 }
 
 export function AuthHeader({ user, identity }: AuthHeaderProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isSessionPage = /^\/sessions\/[^/]+$/.test(pathname ?? "");
+  const showSessionHeader = searchParams.get("nav") === "1";
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const primaryLabel = identity?.username || user?.email?.split("@")[0] || "Guest";
@@ -164,6 +169,10 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
       </Link>
     </>
   );
+
+  if (isSessionPage && !showSessionHeader) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/80 bg-night/75 backdrop-blur">

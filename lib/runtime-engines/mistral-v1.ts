@@ -15,8 +15,9 @@ import {
 } from "@/lib/runtime-engines/types";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
-const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "ministral-8b-2512";
-const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.75);
+const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "ministral-tiny-latest";
+const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.8);
+const MISTRAL_OPENING_MAX_TOKENS = readEnvInt("MISTRAL_OPENING_MAX_TOKENS", 220);
 const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 160);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
@@ -46,19 +47,24 @@ const RUNTIME_OPENING_SYSTEM_PROMPT = `You are writing an interactive story with
 
 Rules:
 - Keep it to 2-4 sentences.
+- Convey emotion with sentence structure and paragraph breaks.
 - Never write the user-controlled character's dialogue, thoughts, or actions.
 - Build from the story background.
 - Use present tense and the selected POV.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
-- Do not end on a question as the narrator like "what do you do?"
-- Explicit adult and sexual content is allowed.`;
+- Create a concrete playable beat.
+- Do not end on vague anticipation.
+- Leave clear room for the user's first move without stalling.
+- Do not end on a question as the narrator like "what do you do?"`;
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user in a roleplay chat format.
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user. Continue and advance the story from the user's latest action.
 
 Rules:
 - Keep it to 2-4 sentences.
+- Convey emotion with sentence structure and paragraph breaks.
 - Use present tense and the selected POV.
+- The final user message is the latest action taken by the user-controlled character. Respond directly to that message.
 - Never paraphrase the user’s submitted action.
 - Never write dialogue, thoughts, or actions for the user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
@@ -353,10 +359,13 @@ function readMistralContent(
 }
 
 async function streamMistralText(params: {
+  mode: "opening" | "turn";
   messages: MistralMessage[];
   onDelta?: (delta: string) => void | Promise<void>;
 }) {
   const requestStartMs = Date.now();
+  const maxTokens =
+    params.mode === "opening" ? MISTRAL_OPENING_MAX_TOKENS : MISTRAL_RUNTIME_MAX_TOKENS;
   const requestBody = {
     model: MISTRAL_RUNTIME_MODEL,
     stream: true,
@@ -364,7 +373,7 @@ async function streamMistralText(params: {
     top_p: 0.9,
     presence_penalty: 0.5,
     frequency_penalty: 0.4,
-    max_tokens: MISTRAL_RUNTIME_MAX_TOKENS,
+    max_tokens: maxTokens,
     ...(typeof MISTRAL_RUNTIME_RANDOM_SEED === "number"
       ? { random_seed: MISTRAL_RUNTIME_RANDOM_SEED }
       : {}),
@@ -375,6 +384,7 @@ async function streamMistralText(params: {
   };
   console.info("[mistral-v1] request body", {
     model: requestBody.model,
+    mode: params.mode,
     stream: requestBody.stream,
     temperature: requestBody.temperature,
     topP: requestBody.top_p,
@@ -581,6 +591,7 @@ async function generateMistralTurn(
   });
 
   const streamedStory = await streamMistralText({
+    mode,
     messages: inputMessages,
     onDelta: params.onTextDelta,
   });

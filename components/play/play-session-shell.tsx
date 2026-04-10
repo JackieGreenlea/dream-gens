@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, ReactNode, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
 import { PlayerCharacter, Session, SessionTurn, World } from "@/lib/types";
@@ -33,6 +33,9 @@ export function PlaySessionShell({
   initialCharacter,
 }: PlaySessionShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isNavVisible = searchParams.get("nav") === "1";
   const [session, setSession] = useState<Session | null>(initialSession);
   const [world] = useState<World | null>(initialWorld);
   const [character] = useState<PlayerCharacter | null>(initialCharacter);
@@ -420,13 +423,33 @@ export function PlaySessionShell({
     void submitAction(playerAction);
   }
 
+  function toggleSessionNav() {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (isNavVisible) {
+      params.delete("nav");
+    } else {
+      params.set("nav", "1");
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
+
   return (
     <div className="h-full overflow-hidden overscroll-none">
       <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none">
-        <section className="relative px-1.5 pb-1.5 pt-1 sm:px-6 sm:pb-3 sm:pt-3">
+        <section className={`relative px-1.5 pb-1.5 pt-1 sm:px-6 sm:pb-3 sm:pt-3 ${isNavVisible ? "lg:pt-16" : ""}`}>
           <div className="space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2 text-[0.78rem] text-secondary sm:text-sm lg:text-[0.82rem]">
+                <button
+                  type="button"
+                  onClick={toggleSessionNav}
+                  className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
+                >
+                  {isNavVisible ? "Hide Nav" : "Show Nav"}
+                </button>
                 <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">
                   Turn {session.turnCount}
                 </span>

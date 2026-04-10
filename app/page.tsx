@@ -78,7 +78,7 @@ export default async function HomePage({
             <div className="space-y-5">
               <div className="w-full rounded-[1.4rem] bg-[linear-gradient(135deg,rgba(13,16,20,0.52)_0%,rgba(13,16,20,0.28)_100%)] px-5 py-6 sm:max-w-xl sm:px-8 sm:py-8">
                 <div className="space-y-5">
-                  <h1 className="max-w-none text-[2.65rem] font-semibold tracking-[-0.045em] text-foreground sm:max-w-md sm:text-5xl lg:text-[4.2rem] lg:leading-[0.95]">
+                  <h1 className="max-w-none text-[2.65rem] font-semibold leading-[0.94] tracking-[-0.045em] text-foreground sm:max-w-md sm:text-5xl sm:leading-[0.96] lg:text-[3.55rem] lg:leading-[0.95]">
                     Step into a world of your own imagination.
                   </h1>
                   <p className="max-w-none text-base leading-7 text-secondary sm:max-w-xl sm:text-lg">
