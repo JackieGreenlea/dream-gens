@@ -1,4 +1,3 @@
-import { selectActiveStoryCards } from "@/lib/runtime-story-cards";
 import { World } from "@/lib/types";
 
 export type RuntimeContextPacket = {
@@ -56,12 +55,7 @@ export function buildRuntimeContextPacket(params: {
     continuitySummary: rollingSummary,
     instructions: params.world.instructions,
     background: params.world.background,
-    activeStoryCards: selectActiveStoryCards({
-      storyCards: params.world.storyCards,
-      playerAction: params.playerAction ?? "",
-      rollingSummary,
-      recentTurns: params.session.recentTurns,
-    }),
+    activeStoryCards: [],
     recentTurns: params.session.recentTurns.slice(-10).map((turn) => ({
       turnNumber: turn.turnNumber,
       playerAction: turn.playerAction,

@@ -46,7 +46,6 @@ export function PlaySessionShell({
   const [isGeneratingSuggestedActions, setIsGeneratingSuggestedActions] = useState(false);
   const [error, setError] = useState("");
   const [runtimeDebug, setRuntimeDebug] = useState<RuntimeDebugPayload | null>(null);
-  const [isRuntimeDebugOpen, setIsRuntimeDebugOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -56,6 +55,15 @@ export function PlaySessionShell({
 
   const suggestedActions = session?.turns.at(-1)?.suggestedActions ?? [];
   const recentTurns = session?.turns ?? [];
+  const lastSentPayload = runtimeDebug
+    ? {
+        engineId: runtimeDebug.engineId ?? "",
+        ...(runtimeDebug.sentPreviousResponseId
+          ? { previousResponseId: runtimeDebug.sentPreviousResponseId }
+          : {}),
+        inputMessages: runtimeDebug.inputMessages ?? null,
+      }
+    : null;
 
   function sanitizeStreamingStoryText(text: string) {
     return text
@@ -176,7 +184,6 @@ export function PlaySessionShell({
     setIsSubmitting(true);
     setError("");
     setRuntimeDebug(null);
-    setIsRuntimeDebugOpen(false);
     setPendingPlayerAction(nextAction);
     setStreamingStoryText("");
     firstChunkReceivedLoggedRef.current = false;
@@ -274,7 +281,6 @@ export function PlaySessionShell({
         if (event === "complete" && payload.turn) {
           completed = true;
           setRuntimeDebug(payload.debug ?? null);
-          setIsRuntimeDebugOpen(false);
 
           setSession((current) =>
             current
@@ -293,7 +299,6 @@ export function PlaySessionShell({
 
         if (event === "error") {
           setRuntimeDebug(payload.debug ?? null);
-          setIsRuntimeDebugOpen(false);
           throw new Error(payload.error || "The session could not generate the next turn.");
         }
       }
@@ -384,7 +389,6 @@ export function PlaySessionShell({
       }
 
       setRuntimeDebug(payload.debug ?? null);
-      setIsRuntimeDebugOpen(false);
       setSession((current) =>
         current
           ? {
@@ -620,20 +624,14 @@ export function PlaySessionShell({
                 </div>
               ) : null}
 
-              {isDevelopment && runtimeDebug ? (
+              {isDevelopment && lastSentPayload ? (
                 <div className="space-y-2 rounded-lg border border-line/80 bg-surface/70 p-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsRuntimeDebugOpen((current) => !current)}
-                    className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-secondary transition hover:text-foreground lg:text-[0.68rem]"
-                  >
-                    Runtime Debug {isRuntimeDebugOpen ? "v" : ">"}
-                  </button>
-                  {isRuntimeDebugOpen ? (
-                    <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85 lg:text-[0.68rem] lg:leading-5">
-                      {JSON.stringify(runtimeDebug, null, 2)}
-                    </pre>
-                  ) : null}
+                  <p className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-secondary lg:text-[0.68rem]">
+                    Last Sent Payload
+                  </p>
+                  <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-foreground/85 lg:text-[0.68rem] lg:leading-5">
+                    {JSON.stringify(lastSentPayload, null, 2)}
+                  </pre>
                 </div>
               ) : null}
             </div>
