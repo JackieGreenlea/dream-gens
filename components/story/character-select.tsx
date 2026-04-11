@@ -172,6 +172,7 @@ export function StoryCharacterSelect({
       if (!response.ok || !data.sessionId) {
         throw new Error(data.error || "The session could not be started.");
       }
+
       router.push(`/sessions/${data.sessionId}`);
     } catch (startError) {
       setError(

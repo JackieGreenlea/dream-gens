@@ -19,11 +19,10 @@ import {
 type SessionTurnResult = {
   turn: ReturnType<typeof createSessionTurn>;
   previousResponseId: string;
-  debug: {
+  payload: {
+    engineId: string;
     inputMessages: unknown;
     sentPreviousResponseId: string;
-    responseId: string;
-    rawResponse: unknown;
   };
 };
 
@@ -164,12 +163,7 @@ async function generateAndPersistSessionTurn(params: {
   return {
     turn,
     previousResponseId: nextPreviousResponseId,
-    debug: {
-      inputMessages: engineResult.debug.inputMessages,
-      sentPreviousResponseId: engineResult.debug.sentPreviousResponseId,
-      responseId: nextPreviousResponseId,
-      rawResponse: engineResult.debug.rawResponse,
-    },
+    payload: engineResult.payload,
   };
 }
 
@@ -246,6 +240,6 @@ export async function generateSessionSuggestedActions(params: {
     session,
     turnNumber: latestTurn.turnNumber,
     suggestedActions,
-    debug: result.debug,
+    payload: result.payload,
   };
 }

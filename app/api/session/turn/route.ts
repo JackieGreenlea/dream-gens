@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { RuntimeEngineDebugError } from "@/lib/runtime-engines/types";
+import { RuntimeEnginePayloadError } from "@/lib/runtime-engines/types";
 import { streamSessionTurn } from "@/lib/session-runtime";
 import { runtimeTurnRequestSchema } from "@/lib/schemas";
 import { getCurrentUserIdFast } from "@/lib/supabase/server";
@@ -9,7 +9,6 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   console.info("[session-turn] start");
-  const isDevelopment = process.env.NODE_ENV !== "production";
 
   try {
     const userId = await getCurrentUserIdFast();
@@ -58,11 +57,7 @@ export async function POST(request: Request) {
           sendEvent("complete", {
             turn: result.turn,
             previousResponseId: result.previousResponseId,
-            ...(isDevelopment
-              ? {
-                  debug: result.debug,
-                }
-              : {}),
+            payload: result.payload,
           });
         } catch (error) {
           const message =
@@ -70,9 +65,9 @@ export async function POST(request: Request) {
           console.error("[session-turn] stream failure", { message });
           sendEvent("error", {
             error: message,
-            ...(isDevelopment && error instanceof RuntimeEngineDebugError
+            ...(error instanceof RuntimeEnginePayloadError
               ? {
-                  debug: error.debug,
+                  payload: error.payload,
                 }
               : {}),
           });

@@ -21,20 +21,16 @@ export type RuntimeEngineGenerateTurnParams = {
   onTextDelta?: (delta: string) => void | Promise<void>;
 };
 
-export type RuntimeEngineDebugPayload = {
+export type RuntimeEngineSentPayload = {
   engineId: string;
   inputMessages: unknown;
   sentPreviousResponseId: string;
-  rawResponse: unknown;
-  finalizationText?: string;
-  parsedOutput?: unknown;
-  validationError?: unknown;
 };
 
 export type RuntimeEngineGenerateTurnResult = {
   output: RuntimeTurnOutput;
   responseId: string;
-  debug: RuntimeEngineDebugPayload;
+  payload: RuntimeEngineSentPayload;
 };
 
 export type RuntimeEngineGenerateSuggestedActionsParams = {
@@ -46,7 +42,7 @@ export type RuntimeEngineGenerateSuggestedActionsParams = {
 
 export type RuntimeEngineGenerateSuggestedActionsResult = {
   suggestedActions: string[];
-  debug: RuntimeEngineDebugPayload;
+  payload: RuntimeEngineSentPayload;
 };
 
 export interface RuntimeEngine {
@@ -59,12 +55,12 @@ export interface RuntimeEngine {
   ): Promise<RuntimeEngineGenerateSuggestedActionsResult>;
 }
 
-export class RuntimeEngineDebugError extends Error {
-  debug: RuntimeEngineDebugPayload;
+export class RuntimeEnginePayloadError extends Error {
+  payload: RuntimeEngineSentPayload;
 
-  constructor(message: string, debug: RuntimeEngineDebugPayload) {
+  constructor(message: string, payload: RuntimeEngineSentPayload) {
     super(message);
-    this.name = "RuntimeEngineDebugError";
-    this.debug = debug;
+    this.name = "RuntimeEnginePayloadError";
+    this.payload = payload;
   }
 }

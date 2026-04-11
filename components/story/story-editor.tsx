@@ -47,6 +47,9 @@ export function StoryEditor({
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [pendingTag, setPendingTag] = useState("");
+  const [characterLineDrafts, setCharacterLineDrafts] = useState<
+    Record<string, { strengths?: string; weaknesses?: string }>
+  >({});
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
     initialStory?.coverImageUrl ?? null,
   );
@@ -92,6 +95,38 @@ export function StoryEditor({
           }
         : current,
     );
+  }
+
+  function updateCharacterLineDraft(
+    characterId: string,
+    field: "strengths" | "weaknesses",
+    value: string,
+  ) {
+    setCharacterLineDrafts((current) => ({
+      ...current,
+      [characterId]: {
+        ...current[characterId],
+        [field]: value,
+      },
+    }));
+  }
+
+  function clearCharacterLineDraft(characterId: string, field: "strengths" | "weaknesses") {
+    setCharacterLineDrafts((current) => {
+      const nextCharacterDraft = { ...(current[characterId] ?? {}) };
+      delete nextCharacterDraft[field];
+
+      if (Object.keys(nextCharacterDraft).length === 0) {
+        const nextDrafts = { ...current };
+        delete nextDrafts[characterId];
+        return nextDrafts;
+      }
+
+      return {
+        ...current,
+        [characterId]: nextCharacterDraft,
+      };
+    });
   }
 
   function updateStoryCard(cardId: string, updater: (card: StoryCard) => StoryCard) {
@@ -699,13 +734,20 @@ export function StoryEditor({
                       hint="One per line. Aim to keep 2 story-relevant strengths."
                     >
                       <Textarea
-                        value={formatLineList(character.strengths)}
+                        value={
+                          characterLineDrafts[character.id]?.strengths ??
+                          formatLineList(character.strengths)
+                        }
                         onChange={(event) =>
+                          updateCharacterLineDraft(character.id, "strengths", event.target.value)
+                        }
+                        onBlur={(event) => {
                           updateCharacter(character.id, (current) => ({
                             ...current,
                             strengths: parseLineList(event.target.value, current.strengths, 2),
-                          }))
-                        }
+                          }));
+                          clearCharacterLineDraft(character.id, "strengths");
+                        }}
                         className="min-h-28"
                       />
                     </Field>
@@ -714,13 +756,20 @@ export function StoryEditor({
                       hint="One per line. Aim to keep 2 story-relevant weaknesses."
                     >
                       <Textarea
-                        value={formatLineList(character.weaknesses)}
+                        value={
+                          characterLineDrafts[character.id]?.weaknesses ??
+                          formatLineList(character.weaknesses)
+                        }
                         onChange={(event) =>
+                          updateCharacterLineDraft(character.id, "weaknesses", event.target.value)
+                        }
+                        onBlur={(event) => {
                           updateCharacter(character.id, (current) => ({
                             ...current,
                             weaknesses: parseLineList(event.target.value, current.weaknesses, 2),
-                          }))
-                        }
+                          }));
+                          clearCharacterLineDraft(character.id, "weaknesses");
+                        }}
                         className="min-h-28"
                       />
                     </Field>

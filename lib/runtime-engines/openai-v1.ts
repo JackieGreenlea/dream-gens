@@ -16,7 +16,6 @@ import {
 } from "@/lib/schemas";
 import {
   RuntimeEngine,
-  RuntimeEngineDebugPayload,
   RuntimeEngineGenerateSuggestedActionsParams,
   RuntimeEngineGenerateSuggestedActionsResult,
   RuntimeEngineGenerateTurnParams,
@@ -244,6 +243,19 @@ async function generateOpenAITurn(
     context,
     playerAction: params.playerAction,
   });
+  console.info(
+    `[openai-v1] exact api request\n${JSON.stringify(
+      {
+        model: RUNTIME_MODEL,
+        input: inputMessages,
+        ...(params.session.previousResponseId
+          ? { previous_response_id: params.session.previousResponseId }
+          : {}),
+      },
+      null,
+      2,
+    )}`,
+  );
 
   const streamedStory = await streamTextOutputWithMetadata({
     input: inputMessages,
@@ -257,19 +269,14 @@ async function generateOpenAITurn(
     }),
   );
 
-  const debug: RuntimeEngineDebugPayload = {
-    engineId: "openai_v1",
-    inputMessages,
-    sentPreviousResponseId: params.session.previousResponseId || "",
-    rawResponse: {
-      streamEvents: streamedStory.rawEvents,
-    },
-  };
-
   return {
     output,
     responseId: streamedStory.responseId || params.session.previousResponseId || "",
-    debug,
+    payload: {
+      engineId: "openai_v1",
+      inputMessages,
+      sentPreviousResponseId: params.session.previousResponseId || "",
+    },
   };
 }
 
@@ -289,6 +296,19 @@ async function generateOpenAISuggestedActions(
     playerAction: params.turn.playerAction,
     storyText: params.turn.storyText,
   });
+  console.info(
+    `[openai-v1] exact api request\n${JSON.stringify(
+      {
+        model: RUNTIME_MODEL,
+        input: inputMessages,
+        schemaName: "session_turn_suggested_actions",
+        schema: runtimeTurnFinalizationJsonSchema,
+        store: false,
+      },
+      null,
+      2,
+    )}`,
+  );
 
   const response = await createStructuredOutputWithMetadata<unknown>({
     schemaName: "session_turn_suggested_actions",
@@ -312,11 +332,10 @@ async function generateOpenAISuggestedActions(
 
   return {
     suggestedActions: output.suggestedActions,
-    debug: {
+    payload: {
       engineId: "openai_v1",
       inputMessages,
       sentPreviousResponseId: params.session.previousResponseId || "",
-      rawResponse: response.rawResponse,
     },
   };
 }

@@ -12,52 +12,87 @@ import {
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
-import { StoryCardType } from "@/lib/types";
+import { StoryPov } from "@/lib/types";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-tiny-latest";
-const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.85);
-const MISTRAL_OPENING_MAX_TOKENS = readEnvInt("MISTRAL_OPENING_MAX_TOKENS", 220);
+const MISTRAL_RUNTIME_TEMPERATURE = readEnvFloat("MISTRAL_RUNTIME_TEMPERATURE", 0.95);
+const MISTRAL_OPENING_MAX_TOKENS = readEnvInt("MISTRAL_OPENING_MAX_TOKENS", 240);
 const MISTRAL_RUNTIME_MAX_TOKENS = readEnvInt("MISTRAL_RUNTIME_MAX_TOKENS", 160);
 const MISTRAL_FINALIZER_MAX_TOKENS = readEnvInt("MISTRAL_FINALIZER_MAX_TOKENS", 120);
 const MISTRAL_RUNTIME_RANDOM_SEED = readOptionalEnvInt("MISTRAL_RUNTIME_RANDOM_SEED");
-const INSTRUCTION_REMINDER_INTERVAL = 10;
 
 type MistralMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
 
-const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
-  character: "Characters",
-  location: "Locations",
-  faction: "Factions",
-  story_event: "Story Events",
-};
+function formatPovLabel(pov: StoryPov) {
+  return pov.replace("_", " ");
+}
 
-const RUNTIME_OPENING_SYSTEM_PROMPT = `You are a roleplay chat partner. Follow the user's roleplay instructions closely.
+function buildRollingSummaryLine(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  if (context.turnCount < 9) {
+    return "";
+  }
+
+  const summary = context.continuitySummary.trim();
+
+  if (!summary || summary === "The story is just beginning.") {
+    return "";
+  }
+
+  return `Earlier in the story: ${summary}`;
+}
+
+function buildOpeningSystemPrompt(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  return `You are a roleplay chat partner. Follow the user's roleplay instructions closely.
 
 Rules:
 - Keep it to 2-4 sentences.
-- Use present tense and 2nd person POV.
+- Use present tense and ${formatPovLabel(context.pov)} POV.
+- Never write dialogue, thoughts, or actions for the user-controlled character.
+- Ensure each character has a distinct voice, personality, and mannerisms.
+- Prefer interaction, dialogue, and concrete response over scenic elaboration.
+- Keep track of body positioning.
+- Stay in character.
+- Start in motion around the user-controlled character.
+- Make something happen immediately.
+- Do not end on vague anticipation.
+
+The user is playing as ${context.character.name}. ${context.character.description}
+You are playing as all other characters. You can also create new characters as appropriate.
+
+User's story background: ${context.background}
+
+Tone/theme: ${context.toneStyle}
+
+Additional context: ${context.instructions}`;
+}
+
+function buildStorySystemPrompt(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const rollingSummaryLine = buildRollingSummaryLine(context);
+
+  return `You are a roleplay chat partner. Follow the user's roleplay instructions closely.
+
+Rules:
+- Keep it to 2-4 sentences.
+- Use present tense and ${formatPovLabel(context.pov)} POV.
 - Never paraphrase the user’s submitted action.
 - Never write dialogue, thoughts, or actions for the user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
 - Keep track of body positioning.
-- Start in motion around the user-controlled character.
-- Make something happen immediately.`;
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are a roleplay chat partner. Follow the user's roleplay instructions closely.
+The user is playing as ${context.character.name}. ${context.character.description}
+You are playing as all other characters. You can also create new characters as appropriate.
 
-Rules:
-- Keep it to 2-4 sentences.
-- Use present tense and 2nd person POV.
-- Never paraphrase the user’s submitted action.
-- Never write dialogue, thoughts, or actions for the user-controlled character.
-- Ensure each character has a distinct voice, personality, and mannerisms.
-- Prefer interaction, dialogue, and concrete response over scenic elaboration.
-- Keep track of body positioning.`;
+Background: ${context.background}
+
+Tone/theme: ${context.toneStyle}
+
+Additional context: ${context.instructions}${rollingSummaryLine ? `\n\n${rollingSummaryLine}` : ""}`;
+}
 
 const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `Return only valid JSON.
 
@@ -137,109 +172,7 @@ function readOptionalEnvInt(name: string) {
   return Number.isInteger(parsed) ? parsed : undefined;
 }
 
-function compactText(value: string, maxLength: number) {
-  const normalized = value.replace(/\s+/g, " ").trim();
-
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, maxLength).trimEnd()}...`;
-}
-
-function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  const lines = [
-    "# Opening State",
-    `- Title: ${context.title}`,
-    `- POV: ${context.pov.replace("_", " ")}`,
-    `- Tone / Style: ${context.toneStyle}`,
-    `- User-controlled character objective in the story: ${context.objective}`,
-    `- Story Background: ${context.background}`,
-    `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `- User-controlled character's strengths: ${context.character.strengths.join(", ")}`,
-    `- User-controlled character's weaknesses: ${context.character.weaknesses.join(", ")}`,
-  ];
-
-  const activeStoryCardLines = buildActiveStoryCardLines(context);
-
-  if (activeStoryCardLines.length > 0) {
-    lines.push(...activeStoryCardLines);
-  }
-
-  if (context.instructions.trim()) {
-    lines.push(`- Compatibility Story Instructions: ${context.instructions}`);
-  }
-
-  return lines.join("\n");
-}
-
-function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  const lines = ["# Continuity State"];
-
-  if (shouldIncludeInstructionReminder(context)) {
-    lines.push(`- POV: ${context.pov.replace("_", " ")}`);
-    lines.push(`- User's objective in the story: ${context.objective}`);
-  }
-
-  lines.push(`- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`);
-  lines.push(`- Rolling Story Summary: ${context.continuitySummary}`);
-
-  const activeStoryCardLines = buildActiveStoryCardLines(context);
-
-  if (activeStoryCardLines.length > 0) {
-    lines.push(...activeStoryCardLines);
-  }
-
-  if (shouldIncludeInstructionReminder(context) && context.instructions.trim()) {
-    lines.push(`- Compatibility Story Instructions: ${context.instructions}`);
-  }
-
-  return lines.join("\n");
-}
-
-function buildActiveStoryCardLines(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  if (context.activeStoryCards.length === 0) {
-    return [];
-  }
-
-  const lines = ["- Active Story Cards:"];
-
-  for (const type of Object.keys(STORY_CARD_TYPE_LABELS) as StoryCardType[]) {
-    const cards = context.activeStoryCards.filter((card) => card.type === type);
-
-    if (cards.length === 0) {
-      continue;
-    }
-
-    lines.push(`  - ${STORY_CARD_TYPE_LABELS[type]}:`);
-
-    for (const card of cards) {
-      lines.push(`    - ${card.title}: ${compactText(card.description, 160)}`);
-    }
-  }
-
-  return lines;
-}
-
-function shouldIncludeInstructionReminder(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  if (context.mode === "opening") {
-    return true;
-  }
-
-  const upcomingTurnNumber = context.turnCount + 1;
-  return upcomingTurnNumber % INSTRUCTION_REMINDER_INTERVAL === 0;
-}
-
-function buildContextPacketMessage(
-  context: ReturnType<typeof buildRuntimeContextPacket>,
-): MistralMessage {
-  return {
-    role: "system",
-    content: context.mode === "opening" ? buildOpeningContextPacket(context) : buildContinuityContextPacket(context),
-  };
-}
-
-function buildHistoricalActionMessage(turnNumber: number, action: string): MistralMessage {
+function buildHistoricalActionMessage(action: string): MistralMessage {
   return {
     role: "user",
     content: [
@@ -275,7 +208,7 @@ function buildRecentHistoryMessages(
     const messages: MistralMessage[] = [];
 
     if (turn.playerAction.trim()) {
-      messages.push(buildHistoricalActionMessage(turn.turnNumber, turn.playerAction));
+      messages.push(buildHistoricalActionMessage(turn.playerAction));
     }
 
     messages.push({
@@ -287,15 +220,6 @@ function buildRecentHistoryMessages(
   });
 }
 
-function buildOpeningRequestMessage(): MistralMessage {
-  return {
-    role: "user",
-    content: [
-      "# Opening Request",
-    ].join("\n\n"),
-  };
-}
-
 function buildMistralStoryMessages(params: {
   context: ReturnType<typeof buildRuntimeContextPacket>;
   playerAction: string;
@@ -304,13 +228,13 @@ function buildMistralStoryMessages(params: {
     {
       role: "system",
       content:
-        params.context.mode === "opening" ? RUNTIME_OPENING_SYSTEM_PROMPT : RUNTIME_STORY_SYSTEM_PROMPT,
+        params.context.mode === "opening"
+          ? buildOpeningSystemPrompt(params.context)
+          : buildStorySystemPrompt(params.context),
     },
-    buildContextPacketMessage(params.context),
   ];
 
   if (params.context.mode === "opening") {
-    messages.push(buildOpeningRequestMessage());
     return messages;
   }
 
@@ -330,7 +254,6 @@ function buildMistralFinalizationMessages(params: {
       role: "system",
       content: RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT,
     },
-    buildContextPacketMessage(params.context),
     {
       role: "assistant",
       content: params.storyText.trim(),
@@ -382,7 +305,7 @@ async function streamMistralText(params: {
     model: MISTRAL_RUNTIME_MODEL,
     stream: true,
     temperature: MISTRAL_RUNTIME_TEMPERATURE,
-    top_p: 0.9,
+    top_p: 0.95,
     presence_penalty: 0.5,
     frequency_penalty: 0.4,
     max_tokens: maxTokens,
@@ -395,7 +318,7 @@ async function streamMistralText(params: {
     messages: params.messages,
   };
   console.info(
-    `[mistral-v1] exact api request\n${JSON.stringify(requestBody, null, 2)}`,
+    `[mistral-v2] exact api request\n${JSON.stringify(requestBody, null, 2)}`,
   );
 
   const response = await fetch(MISTRAL_CHAT_COMPLETIONS_URL, {
@@ -406,7 +329,7 @@ async function streamMistralText(params: {
     },
     body: JSON.stringify(requestBody),
   });
-  console.info("[mistral-v1] fetch responded", {
+  console.info("[mistral-v2] fetch responded", {
     model: MISTRAL_RUNTIME_MODEL,
     elapsedMs: Date.now() - requestStartMs,
     ok: response.ok,
@@ -473,7 +396,7 @@ async function streamMistralText(params: {
     if (deltaText) {
       if (!firstDeltaLogged) {
         firstDeltaLogged = true;
-        console.info("[mistral-v1] first delta", {
+        console.info("[mistral-v2] first delta", {
           model: MISTRAL_RUNTIME_MODEL,
           elapsedMs: Date.now() - requestStartMs,
         });
@@ -503,7 +426,7 @@ async function streamMistralText(params: {
     await processEventBlock(buffer);
   }
 
-  console.info("[mistral-v1] stream completed", {
+  console.info("[mistral-v2] stream completed", {
     model: MISTRAL_RUNTIME_MODEL,
     elapsedMs: Date.now() - requestStartMs,
     textLength: text.trim().length,
@@ -535,7 +458,7 @@ async function finalizeMistralTurn(params: {
   };
 
   console.info(
-    `[mistral-v1] exact api request\n${JSON.stringify(requestBody, null, 2)}`,
+    `[mistral-v2] exact api request\n${JSON.stringify(requestBody, null, 2)}`,
   );
 
   const response = await fetch(MISTRAL_CHAT_COMPLETIONS_URL, {
@@ -565,7 +488,7 @@ async function finalizeMistralTurn(params: {
     parsedOutput = JSON.parse(content) as unknown;
   } catch {
     throw new RuntimeEnginePayloadError("Mistral finalization returned invalid JSON.", {
-      engineId: "mistral_v1",
+      engineId: "mistral_v2",
       inputMessages: params.messages,
       sentPreviousResponseId: "",
     });
@@ -610,7 +533,7 @@ async function generateMistralTurn(
     output,
     responseId: streamedStory.responseId || params.session.previousResponseId || "",
     payload: {
-      engineId: "mistral_v1",
+      engineId: "mistral_v2",
       inputMessages,
       sentPreviousResponseId: "",
     },
@@ -646,7 +569,7 @@ async function generateMistralSuggestedActions(
       throw new RuntimeEnginePayloadError(
         "The runtime returned data that did not match the expected suggested-actions schema.",
         {
-          engineId: "mistral_v1",
+          engineId: "mistral_v2",
           inputMessages,
           sentPreviousResponseId: "",
         },
@@ -659,15 +582,15 @@ async function generateMistralSuggestedActions(
   return {
     suggestedActions: output.suggestedActions,
     payload: {
-      engineId: "mistral_v1",
+      engineId: "mistral_v2",
       inputMessages,
       sentPreviousResponseId: "",
     },
   };
 }
 
-export const mistralV1RuntimeEngine: RuntimeEngine = {
-  id: "mistral_v1",
+export const mistralV2RuntimeEngine: RuntimeEngine = {
+  id: "mistral_v2",
   generateTurn: generateMistralTurn,
   generateSuggestedActions: generateMistralSuggestedActions,
 };

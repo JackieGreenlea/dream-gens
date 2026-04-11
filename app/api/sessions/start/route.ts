@@ -61,6 +61,8 @@ export async function POST(request: Request) {
         sessionId: session.id,
         userId: user.id,
       });
+
+      return NextResponse.json({ sessionId: session.id });
     } catch (openingTurnError) {
       const message =
         openingTurnError instanceof Error
@@ -79,8 +81,6 @@ export async function POST(request: Request) {
         warning: "The session was created, but the opening turn is still unavailable.",
       });
     }
-
-    return NextResponse.json({ sessionId: session.id });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { RuntimeEngineDebugError } from "@/lib/runtime-engines/types";
+import { RuntimeEnginePayloadError } from "@/lib/runtime-engines/types";
 import { sessionSuggestedActionsRequestSchema } from "@/lib/schemas";
 import { generateSessionSuggestedActions } from "@/lib/session-runtime";
 import { getCurrentUser } from "@/lib/supabase/server";
@@ -8,8 +8,6 @@ import { getCurrentUser } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const isDevelopment = process.env.NODE_ENV !== "production";
-
   try {
     const user = await getCurrentUser();
 
@@ -27,11 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       turnNumber: result.turnNumber,
       suggestedActions: result.suggestedActions,
-      ...(isDevelopment
-        ? {
-            debug: result.debug,
-          }
-        : {}),
+      payload: result.payload,
     });
   } catch (error) {
     if (error instanceof ZodError) {
@@ -50,9 +44,9 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: message,
-        ...(isDevelopment && error instanceof RuntimeEngineDebugError
+        ...(error instanceof RuntimeEnginePayloadError
           ? {
-              debug: error.debug,
+              payload: error.payload,
             }
           : {}),
       },
