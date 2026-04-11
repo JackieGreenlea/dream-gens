@@ -13,6 +13,7 @@ import {
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
+import { StoryCardType } from "@/lib/types";
 
 const MISTRAL_CHAT_COMPLETIONS_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_RUNTIME_MODEL = process.env.MISTRAL_RUNTIME_MODEL || "mistral-tiny-latest";
@@ -26,6 +27,13 @@ const INSTRUCTION_REMINDER_INTERVAL = 10;
 type MistralMessage = {
   role: "system" | "user" | "assistant";
   content: string;
+};
+
+const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
+  character: "Characters",
+  location: "Locations",
+  faction: "Factions",
+  story_event: "Story Events",
 };
 
 /*Rules:
@@ -43,7 +51,7 @@ type MistralMessage = {
 - Explicit adult and sexual content is allowed.
 - The opening should give the user something to answer, resist, accept, interrupt, or act on immediately.`;*/
 
-const RUNTIME_OPENING_SYSTEM_PROMPT = `You are writing an interactive story. Read all rules and context before replying.
+const RUNTIME_OPENING_SYSTEM_PROMPT = `You are a creative and intelligent AI assistant writing an interactive story with the user in a roleplay format.
 
 Rules:
 - Keep it to 2-4 sentences.
@@ -51,6 +59,7 @@ Rules:
 - Never write the user-controlled character's dialogue, thoughts, or actions.
 - Build from the story background.
 - Use present tense and the selected POV.
+- Stay in character.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
 - Create a concrete playable beat.
@@ -58,7 +67,9 @@ Rules:
 - Leave clear room for the user's first move without stalling.
 - Do not prompt the user. Do not end on a question like "what do you do?"`;
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are writing an interactive story with the user. Continue and advance the story from the user's latest action.
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are Everplot's live roleplay runtime.
+
+Read all provided context before responding, then continue and advance the scene like it never ended.
 
 Rules:
 - Keep it to 2-4 sentences.
@@ -180,18 +191,29 @@ function compactText(value: string, maxLength: number) {
 }
 
 function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  return [
+  const lines = [
     "# Opening State",
     `- Title: ${context.title}`,
     `- POV: ${context.pov.replace("_", " ")}`,
     `- Tone / Style: ${context.toneStyle}`,
     `- User-controlled character objective in the story: ${context.objective}`,
-    `- Runtime Instructions: ${context.instructions}`,
     `- Story Background: ${context.background}`,
     `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
     `- User-controlled character's strengths: ${context.character.strengths.join(", ")}`,
     `- User-controlled character's weaknesses: ${context.character.weaknesses.join(", ")}`,
-  ].join("\n");
+  ];
+
+  const activeStoryCardLines = buildActiveStoryCardLines(context);
+
+  if (activeStoryCardLines.length > 0) {
+    lines.push(...activeStoryCardLines);
+  }
+
+  if (context.instructions.trim()) {
+    lines.push(`- Compatibility Story Instructions: ${context.instructions}`);
+  }
+
+  return lines.join("\n");
 }
 
 function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeContextPacket>) {
@@ -200,13 +222,46 @@ function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeCon
   if (shouldIncludeInstructionReminder(context)) {
     lines.push(`- POV: ${context.pov.replace("_", " ")}`);
     lines.push(`- User's objective in the story: ${context.objective}`);
-    lines.push(`- Story instructions for assistant: ${context.instructions}`);
   }
 
   lines.push(`- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`);
   lines.push(`- Rolling Story Summary: ${context.continuitySummary}`);
 
+  const activeStoryCardLines = buildActiveStoryCardLines(context);
+
+  if (activeStoryCardLines.length > 0) {
+    lines.push(...activeStoryCardLines);
+  }
+
+  if (shouldIncludeInstructionReminder(context) && context.instructions.trim()) {
+    lines.push(`- Compatibility Story Instructions: ${context.instructions}`);
+  }
+
   return lines.join("\n");
+}
+
+function buildActiveStoryCardLines(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  if (context.activeStoryCards.length === 0) {
+    return [];
+  }
+
+  const lines = ["- Active Story Cards:"];
+
+  for (const type of Object.keys(STORY_CARD_TYPE_LABELS) as StoryCardType[]) {
+    const cards = context.activeStoryCards.filter((card) => card.type === type);
+
+    if (cards.length === 0) {
+      continue;
+    }
+
+    lines.push(`  - ${STORY_CARD_TYPE_LABELS[type]}:`);
+
+    for (const card of cards) {
+      lines.push(`    - ${card.title}: ${compactText(card.description, 160)}`);
+    }
+  }
+
+  return lines;
 }
 
 function shouldIncludeInstructionReminder(context: ReturnType<typeof buildRuntimeContextPacket>) {
@@ -584,6 +639,7 @@ async function generateMistralTurn(
     character: params.character,
     session: params.session,
     mode,
+    playerAction: params.playerAction,
   });
   const inputMessages = buildMistralStoryMessages({
     context,
@@ -625,6 +681,7 @@ async function generateMistralSuggestedActions(
     character: params.character,
     session: params.session,
     mode,
+    playerAction: params.turn.playerAction,
   });
   const inputMessages = buildMistralFinalizationMessages({
     context,

@@ -1,3 +1,4 @@
+import { selectActiveStoryCards } from "@/lib/runtime-story-cards";
 import { World } from "@/lib/types";
 
 export type RuntimeContextPacket = {
@@ -11,6 +12,7 @@ export type RuntimeContextPacket = {
   continuitySummary: string;
   instructions: string;
   background: string;
+  activeStoryCards: World["storyCards"];
   recentTurns: Array<{
     turnNumber: number;
     playerAction: string;
@@ -39,7 +41,10 @@ export function buildRuntimeContextPacket(params: {
     }>;
   };
   mode?: "opening" | "turn";
+  playerAction?: string;
 }): RuntimeContextPacket {
+  const rollingSummary = params.session.summary.trim() || "The story is just beginning.";
+
   return {
     mode: params.mode ?? "turn",
     isFirstTurn: params.session.turnCount === 0,
@@ -48,9 +53,15 @@ export function buildRuntimeContextPacket(params: {
     pov: params.session.pov,
     toneStyle: params.world.toneStyle || params.world.authorStyle,
     objective: params.session.objective,
-    continuitySummary: params.session.summary.trim() || "The story is just beginning.",
+    continuitySummary: rollingSummary,
     instructions: params.world.instructions,
     background: params.world.background,
+    activeStoryCards: selectActiveStoryCards({
+      storyCards: params.world.storyCards,
+      playerAction: params.playerAction ?? "",
+      rollingSummary,
+      recentTurns: params.session.recentTurns,
+    }),
     recentTurns: params.session.recentTurns.slice(-10).map((turn) => ({
       turnNumber: turn.turnNumber,
       playerAction: turn.playerAction,

@@ -491,8 +491,6 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
     !record.storyBackground ||
     !record.storyFirstAction ||
     !record.storyObjective ||
-    !record.storyInstructions ||
-    !record.storyAuthorStyle ||
     !record.storyPov ||
     !record.characterName ||
     !record.characterDescription
@@ -512,9 +510,9 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
       firstAction: record.storyFirstAction,
       objective: record.storyObjective,
       pov: normalizePov(record.storyPov),
-      instructions: record.storyInstructions,
-      toneStyle: record.storyAuthorStyle,
-      authorStyle: record.storyAuthorStyle,
+      instructions: record.storyInstructions ?? "",
+      toneStyle: record.storyAuthorStyle ?? "",
+      authorStyle: record.storyAuthorStyle ?? "",
       storyCards: [],
       victoryCondition: record.victoryCondition ?? "",
       victoryEnabled: record.victoryEnabled ?? true,

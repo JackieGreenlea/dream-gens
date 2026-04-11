@@ -22,6 +22,7 @@ import {
   RuntimeEngineGenerateTurnParams,
   RuntimeEngineGenerateTurnResult,
 } from "@/lib/runtime-engines/types";
+import { StoryCardType } from "@/lib/types";
 
 const RUNTIME_STORY_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
 
@@ -70,6 +71,13 @@ Requirements:
 - Start each suggested action with a clear verb when possible.
 - Do not restate the scene or write strategy commentary.`;
 
+const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
+  character: "Characters",
+  location: "Locations",
+  faction: "Factions",
+  story_event: "Story Events",
+};
+
 function toInputMessage(role: OpenAIInputMessage["role"], text: string): OpenAIInputMessage {
   if (role === "assistant") {
     return {
@@ -97,6 +105,8 @@ function compactText(value: string, maxLength: number) {
 function buildOpenAIDeveloperMessage(
   context: ReturnType<typeof buildRuntimeContextPacket>,
 ) {
+  const activeStoryCardsSection = buildActiveStoryCardsSection(context);
+
   if (context.isFirstTurn) {
     return [
       "Session Setup:",
@@ -105,9 +115,6 @@ function buildOpenAIDeveloperMessage(
       `Tone / Style: ${context.toneStyle}`,
       `Objective: ${context.objective}`,
       "",
-      "Story Instructions:",
-      context.instructions,
-      "",
       "Story Background:",
       context.background,
       "",
@@ -115,6 +122,11 @@ function buildOpenAIDeveloperMessage(
       `${context.character.name}: ${context.character.description}`,
       `Strengths: ${context.character.strengths.join(", ")}`,
       `Weaknesses: ${context.character.weaknesses.join(", ")}`,
+      activeStoryCardsSection ? "" : null,
+      activeStoryCardsSection,
+      context.instructions.trim() ? "" : null,
+      context.instructions.trim() ? "Compatibility Story Instructions:" : null,
+      context.instructions.trim() ? context.instructions : null,
       "",
       "Launch Notes:",
       "This is the opening runtime turn for this session.",
@@ -132,12 +144,39 @@ function buildOpenAIDeveloperMessage(
     `POV: ${context.pov.replace("_", " ")}`,
     `Tone / Style: ${context.toneStyle}`,
     `Objective: ${context.objective}`,
-    `Continuity Summary: ${context.continuitySummary}`,
-    `Runtime Instructions: ${context.instructions}`,
+    `Rolling Story Summary: ${context.continuitySummary}`,
     `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
     `Strengths: ${context.character.strengths.join(", ")}`,
     `Weaknesses: ${context.character.weaknesses.join(", ")}`,
+    activeStoryCardsSection ? "" : null,
+    activeStoryCardsSection,
+    context.instructions.trim() ? "" : null,
+    context.instructions.trim() ? `Compatibility Story Instructions: ${context.instructions}` : null,
   ].join("\n");
+}
+
+function buildActiveStoryCardsSection(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  if (context.activeStoryCards.length === 0) {
+    return "";
+  }
+
+  const lines = ["Active Story Cards:"];
+
+  for (const type of Object.keys(STORY_CARD_TYPE_LABELS) as StoryCardType[]) {
+    const cards = context.activeStoryCards.filter((card) => card.type === type);
+
+    if (cards.length === 0) {
+      continue;
+    }
+
+    lines.push(`${STORY_CARD_TYPE_LABELS[type]}:`);
+
+    for (const card of cards) {
+      lines.push(`- ${card.title}: ${compactText(card.description, 160)}`);
+    }
+  }
+
+  return lines.join("\n");
 }
 
 function buildOpenAIInputMessages(params: {
@@ -199,6 +238,7 @@ async function generateOpenAITurn(
     character: params.character,
     session: params.session,
     mode,
+    playerAction: params.playerAction,
   });
   const inputMessages = buildOpenAIInputMessages({
     context,
@@ -242,6 +282,7 @@ async function generateOpenAISuggestedActions(
     character: params.character,
     session: params.session,
     mode,
+    playerAction: params.turn.playerAction,
   });
   const inputMessages = buildOpenAIFinalizationMessages({
     context,
