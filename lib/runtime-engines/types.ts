@@ -7,6 +7,7 @@ export type RuntimeEngineSessionContext = {
   objective: string;
   pov: StoryPov;
   summary: string;
+  inactiveStoryCardIds: string[];
   turnCount: number;
   previousResponseId: string;
   recentTurns: SessionTurn[];

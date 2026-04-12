@@ -181,6 +181,9 @@ export async function synthesizeRollingStorySummary(params: {
     systemPrompt: [
       "Synthesize a rolling story summary.",
       "Preserve where the story stands now, who currently matters and why they matter, relationship shifts, unresolved tensions, secrets, promises, goals, conflicts, notable injuries, objects, obligations, revelations, and major direction changes that still matter.",
+      "Treat the previous rolling summary as continuity state that should be carried forward unless a detail has clearly been resolved, replaced, or contradicted by the latest block.",
+      "Do not collapse the summary into only the newest block.",
+      "When in doubt, preserve still-relevant facts from the previous summary.",
       "Write one compact, information-dense paragraph in plain usable prose.",
       "Do not recap everything beat by beat. Do not be flowery. Do not use a list unless absolutely necessary.",
     ].join("\n"),
@@ -192,6 +195,7 @@ export async function synthesizeRollingStorySummary(params: {
       params.latestBlockSummary.trim(),
       "",
       "Combine them into one updated rolling story summary.",
+      "Carry forward older continuity that still matters, even if it is not repeated in the latest block summary.",
     ].join("\n"),
   });
 }

@@ -50,6 +50,7 @@ export function StoryEditor({
   const [characterLineDrafts, setCharacterLineDrafts] = useState<
     Record<string, { strengths?: string; weaknesses?: string }>
   >({});
+  const [storyCardTriggerDrafts, setStoryCardTriggerDrafts] = useState<Record<string, string>>({});
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
     initialStory?.coverImageUrl ?? null,
   );
@@ -162,6 +163,16 @@ export function StoryEditor({
   }
 
   function removeStoryCard(cardId: string) {
+    setStoryCardTriggerDrafts((current) => {
+      if (!(cardId in current)) {
+        return current;
+      }
+
+      const nextDrafts = { ...current };
+      delete nextDrafts[cardId];
+      return nextDrafts;
+    });
+
     setStory((current) =>
       current
         ? {
@@ -178,6 +189,25 @@ export function StoryEditor({
       .map((keyword) => keyword.trim())
       .filter(Boolean)
       .slice(0, 12);
+  }
+
+  function updateStoryCardTriggerDraft(cardId: string, value: string) {
+    setStoryCardTriggerDrafts((current) => ({
+      ...current,
+      [cardId]: value,
+    }));
+  }
+
+  function clearStoryCardTriggerDraft(cardId: string) {
+    setStoryCardTriggerDrafts((current) => {
+      if (!(cardId in current)) {
+        return current;
+      }
+
+      const nextDrafts = { ...current };
+      delete nextDrafts[cardId];
+      return nextDrafts;
+    });
   }
 
   function handleAddTag() {
@@ -875,13 +905,20 @@ export function StoryEditor({
                                 hint="One per line. These are read-only runtime candidates for later phases."
                               >
                                 <Textarea
-                                  value={formatLineList(card.triggerKeywords)}
+                                  value={
+                                    storyCardTriggerDrafts[card.id] ??
+                                    formatLineList(card.triggerKeywords)
+                                  }
                                   onChange={(event) =>
+                                    updateStoryCardTriggerDraft(card.id, event.target.value)
+                                  }
+                                  onBlur={(event) => {
                                     updateStoryCard(card.id, (current) => ({
                                       ...current,
                                       triggerKeywords: parseKeywordList(event.target.value),
-                                    }))
-                                  }
+                                    }));
+                                    clearStoryCardTriggerDraft(card.id);
+                                  }}
                                   className="min-h-24"
                                 />
                               </Field>

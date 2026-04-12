@@ -4,7 +4,7 @@ import { FormEvent, KeyboardEvent, ReactNode, useEffect, useRef, useState } from
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
-import { PlayerCharacter, Session, SessionTurn, World } from "@/lib/types";
+import { PlayerCharacter, Session, SessionTurn, StoryCardType, World } from "@/lib/types";
 
 type PlaySessionShellProps = {
   sessionId: string;
@@ -31,8 +31,10 @@ export function PlaySessionShell({
   const [streamingStoryText, setStreamingStoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingSuggestedActions, setIsGeneratingSuggestedActions] = useState(false);
+  const [isUpdatingStoryCards, setIsUpdatingStoryCards] = useState(false);
   const [error, setError] = useState("");
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isContextOpen, setIsContextOpen] = useState(false);
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const firstChunkReceivedLoggedRef = useRef(false);
@@ -41,6 +43,12 @@ export function PlaySessionShell({
 
   const suggestedActions = session?.turns.at(-1)?.suggestedActions ?? [];
   const recentTurns = session?.turns ?? [];
+  const storyCardGroups: Array<{ type: StoryCardType; title: string }> = [
+    { type: "character", title: "Characters" },
+    { type: "location", title: "Settings" },
+    { type: "faction", title: "Factions" },
+    { type: "story_event", title: "Events" },
+  ];
   function sanitizeStreamingStoryText(text: string) {
     return text
       .replace(/^```(?:json)?\s*/i, "")
@@ -374,6 +382,51 @@ export function PlaySessionShell({
     }
   }
 
+  async function toggleStoryCard(cardId: string) {
+    if (!session || isUpdatingStoryCards) {
+      return;
+    }
+
+    setIsUpdatingStoryCards(true);
+    setError("");
+
+    const currentInactiveIds = session.inactiveStoryCardIds ?? [];
+    const nextInactiveIds = currentInactiveIds.includes(cardId)
+      ? currentInactiveIds.filter((id) => id !== cardId)
+      : [...currentInactiveIds, cardId];
+
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          inactiveStoryCardIds: nextInactiveIds,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        session?: Session;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.session) {
+        throw new Error(payload.error || "Unable to update story cards for this session.");
+      }
+
+      setSession(payload.session);
+    } catch (toggleError) {
+      setError(
+        toggleError instanceof Error
+          ? toggleError.message
+          : "Unable to update story cards for this session.",
+      );
+    } finally {
+      setIsUpdatingStoryCards(false);
+    }
+  }
+
   function handleComposerKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) {
       return;
@@ -421,13 +474,112 @@ export function PlaySessionShell({
                 <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">{character.name}</span>
               </div>
               <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsDetailsOpen((current) => !current)}
-                  className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
-                >
-                  {isDetailsOpen ? "Hide" : "Details"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsContextOpen((current) => !current)}
+                    className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
+                  >
+                    {isContextOpen ? "Hide Context" : "Context"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsDetailsOpen((current) => !current)}
+                    className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
+                  >
+                    {isDetailsOpen ? "Hide" : "Details"}
+                  </button>
+                </div>
+
+                {isContextOpen ? (
+                  <div className="absolute right-0 top-10 z-20 w-[min(34rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-5 backdrop-blur sm:w-[30rem]">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">Story Context</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsContextOpen(false)}
+                        className="text-xs uppercase tracking-[0.18em] text-secondary transition hover:text-foreground lg:text-[0.68rem]"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="mt-4 max-h-[70vh] space-y-5 overflow-y-auto pr-1">
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Rolling Summary</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                          {session.summary.trim() || "The story is just beginning."}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Background</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.background}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Runtime Background</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.runtimeBackground || world.background}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Tone / Theme</p>
+                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.toneStyle || world.authorStyle || "No tone set."}</p>
+                      </div>
+                      {world.instructions.trim() ? (
+                        <div className="space-y-2">
+                          <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Additional Context</p>
+                          <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.instructions}</p>
+                        </div>
+                      ) : null}
+                      <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Cards</p>
+                        {storyCardGroups.map((group) => {
+                          const cards = world.storyCards.filter((card) => card.type === group.type);
+
+                          if (cards.length === 0) {
+                            return null;
+                          }
+
+                          return (
+                            <div key={group.type} className="space-y-2">
+                              <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">{group.title}</p>
+                              <div className="space-y-2">
+                                {cards.map((card) => (
+                                  <div key={card.id} className="rounded-lg border border-line/60 bg-night/35 p-3">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">
+                                        {card.title}
+                                        {card.role?.trim() ? ` (${card.role.trim()})` : ""}
+                                      </p>
+                                      <button
+                                        type="button"
+                                        disabled={isUpdatingStoryCards}
+                                        onClick={() => void toggleStoryCard(card.id)}
+                                        className="shrink-0 rounded-md border border-line bg-transparent px-2 py-1 text-[0.68rem] uppercase tracking-[0.14em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                                      >
+                                        {session.inactiveStoryCardIds.includes(card.id) ? "Activate" : "Deactivate"}
+                                      </button>
+                                    </div>
+                                    <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                                      {card.description}
+                                    </p>
+                                    <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
+                                      {session.inactiveStoryCardIds.includes(card.id)
+                                        ? "Inactive for this session."
+                                        : "Active for this session."}
+                                    </p>
+                                    {card.triggerKeywords.length > 0 ? (
+                                      <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
+                                        Triggers: {card.triggerKeywords.join(", ")}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 {isDetailsOpen ? (
                   <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-5 backdrop-blur sm:w-[22rem]">

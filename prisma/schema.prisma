@@ -169,6 +169,7 @@ model Session {
   currentObjective   String?
   pov                StoryPov        @default(second_person)
   summary            String          @default("")
+  inactiveStoryCardIds Json          @default("[]")
   previousResponseId String?
   user               User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
   world              World?          @relation(fields: [worldId], references: [id], onDelete: Cascade)

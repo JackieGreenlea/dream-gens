@@ -45,8 +45,22 @@ function buildRollingSummaryLine(context: ReturnType<typeof buildRuntimeContextP
   return `Earlier in the story: ${summary}`;
 }
 
-function buildCharacterCards(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  const characterCards = context.coreStoryCards.filter((card) => card.type === "character");
+function getPromptStoryCards(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const cards = context.mode === "opening" ? context.coreStoryCards : [...context.coreStoryCards, ...context.activeStoryCards];
+  const seenCardIds = new Set<string>();
+
+  return cards.filter((card) => {
+    if (seenCardIds.has(card.id)) {
+      return false;
+    }
+
+    seenCardIds.add(card.id);
+    return true;
+  });
+}
+
+function buildCharacterCards(cards: ReturnType<typeof getPromptStoryCards>) {
+  const characterCards = cards.filter((card) => card.type === "character");
 
   if (characterCards.length === 0) {
     return [];
@@ -58,7 +72,7 @@ function buildCharacterCards(context: ReturnType<typeof buildRuntimeContextPacke
 }
 
 function buildSettings(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  const locationCards = context.coreStoryCards.filter((card) => card.type === "location");
+  const locationCards = getPromptStoryCards(context).filter((card) => card.type === "location");
 
   if (locationCards.length === 0) {
     return [];
@@ -68,7 +82,7 @@ function buildSettings(context: ReturnType<typeof buildRuntimeContextPacket>) {
 }
 
 function buildEvents(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  const storyEventCards = context.coreStoryCards.filter((card) => card.type === "story_event");
+  const storyEventCards = getPromptStoryCards(context).filter((card) => card.type === "story_event");
 
   if (storyEventCards.length === 0) {
     return [];
@@ -78,7 +92,8 @@ function buildEvents(context: ReturnType<typeof buildRuntimeContextPacket>) {
 }
 
 function buildOpeningSystemPrompt(context: ReturnType<typeof buildRuntimeContextPacket>) {
-  const characterCards = buildCharacterCards(context);
+  const promptStoryCards = getPromptStoryCards(context);
+  const characterCards = buildCharacterCards(promptStoryCards);
   const settings = buildSettings(context);
   const events = buildEvents(context);
   const additionalContextParts: string[] = [];
@@ -128,7 +143,8 @@ Write the opening scene now.`;
 
 function buildStorySystemPrompt(context: ReturnType<typeof buildRuntimeContextPacket>) {
   const rollingSummaryLine = buildRollingSummaryLine(context);
-  const characterCards = buildCharacterCards(context);
+  const promptStoryCards = getPromptStoryCards(context);
+  const characterCards = buildCharacterCards(promptStoryCards);
   const settings = buildSettings(context);
   const events = buildEvents(context);
   const additionalContextParts: string[] = [];

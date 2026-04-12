@@ -447,6 +447,7 @@ function mapSession(record: DbSession): Session {
     objective: record.storyObjective ?? record.objective,
     pov: normalizePov(record.storyPov ?? record.pov),
     summary: record.summary ?? "",
+    inactiveStoryCardIds: readStringArray(record.inactiveStoryCardIds ?? [], []),
     storyTitle: record.storyTitle ?? null,
     storySummary: record.storySummary ?? null,
     storyBackground: record.storyBackground ?? null,
@@ -1941,6 +1942,36 @@ export async function updateSessionSummary(params: {
     },
     data: {
       summary: sanitizeTextForDatabase(params.summary),
+    },
+    include: recentTurnsInclude,
+  });
+
+  return mapSession(savedSession);
+}
+
+export async function updateSessionInactiveStoryCardIds(params: {
+  sessionId: string;
+  userId: string;
+  inactiveStoryCardIds: string[];
+}) {
+  const existingSession = await prisma.session.findFirst({
+    where: {
+      id: params.sessionId,
+      userId: params.userId,
+    },
+    include: recentTurnsInclude,
+  });
+
+  if (!existingSession) {
+    return null;
+  }
+
+  const savedSession = await prisma.session.update({
+    where: {
+      id: params.sessionId,
+    },
+    data: {
+      inactiveStoryCardIds: sanitizeTextArrayForDatabase(params.inactiveStoryCardIds),
     },
     include: recentTurnsInclude,
   });

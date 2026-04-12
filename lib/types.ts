@@ -83,6 +83,7 @@ export type Session = {
   objective: string;
   pov: StoryPov;
   summary: string;
+  inactiveStoryCardIds: string[];
   storyTitle?: string | null;
   storySummary?: string | null;
   storyBackground?: string | null;

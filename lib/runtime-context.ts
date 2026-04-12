@@ -1,5 +1,5 @@
 import { World } from "@/lib/types";
-import { selectCoreStoryCards } from "@/lib/runtime-story-cards";
+import { selectActiveStoryCards, selectCoreStoryCards } from "@/lib/runtime-story-cards";
 
 export type RuntimeContextPacket = {
   mode: "opening" | "turn";
@@ -35,6 +35,7 @@ export function buildRuntimeContextPacket(params: {
     objective: string;
     pov: World["pov"];
     summary: string;
+    inactiveStoryCardIds: string[];
     turnCount: number;
     recentTurns: Array<{
       turnNumber: number;
@@ -46,6 +47,21 @@ export function buildRuntimeContextPacket(params: {
   playerAction?: string;
 }): RuntimeContextPacket {
   const rollingSummary = params.session.summary.trim() || "The story is just beginning.";
+  const inactiveStoryCardIds = new Set(params.session.inactiveStoryCardIds);
+  const recentTurns = params.session.recentTurns.slice(-10).map((turn) => ({
+    turnNumber: turn.turnNumber,
+    playerAction: turn.playerAction,
+    storyText: turn.storyText,
+  }));
+  const coreStoryCards = selectCoreStoryCards(params.world.storyCards).filter(
+    (card) => !inactiveStoryCardIds.has(card.id),
+  );
+  const activeStoryCards = selectActiveStoryCards({
+    storyCards: params.world.storyCards,
+    playerAction: params.playerAction ?? "",
+    rollingSummary,
+    recentTurns,
+  }).filter((card) => !inactiveStoryCardIds.has(card.id));
 
   return {
     mode: params.mode ?? "turn",
@@ -59,13 +75,9 @@ export function buildRuntimeContextPacket(params: {
     instructions: params.world.instructions,
     background: params.world.background,
     runtimeBackground: params.world.runtimeBackground || params.world.background,
-    activeStoryCards: [],
-    coreStoryCards: selectCoreStoryCards(params.world.storyCards),
-    recentTurns: params.session.recentTurns.slice(-10).map((turn) => ({
-      turnNumber: turn.turnNumber,
-      playerAction: turn.playerAction,
-      storyText: turn.storyText,
-    })),
+    activeStoryCards,
+    coreStoryCards,
+    recentTurns,
     character: {
       name: params.character.name,
       description: params.character.description,
