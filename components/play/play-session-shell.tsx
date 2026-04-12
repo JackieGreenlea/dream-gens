@@ -158,6 +158,12 @@ export function PlaySessionShell({
     );
   }
 
+  const inactiveStoryCardIds = new Set(session.inactiveStoryCardIds);
+  const selectedStoryCardIds = new Set(session.lastSentStoryCardIds);
+  const runtimeSelectedStoryCards = world.storyCards.filter((card) =>
+    selectedStoryCardIds.has(card.id),
+  );
+
   async function submitAction(action: string) {
     const nextAction = action.trim();
 
@@ -529,6 +535,46 @@ export function PlaySessionShell({
                         </div>
                       ) : null}
                       <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">
+                          Currently Sent In Payload
+                        </p>
+                        {runtimeSelectedStoryCards.length > 0 ? (
+                          storyCardGroups.map((group) => {
+                            const cards = runtimeSelectedStoryCards.filter((card) => card.type === group.type);
+
+                            if (cards.length === 0) {
+                              return null;
+                            }
+
+                            return (
+                              <div key={`selected-${group.type}`} className="space-y-2">
+                                <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">{group.title}</p>
+                                <div className="space-y-2">
+                                  {cards.map((card) => (
+                                    <div
+                                      key={`selected-${card.id}`}
+                                      className="rounded-lg border border-line/60 bg-night/35 p-3"
+                                    >
+                                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">
+                                        {card.title}
+                                        {card.role?.trim() ? ` (${card.role.trim()})` : ""}
+                                      </p>
+                                      <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                                        {card.description}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                            No story cards are currently being sent in the payload.
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-3">
                         <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Cards</p>
                         {storyCardGroups.map((group) => {
                           const cards = world.storyCards.filter((card) => card.type === group.type);
@@ -554,7 +600,7 @@ export function PlaySessionShell({
                                         onClick={() => void toggleStoryCard(card.id)}
                                         className="shrink-0 rounded-md border border-line bg-transparent px-2 py-1 text-[0.68rem] uppercase tracking-[0.14em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                                       >
-                                        {session.inactiveStoryCardIds.includes(card.id) ? "Activate" : "Deactivate"}
+                                        {session.inactiveStoryCardIds.includes(card.id) ? "Allow" : "Exclude"}
                                       </button>
                                     </div>
                                     <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
@@ -562,8 +608,10 @@ export function PlaySessionShell({
                                     </p>
                                     <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
                                       {session.inactiveStoryCardIds.includes(card.id)
-                                        ? "Inactive for this session."
-                                        : "Active for this session."}
+                                        ? "Excluded from this session."
+                                        : selectedStoryCardIds.has(card.id)
+                                          ? "Selected for the current payload."
+                                          : "Available, but not selected for the current payload."}
                                     </p>
                                     {card.triggerKeywords.length > 0 ? (
                                       <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
@@ -679,7 +727,7 @@ export function PlaySessionShell({
                   onChange={(event) => setPlayerAction(event.target.value)}
                   onKeyDown={handleComposerKeyDown}
                   disabled={isSubmitting}
-                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[0.84rem] leading-[1.2rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[1.02rem] sm:leading-[1.7rem] lg:text-[0.92rem] lg:leading-[1.45rem]"
+                  className="min-h-[3.75rem] max-h-48 w-full resize-y rounded-lg bg-field px-4 py-3 pr-16 text-[1rem] leading-[1.5rem] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-focus/20 disabled:cursor-not-allowed disabled:opacity-60 sm:text-[1.02rem] sm:leading-[1.7rem] lg:text-[0.92rem] lg:leading-[1.45rem]"
                   placeholder="Type what your character does next..."
                 />
                 <button

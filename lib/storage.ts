@@ -126,6 +126,7 @@ function normalizeSession(session: LegacyStoredSession): Session {
     pov: normalizePov(session.pov),
     summary: session.summary ?? "",
     inactiveStoryCardIds: [],
+    lastSentStoryCardIds: [],
     previousResponseId: session.previousResponseId ?? "",
     turns: normalizedTurns.slice(-MAX_SESSION_TURNS),
   };
@@ -168,6 +169,7 @@ export function createSession(worldId: string, characterId: string) {
     pov: normalizePov(world?.pov),
     summary: "",
     inactiveStoryCardIds: [],
+    lastSentStoryCardIds: [],
     previousResponseId: "",
     turns: [],
   };

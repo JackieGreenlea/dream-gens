@@ -84,6 +84,7 @@ export type Session = {
   pov: StoryPov;
   summary: string;
   inactiveStoryCardIds: string[];
+  lastSentStoryCardIds: string[];
   storyTitle?: string | null;
   storySummary?: string | null;
   storyBackground?: string | null;

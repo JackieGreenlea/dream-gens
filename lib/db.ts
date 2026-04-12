@@ -448,6 +448,7 @@ function mapSession(record: DbSession): Session {
     pov: normalizePov(record.storyPov ?? record.pov),
     summary: record.summary ?? "",
     inactiveStoryCardIds: readStringArray(record.inactiveStoryCardIds ?? [], []),
+    lastSentStoryCardIds: readStringArray(record.lastSentStoryCardIds ?? [], []),
     storyTitle: record.storyTitle ?? null,
     storySummary: record.storySummary ?? null,
     storyBackground: record.storyBackground ?? null,
@@ -1851,6 +1852,7 @@ export async function saveTurn(params: {
   sessionId: string;
   turn: SessionTurn;
   previousResponseId: string;
+  sentStoryCardIds?: string[];
 }) {
   // Postgres text columns reject embedded null characters, so strip them before writes.
   await prisma.$transaction(async (tx) => {
@@ -1870,6 +1872,7 @@ export async function saveTurn(params: {
       data: {
         turnCount: params.turn.turnNumber,
         previousResponseId: params.previousResponseId,
+        lastSentStoryCardIds: sanitizeTextArrayForDatabase(params.sentStoryCardIds ?? []),
       },
     });
   });

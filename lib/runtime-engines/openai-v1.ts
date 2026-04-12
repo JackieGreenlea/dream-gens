@@ -276,6 +276,7 @@ async function generateOpenAITurn(
       engineId: "openai_v1",
       inputMessages,
       sentPreviousResponseId: params.session.previousResponseId || "",
+      sentStoryCardIds: context.activeStoryCards.map((card) => card.id),
     },
   };
 }
@@ -336,6 +337,7 @@ async function generateOpenAISuggestedActions(
       engineId: "openai_v1",
       inputMessages,
       sentPreviousResponseId: params.session.previousResponseId || "",
+      sentStoryCardIds: [],
     },
   };
 }

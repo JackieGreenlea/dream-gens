@@ -138,6 +138,7 @@ async function generateAndPersistSessionTurn(params: {
     sessionId: bundle.session.id,
     turn,
     previousResponseId: nextPreviousResponseId,
+    sentStoryCardIds: engineResult.payload.sentStoryCardIds,
   });
   console.info("[session-runtime] turn saved", {
     sessionId: params.sessionId,

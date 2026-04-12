@@ -59,6 +59,10 @@ function getPromptStoryCards(context: ReturnType<typeof buildRuntimeContextPacke
   });
 }
 
+function getPromptStoryCardIds(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  return getPromptStoryCards(context).map((card) => card.id);
+}
+
 function buildCharacterCards(cards: ReturnType<typeof getPromptStoryCards>) {
   const characterCards = cards.filter((card) => card.type === "character");
 
@@ -171,7 +175,7 @@ Rules:
 - Keep it to 2-4 sentences.
 - Use present tense and ${formatPovLabel(context.pov)} POV.
 - Never paraphrase the user’s submitted action.
-- Never write dialogue, thoughts, or actions for the user-controlled character.
+- Never write dialogue, actions, or thoughts for the player/user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
 - Keep track of body positioning.
@@ -585,6 +589,7 @@ async function finalizeMistralTurn(params: {
       engineId: "mistral_v2",
       inputMessages: params.messages,
       sentPreviousResponseId: "",
+      sentStoryCardIds: [],
     });
   }
 
@@ -630,6 +635,7 @@ async function generateMistralTurn(
       engineId: "mistral_v2",
       inputMessages,
       sentPreviousResponseId: "",
+      sentStoryCardIds: getPromptStoryCardIds(context),
     },
   };
 }
@@ -666,6 +672,7 @@ async function generateMistralSuggestedActions(
           engineId: "mistral_v2",
           inputMessages,
           sentPreviousResponseId: "",
+          sentStoryCardIds: [],
         },
       );
     }
@@ -679,6 +686,7 @@ async function generateMistralSuggestedActions(
       engineId: "mistral_v2",
       inputMessages,
       sentPreviousResponseId: "",
+      sentStoryCardIds: [],
     },
   };
 }

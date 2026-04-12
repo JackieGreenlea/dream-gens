@@ -26,6 +26,7 @@ export type RuntimeEngineSentPayload = {
   engineId: string;
   inputMessages: unknown;
   sentPreviousResponseId: string;
+  sentStoryCardIds: string[];
 };
 
 export type RuntimeEngineGenerateTurnResult = {

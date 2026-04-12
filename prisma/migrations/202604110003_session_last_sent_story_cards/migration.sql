@@ -1,0 +1,2 @@
+ALTER TABLE "Session"
+ADD COLUMN "lastSentStoryCardIds" JSONB NOT NULL DEFAULT '[]';

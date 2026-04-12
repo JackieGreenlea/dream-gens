@@ -568,6 +568,7 @@ async function finalizeMistralTurn(params: {
       engineId: "mistral_v1",
       inputMessages: params.messages,
       sentPreviousResponseId: "",
+      sentStoryCardIds: [],
     });
   }
 
@@ -613,6 +614,7 @@ async function generateMistralTurn(
       engineId: "mistral_v1",
       inputMessages,
       sentPreviousResponseId: "",
+      sentStoryCardIds: context.activeStoryCards.map((card) => card.id),
     },
   };
 }
@@ -649,6 +651,7 @@ async function generateMistralSuggestedActions(
           engineId: "mistral_v1",
           inputMessages,
           sentPreviousResponseId: "",
+          sentStoryCardIds: [],
         },
       );
     }
@@ -662,6 +665,7 @@ async function generateMistralSuggestedActions(
       engineId: "mistral_v1",
       inputMessages,
       sentPreviousResponseId: "",
+      sentStoryCardIds: [],
     },
   };
 }
