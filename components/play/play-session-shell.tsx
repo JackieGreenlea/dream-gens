@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, ReactNode, useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
 import { PlayerCharacter, Session, SessionTurn, StoryCardType, World } from "@/lib/types";
@@ -20,9 +20,6 @@ export function PlaySessionShell({
   initialCharacter,
 }: PlaySessionShellProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const isNavVisible = searchParams.get("nav") === "1";
   const [session, setSession] = useState<Session | null>(initialSession);
   const [world] = useState<World | null>(initialWorld);
   const [character] = useState<PlayerCharacter | null>(initialCharacter);
@@ -33,8 +30,8 @@ export function PlaySessionShell({
   const [isGeneratingSuggestedActions, setIsGeneratingSuggestedActions] = useState(false);
   const [isUpdatingStoryCards, setIsUpdatingStoryCards] = useState(false);
   const [error, setError] = useState("");
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isContextOpen, setIsContextOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [infoTab, setInfoTab] = useState<"context" | "details">("context");
   const [areSuggestedActionsOpen, setAreSuggestedActionsOpen] = useState(false);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const firstChunkReceivedLoggedRef = useRef(false);
@@ -447,224 +444,229 @@ export function PlaySessionShell({
     void submitAction(playerAction);
   }
 
-  function toggleSessionNav() {
-    const params = new URLSearchParams(searchParams.toString());
-
-    if (isNavVisible) {
-      params.delete("nav");
-    } else {
-      params.set("nav", "1");
-    }
-
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }
-
   return (
     <div className="h-full overflow-hidden overscroll-none">
       <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-none border-0 bg-transparent p-0 shadow-none">
-        <section className={`relative px-1.5 pb-1.5 pt-1 sm:px-6 sm:pb-3 sm:pt-3 ${isNavVisible ? "lg:pt-16" : ""}`}>
-          <div className="space-y-2">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2 text-[0.78rem] text-secondary sm:text-sm lg:text-[0.82rem]">
-                <button
-                  type="button"
-                  onClick={toggleSessionNav}
-                  className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
+        <div className="flex h-full min-h-0 flex-col lg:mx-auto lg:w-full lg:max-w-[58rem]">
+        <section className="relative px-0 pb-0 pt-0 sm:px-5 sm:pb-1 sm:pt-1">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex flex-wrap items-center gap-2 text-[0.74rem] text-secondary sm:text-[0.82rem] lg:text-[0.76rem]">
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line bg-transparent text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground"
+                aria-label="Exit to home"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
                 >
-                  {isNavVisible ? "Hide Nav" : "Show Nav"}
-                </button>
+                  <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <h1 className="mr-1 truncate text-[1.05rem] font-semibold leading-none text-foreground sm:text-[1.18rem] lg:text-[1.08rem]">
+                {world.title}
+              </h1>
+              <div className="hidden flex-wrap items-center gap-2 sm:flex">
                 <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">
                   Turn {session.turnCount}
                 </span>
                 <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">{character.name}</span>
               </div>
-              <div className="relative shrink-0">
+            </div>
+            <div className="relative shrink-0">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setIsContextOpen((current) => !current)}
-                    className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
+                    onClick={() => {
+                      setInfoTab("context");
+                      setIsInfoOpen((current) => !current);
+                    }}
+                    className="rounded-lg border border-line bg-transparent px-2 py-1 text-[0.64rem] font-medium uppercase tracking-[0.14em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-2.5 sm:text-[0.68rem]"
                   >
-                    {isContextOpen ? "Hide Context" : "Context"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsDetailsOpen((current) => !current)}
-                    className="rounded-lg border border-line bg-transparent px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.15em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] lg:text-[0.68rem]"
-                  >
-                    {isDetailsOpen ? "Hide" : "Details"}
+                    {isInfoOpen ? "Hide Info" : "Info"}
                   </button>
                 </div>
 
-                {isContextOpen ? (
-                  <div className="absolute right-0 top-10 z-20 w-[min(34rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-5 backdrop-blur sm:w-[30rem]">
+                {isInfoOpen ? (
+                  <div className="absolute right-0 top-9 z-20 w-[min(34rem,calc(100vw-1rem))] rounded-xl border border-line bg-surface p-4 backdrop-blur sm:top-10 sm:w-[30rem] sm:p-5">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">Story Context</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setInfoTab("context")}
+                          className={`rounded-md px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.14em] transition ${
+                            infoTab === "context"
+                              ? "bg-elevated text-night"
+                              : "text-secondary hover:bg-night/40 hover:text-foreground"
+                          }`}
+                        >
+                          Context
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInfoTab("details")}
+                          className={`rounded-md px-2.5 py-1 text-[0.68rem] font-medium uppercase tracking-[0.14em] transition ${
+                            infoTab === "details"
+                              ? "bg-elevated text-night"
+                              : "text-secondary hover:bg-night/40 hover:text-foreground"
+                          }`}
+                        >
+                          Details
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setIsContextOpen(false)}
+                        onClick={() => setIsInfoOpen(false)}
                         className="text-xs uppercase tracking-[0.18em] text-secondary transition hover:text-foreground lg:text-[0.68rem]"
                       >
                         Close
                       </button>
                     </div>
-                    <div className="mt-4 max-h-[70vh] space-y-5 overflow-y-auto pr-1">
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Rolling Summary</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
-                          {session.summary.trim() || "The story is just beginning."}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Background</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.background}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Runtime Background</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.runtimeBackground || world.background}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Tone / Theme</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.toneStyle || world.authorStyle || "No tone set."}</p>
-                      </div>
-                      {world.instructions.trim() ? (
-                        <div className="space-y-2">
-                          <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Additional Context</p>
-                          <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.instructions}</p>
-                        </div>
-                      ) : null}
-                      <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">
-                          Currently Sent In Payload
-                        </p>
-                        {runtimeSelectedStoryCards.length > 0 ? (
-                          storyCardGroups.map((group) => {
-                            const cards = runtimeSelectedStoryCards.filter((card) => card.type === group.type);
-
-                            if (cards.length === 0) {
-                              return null;
-                            }
-
-                            return (
-                              <div key={`selected-${group.type}`} className="space-y-2">
-                                <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">{group.title}</p>
-                                <div className="space-y-2">
-                                  {cards.map((card) => (
-                                    <div
-                                      key={`selected-${card.id}`}
-                                      className="rounded-lg border border-line/60 bg-night/35 p-3"
-                                    >
-                                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">
-                                        {card.title}
-                                        {card.role?.trim() ? ` (${card.role.trim()})` : ""}
-                                      </p>
-                                      <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
-                                        {card.description}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
-                            No story cards are currently being sent in the payload.
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Cards</p>
-                        {storyCardGroups.map((group) => {
-                          const cards = world.storyCards.filter((card) => card.type === group.type);
-
-                          if (cards.length === 0) {
-                            return null;
-                          }
-
-                          return (
-                            <div key={group.type} className="space-y-2">
-                              <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">{group.title}</p>
-                              <div className="space-y-2">
-                                {cards.map((card) => (
-                                  <div key={card.id} className="rounded-lg border border-line/60 bg-night/35 p-3">
-                                    <div className="flex items-start justify-between gap-3">
-                                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">
-                                        {card.title}
-                                        {card.role?.trim() ? ` (${card.role.trim()})` : ""}
-                                      </p>
-                                      <button
-                                        type="button"
-                                        disabled={isUpdatingStoryCards}
-                                        onClick={() => void toggleStoryCard(card.id)}
-                                        className="shrink-0 rounded-md border border-line bg-transparent px-2 py-1 text-[0.68rem] uppercase tracking-[0.14em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                                      >
-                                        {session.inactiveStoryCardIds.includes(card.id) ? "Allow" : "Exclude"}
-                                      </button>
-                                    </div>
-                                    <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
-                                      {card.description}
-                                    </p>
-                                    <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
-                                      {session.inactiveStoryCardIds.includes(card.id)
-                                        ? "Excluded from this session."
-                                        : selectedStoryCardIds.has(card.id)
-                                          ? "Selected for the current payload."
-                                          : "Available, but not selected for the current payload."}
-                                    </p>
-                                    {card.triggerKeywords.length > 0 ? (
-                                      <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
-                                        Triggers: {card.triggerKeywords.join(", ")}
-                                      </p>
-                                    ) : null}
-                                  </div>
-                                ))}
-                              </div>
+                    <div className="mt-4 max-h-[70vh] overflow-y-auto pr-1">
+                      {infoTab === "context" ? (
+                        <div className="space-y-5">
+                          <div className="space-y-2">
+                            <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Rolling Summary</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                              {session.summary.trim() || "The story is just beginning."}
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Background</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.background}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Runtime Background</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.runtimeBackground || world.background}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Tone / Theme</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.toneStyle || world.authorStyle || "No tone set."}</p>
+                          </div>
+                          {world.instructions.trim() ? (
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Additional Context</p>
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.instructions}</p>
                             </div>
-                          );
-                        })}
-                      </div>
+                          ) : null}
+                          <div className="space-y-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">
+                              Currently Sent In Payload
+                            </p>
+                            {runtimeSelectedStoryCards.length > 0 ? (
+                              storyCardGroups.map((group) => {
+                                const cards = runtimeSelectedStoryCards.filter((card) => card.type === group.type);
+
+                                if (cards.length === 0) {
+                                  return null;
+                                }
+
+                                return (
+                                  <div key={`selected-${group.type}`} className="space-y-2">
+                                    <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">{group.title}</p>
+                                    <div className="space-y-2">
+                                      {cards.map((card) => (
+                                        <div
+                                          key={`selected-${card.id}`}
+                                          className="rounded-lg border border-line/60 bg-night/35 p-3"
+                                        >
+                                          <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">
+                                            {card.title}
+                                            {card.role?.trim() ? ` (${card.role.trim()})` : ""}
+                                          </p>
+                                          <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                                            {card.description}
+                                          </p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                                No story cards are currently being sent in the payload.
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Cards</p>
+                            {storyCardGroups.map((group) => {
+                              const cards = world.storyCards.filter((card) => card.type === group.type);
+
+                              if (cards.length === 0) {
+                                return null;
+                              }
+
+                              return (
+                                <div key={group.type} className="space-y-2">
+                                  <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">{group.title}</p>
+                                  <div className="space-y-2">
+                                    {cards.map((card) => (
+                                      <div key={card.id} className="rounded-lg border border-line/60 bg-night/35 p-3">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">
+                                            {card.title}
+                                            {card.role?.trim() ? ` (${card.role.trim()})` : ""}
+                                          </p>
+                                          <button
+                                            type="button"
+                                            disabled={isUpdatingStoryCards}
+                                            onClick={() => void toggleStoryCard(card.id)}
+                                            className="shrink-0 rounded-md border border-line bg-transparent px-2 py-1 text-[0.68rem] uppercase tracking-[0.14em] text-secondary transition hover:border-fieldBorder hover:bg-surface hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                                          >
+                                            {session.inactiveStoryCardIds.includes(card.id) ? "Allow" : "Exclude"}
+                                          </button>
+                                        </div>
+                                        <p className="mt-1 text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">
+                                          {card.description}
+                                        </p>
+                                        <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
+                                          {session.inactiveStoryCardIds.includes(card.id)
+                                            ? "Excluded from this session."
+                                            : selectedStoryCardIds.has(card.id)
+                                              ? "Selected for the current payload."
+                                              : "Available, but not selected for the current payload."}
+                                        </p>
+                                        {card.triggerKeywords.length > 0 ? (
+                                          <p className="mt-2 text-xs leading-5 text-muted lg:text-[0.72rem]">
+                                            Triggers: {card.triggerKeywords.join(", ")}
+                                          </p>
+                                        ) : null}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="space-y-5">
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Character</p>
+                              <p className="text-lg font-medium text-foreground lg:text-[1rem]">{character.name}</p>
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{character.description}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Objective</p>
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{session.objective}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Summary</p>
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.summary}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : null}
-
-                {isDetailsOpen ? (
-                  <div className="absolute right-0 top-10 z-10 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-5 backdrop-blur sm:w-[22rem]">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-foreground lg:text-[0.88rem]">Details</p>
-                      <button
-                        type="button"
-                        onClick={() => setIsDetailsOpen(false)}
-                        className="text-xs uppercase tracking-[0.18em] text-secondary transition hover:text-foreground lg:text-[0.68rem]"
-                      >
-                        Close
-                      </button>
-                    </div>
-                    <div className="mt-4 space-y-5">
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Character</p>
-                        <p className="text-lg font-medium text-foreground lg:text-[1rem]">{character.name}</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{character.description}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Objective</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{session.objective}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Summary</p>
-                        <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.summary}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <h1 className="text-[1.38rem] font-semibold leading-tight text-foreground sm:text-[2.4rem] lg:text-[2rem]">
-                {world.title}
-              </h1>
             </div>
           </div>
         </section>
@@ -672,35 +674,35 @@ export function PlaySessionShell({
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line">
           <div
             ref={threadRef}
-            className="min-h-0 flex-1 space-y-8 overflow-y-auto overscroll-contain px-1.5 py-3 sm:px-6 sm:py-6"
+            className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-0 py-1 sm:px-5 sm:py-3"
           >
             {recentTurns.length > 0 || pendingPlayerAction ? (
               <>
                 {recentTurns.map((turn) => (
-                  <div key={turn.turnNumber} className="space-y-5">
+                  <div key={turn.turnNumber} className="space-y-2.5 sm:space-y-3">
                     {turn.playerAction ? (
                       <div className="flex justify-end">
-                        <div className="max-w-[85%] text-right">
+                        <div className="max-w-[85%] text-right lg:max-w-[72%]">
                           <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem] lg:text-[0.98rem] lg:leading-[1.6rem]">
                             {turn.playerAction}
                           </p>
                         </div>
                       </div>
                     ) : null}
-                    <div className="max-w-none sm:max-w-4xl">{renderStoryText(turn.storyText)}</div>
+                    <div className="max-w-none sm:max-w-4xl lg:max-w-none">{renderStoryText(turn.storyText)}</div>
                   </div>
                 ))}
 
                 {pendingPlayerAction ? (
-                  <div className="space-y-5">
+                  <div className="space-y-2.5 sm:space-y-3">
                     <div className="flex justify-end">
-                      <div className="max-w-[85%] text-right">
+                      <div className="max-w-[85%] text-right lg:max-w-[72%]">
                         <p className="text-[0.92rem] font-semibold leading-[1.5rem] text-accent sm:text-[1.12rem] sm:leading-[1.95rem] lg:text-[0.98rem] lg:leading-[1.6rem]">
                           {pendingPlayerAction}
                         </p>
                       </div>
                     </div>
-                    <div className="max-w-none space-y-4 sm:max-w-4xl">
+                    <div className="max-w-none space-y-4 sm:max-w-4xl lg:max-w-none">
                       {streamingStoryText ? (
                         renderStoryText(streamingStoryText)
                       ) : (
@@ -711,7 +713,7 @@ export function PlaySessionShell({
                 ) : null}
               </>
             ) : (
-              <div className="max-w-none py-4 sm:max-w-3xl sm:py-6">
+              <div className="max-w-none py-2 sm:max-w-3xl sm:py-4">
                 <p className="text-[0.9rem] leading-[1.58rem] text-secondary sm:text-[1.2rem] sm:leading-[2.12rem] lg:text-[1rem] lg:leading-[1.7rem]">
                   Preparing the opening scene for this session.
                 </p>
@@ -719,9 +721,9 @@ export function PlaySessionShell({
             )}
           </div>
 
-          <div className="px-1.5 py-2.5 sm:px-6 sm:py-5">
-            <div className="space-y-2">
-              <form className="relative" onSubmit={handleSubmit}>
+          <div className="px-0 py-0.5 sm:px-5 sm:py-2">
+            <div className="space-y-1">
+              <form className="relative mx-auto w-[98.5%] sm:w-full" onSubmit={handleSubmit}>
                 <textarea
                   value={playerAction}
                   onChange={(event) => setPlayerAction(event.target.value)}
@@ -746,7 +748,7 @@ export function PlaySessionShell({
               {error ? <div className="border-l border-danger/45 pl-4 text-sm text-foreground lg:text-[0.88rem]">{error}</div> : null}
 
               {!isSubmitting && suggestedActions.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <button
                     type="button"
                     onClick={() => setAreSuggestedActionsOpen((current) => !current)}
@@ -773,12 +775,12 @@ export function PlaySessionShell({
               ) : null}
 
               {!isSubmitting && suggestedActions.length === 0 && recentTurns.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <button
                     type="button"
                     disabled={isGeneratingSuggestedActions}
                     onClick={() => void generateSuggestedActions()}
-                    className="text-[0.8rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 lg:text-[0.68rem]"
+                    className="text-[0.68rem] uppercase tracking-[0.18em] text-muted transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 sm:text-[0.74rem] lg:text-[0.68rem]"
                   >
                     {isGeneratingSuggestedActions ? "Generating Suggested Actions..." : "Generate Suggested Actions"}
                   </button>
@@ -787,6 +789,7 @@ export function PlaySessionShell({
             </div>
           </div>
         </section>
+        </div>
       </Card>
     </div>
   );

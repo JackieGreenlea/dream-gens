@@ -24,7 +24,7 @@ export default async function SessionPage({
   }
 
   return (
-    <main className="fixed inset-0 overflow-hidden overscroll-none px-0 pt-0 pb-0 sm:left-1/2 sm:w-full sm:max-w-7xl sm:-translate-x-1/2 sm:px-4 sm:pt-1 sm:pb-0 lg:px-6">
+    <main className="fixed inset-0 overflow-hidden overscroll-none px-0 pt-0 pb-0 sm:left-1/2 sm:w-full sm:max-w-7xl sm:-translate-x-1/2 sm:px-3 sm:pt-0 sm:pb-0 lg:px-4">
       <PlaySessionShell
         sessionId={id}
         initialSession={bundle.session}
