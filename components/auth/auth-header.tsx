@@ -22,7 +22,7 @@ function BellIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[1.7rem] w-[1.7rem]"
+      className="h-[1.35rem] w-[1.35rem] sm:h-[1.7rem] sm:w-[1.7rem]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -40,14 +40,15 @@ function UserIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[1.7rem] w-[1.7rem]"
-      fill="currentColor"
+      className="h-[1.35rem] w-[1.35rem] sm:h-[1.7rem] sm:w-[1.7rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <path
-        fillRule="evenodd"
-        d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"
-        clipRule="evenodd"
-      />
+      <circle cx="12" cy="8" r="3.25" />
+      <path d="M5.5 19.25c1.37-2.76 3.84-4.25 6.5-4.25s5.13 1.49 6.5 4.25" />
     </svg>
   );
 }
@@ -57,7 +58,7 @@ function ExploreIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[2.1rem] w-[2.1rem]"
+      className="h-[1.6rem] w-[1.6rem] sm:h-[2.1rem] sm:w-[2.1rem]"
       fill="none"
       stroke="currentColor"
       strokeWidth="2"
@@ -76,7 +77,7 @@ function SearchIcon() {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[1.55rem] w-[1.55rem]"
+      className="h-[1.25rem] w-[1.25rem] sm:h-[1.55rem] sm:w-[1.55rem]"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
@@ -94,7 +95,7 @@ function SparklesIcon({ className = "" }: { className?: string }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className={`h-[1.95rem] w-[1.95rem] ${className}`.trim()}
+      className={`h-[1.45rem] w-[1.45rem] sm:h-[1.95rem] sm:w-[1.95rem] ${className}`.trim()}
       fill="currentColor"
     >
       <path
@@ -107,7 +108,7 @@ function SparklesIcon({ className = "" }: { className?: string }) {
 }
 
 function headerActionButtonClasses() {
-  return "inline-flex h-9 w-9 items-center justify-center rounded-lg border border-transparent bg-transparent text-secondary transition hover:bg-surface hover:text-foreground";
+  return "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-transparent text-secondary transition hover:bg-surface hover:text-foreground sm:h-9 sm:w-9";
 }
 
 export function AuthHeader({ user, identity }: AuthHeaderProps) {
@@ -176,14 +177,14 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/80 bg-night/75 backdrop-blur">
-      <div className="flex w-full items-center gap-3 px-4 py-2 sm:px-8 lg:mx-auto lg:grid lg:min-h-[58px] lg:max-w-[1440px] lg:grid-cols-[auto_minmax(0,40rem)_auto] lg:items-center lg:gap-6 lg:px-8 lg:py-0">
+      <div className="flex w-full items-center gap-2.5 px-4 py-1.5 sm:gap-3 sm:px-8 sm:py-2 lg:mx-auto lg:grid lg:min-h-[58px] lg:max-w-[1440px] lg:grid-cols-[auto_minmax(0,40rem)_auto] lg:items-center lg:gap-6 lg:px-8 lg:py-0">
         <div className="flex min-w-0 items-center justify-start">
           <Link
             href="/"
-            className="inline-flex h-8 items-center sm:h-9"
+            className="inline-flex h-7 items-center sm:h-9"
             aria-label="Everplot home"
           >
-            <Image src={logo} alt="Everplot" className="h-6 w-auto sm:h-7 md:h-7" priority />
+            <Image src={logo} alt="Everplot" className="h-[1.2rem] w-auto sm:h-7 md:h-7" priority />
           </Link>
         </div>
 
@@ -194,7 +195,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
 
           <ButtonLink
             href="/create"
-            className="h-9 w-9 gap-2 !border-transparent !bg-transparent px-0 py-0 !text-[#fdd835] hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-9 md:w-auto md:!border-transparent md:!bg-transparent md:px-4 md:!text-[#fdd835] md:hover:!bg-[#fdd835]/10 md:hover:!text-[#fdd835]"
+            className="h-8 w-8 gap-2 !border-transparent !bg-transparent px-0 py-0 !text-[#fdd835] hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-9 md:w-auto md:!border-transparent md:!bg-transparent md:px-4 md:!text-[#fdd835] md:hover:!bg-[#fdd835]/10 md:hover:!text-[#fdd835]"
             aria-label="Create Story"
           >
             <span className="md:hidden">
