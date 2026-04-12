@@ -8,6 +8,8 @@ export const sampleWorlds: World[] = [
       "A storm-soaked port city where ancient lighthouse fires keep sea spirits asleep.",
     background:
       "Ember Harbor survives on trade, superstition, and a fragile ritual that feeds the lighthouse flame every new moon. Merchants, smugglers, and wardens all want control of the fire.",
+    runtimeBackground:
+      "{{userCharacterName}} is in Ember Harbor, a storm-soaked port city held together by trade, superstition, and a fragile lighthouse ritual that keeps sea spirits asleep. Merchants, smugglers, and wardens all want control of the fire, and pressure is already closing around {{userCharacter}}.",
     firstAction:
       "Arrive at the harbor market just as the warning bells begin to ring from the sea wall.",
     objective:
@@ -52,6 +54,8 @@ export const sampleWorlds: World[] = [
       "A grand arcology tournament hides a machine oracle that predicts social collapse.",
     background:
       "The city's ruling houses host a public strategy contest to distract from failing infrastructure. Deep below the arena, an oracle recomputes which district should be sacrificed next.",
+    runtimeBackground:
+      "{{userCharacterName}} is inside a grand arcology where a public strategy contest distracts from failing infrastructure. Beneath the arena, a hidden oracle keeps recalculating which district should be sacrificed next, and {{userCharacter}} is already close to the truth.",
     firstAction:
       "Step onto the arena floor moments before a competitor collapses after whispering a forbidden prediction.",
     objective:

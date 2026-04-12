@@ -152,6 +152,7 @@ export function StoryEditor({
                 type,
                 title: `New ${STORY_CARD_TYPE_LABELS[type].slice(0, -1)}`,
                 description: "Add card details.",
+                role: "",
                 triggerKeywords: [],
               },
             ],
@@ -631,6 +632,16 @@ export function StoryEditor({
               />
             </Field>
             <Field
+              label="Runtime Background"
+              hint='Compact runtime-safe version of the background. Prefer neutral phrasing or placeholders like {{userCharacterName}} instead of "you."'
+            >
+              <Textarea
+                value={story.runtimeBackground}
+                onChange={(event) => updateField("runtimeBackground", event.target.value)}
+                className="min-h-28"
+              />
+            </Field>
+            <Field
               label="Tags"
               hint="Add simple genre/discovery tags. These drive Explore tabs and home rows."
             >
@@ -843,6 +854,22 @@ export function StoryEditor({
                                   }
                                 />
                               </Field>
+                              {card.type === "character" ? (
+                                <Field
+                                  label="Role"
+                                  hint="Optional short role label, like MMC, love interest, rival, or best friend."
+                                >
+                                  <Input
+                                    value={card.role ?? ""}
+                                    onChange={(event) =>
+                                      updateStoryCard(card.id, (current) => ({
+                                        ...current,
+                                        role: event.target.value,
+                                      }))
+                                    }
+                                  />
+                                </Field>
+                              ) : null}
                               <Field
                                 label="Trigger Keywords"
                                 hint="One per line. These are read-only runtime candidates for later phases."

@@ -34,6 +34,7 @@ export const sessionSchema = z.object({
   storyTitle: z.string().trim().nullable().optional(),
   storySummary: z.string().trim().nullable().optional(),
   storyBackground: z.string().trim().nullable().optional(),
+  storyRuntimeBackground: z.string().trim().nullable().optional(),
   storyFirstAction: z.string().trim().nullable().optional(),
   storyObjective: z.string().trim().nullable().optional(),
   storyInstructions: z.string().trim().nullable().optional(),
@@ -65,12 +66,14 @@ export const storyCardSchema = z.object({
   title: z.string().trim().min(1),
   description: z.string().trim().min(1),
   triggerKeywords: z.array(z.string().trim().min(1)).max(12).default([]),
+  role: z.string().trim().optional().default(""),
 });
 
 const compiledWorldSchemaBase = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).max(600),
   background: z.string().trim().min(1),
+  runtimeBackground: z.string().trim().min(1),
   firstAction: z.string().trim().min(1),
   objective: z.string().trim().min(1),
   toneStyle: z.string().trim().min(1),
@@ -228,6 +231,7 @@ export const compiledWorldJsonSchema = {
     "title",
     "summary",
     "background",
+    "runtimeBackground",
     "firstAction",
     "objective",
     "toneStyle",
@@ -240,6 +244,7 @@ export const compiledWorldJsonSchema = {
     title: { type: "string" },
     summary: { type: "string", maxLength: 600 },
     background: { type: "string" },
+    runtimeBackground: { type: "string" },
     firstAction: { type: "string" },
     objective: { type: "string" },
     toneStyle: { type: "string" },
@@ -248,7 +253,7 @@ export const compiledWorldJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "type", "title", "description", "triggerKeywords"],
+        required: ["id", "type", "title", "description", "role", "triggerKeywords"],
         properties: {
           id: { type: "string" },
           type: {
@@ -257,6 +262,7 @@ export const compiledWorldJsonSchema = {
           },
           title: { type: "string" },
           description: { type: "string" },
+          role: { type: "string" },
           triggerKeywords: {
             type: "array",
             items: {
@@ -310,6 +316,7 @@ export const compiledStoryJsonSchema = {
     "summary",
     "background",
     "tags",
+    "runtimeBackground",
     "firstAction",
     "objective",
     "toneStyle",
@@ -322,6 +329,7 @@ export const compiledStoryJsonSchema = {
     title: { type: "string" },
     summary: { type: "string", maxLength: 600 },
     background: { type: "string" },
+    runtimeBackground: { type: "string" },
     tags: {
       type: "array",
       minItems: 1,
@@ -339,7 +347,7 @@ export const compiledStoryJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "type", "title", "description", "triggerKeywords"],
+        required: ["id", "type", "title", "description", "role", "triggerKeywords"],
         properties: {
           id: { type: "string" },
           type: {
@@ -348,6 +356,7 @@ export const compiledStoryJsonSchema = {
           },
           title: { type: "string" },
           description: { type: "string" },
+          role: { type: "string" },
           triggerKeywords: {
             type: "array",
             items: {

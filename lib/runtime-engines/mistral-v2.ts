@@ -45,33 +45,109 @@ function buildRollingSummaryLine(context: ReturnType<typeof buildRuntimeContextP
   return `Earlier in the story: ${summary}`;
 }
 
+function buildCharacterCards(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const characterCards = context.coreStoryCards.filter((card) => card.type === "character");
+
+  if (characterCards.length === 0) {
+    return [];
+  }
+
+  return characterCards.map((card) =>
+    `- ${card.title}${card.role?.trim() ? ` (${card.role.trim()})` : ""}: ${card.description}`,
+  );
+}
+
+function buildSettings(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const locationCards = context.coreStoryCards.filter((card) => card.type === "location");
+
+  if (locationCards.length === 0) {
+    return [];
+  }
+
+  return locationCards.map((card) => `- ${card.title}: ${card.description}`);
+}
+
+function buildEvents(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const storyEventCards = context.coreStoryCards.filter((card) => card.type === "story_event");
+
+  if (storyEventCards.length === 0) {
+    return [];
+  }
+
+  return storyEventCards.map((card) => `- ${card.title}: ${card.description}`);
+}
+
 function buildOpeningSystemPrompt(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const characterCards = buildCharacterCards(context);
+  const settings = buildSettings(context);
+  const events = buildEvents(context);
+  const additionalContextParts: string[] = [];
+
+  if (context.instructions.trim()) {
+    additionalContextParts.push(context.instructions.trim());
+  }
+
+  if (characterCards.length > 0) {
+    additionalContextParts.push(["Characters:", ...characterCards].join("\n"));
+  }
+
+  if (settings.length > 0) {
+    additionalContextParts.push(["Settings:", ...settings].join("\n"));
+  }
+
+  if (events.length > 0) {
+    additionalContextParts.push(["Events:", ...events].join("\n"));
+  }
+
   return `You are a roleplay chat partner. Follow the user's roleplay instructions closely.
 
 Rules:
 - Keep it to 2-4 sentences.
 - Use present tense and ${formatPovLabel(context.pov)} POV.
-- Never write dialogue, thoughts, or actions for the user-controlled character.
+- Never write thoughts, actions, or dialogue for the user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
-- Prefer interaction, dialogue, and concrete response over scenic elaboration.
-- Keep track of body positioning.
+- Prefer dialogue, interaction, and concrete response over scenic elaboration.
 - Stay in character.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
 - Do not end on vague anticipation.
+- Keep track of body positioning.
 
 The user is playing as ${context.character.name}. ${context.character.description}
 You are playing as all other characters. You can also create new characters as appropriate.
 
-User's story background: ${context.background}
+Background: ${context.runtimeBackground}
 
 Tone/theme: ${context.toneStyle}
 
-Additional context: ${context.instructions}`;
+Additional context:
+${additionalContextParts.join("\n\n")}
+
+Write the opening scene now.`;
 }
 
 function buildStorySystemPrompt(context: ReturnType<typeof buildRuntimeContextPacket>) {
   const rollingSummaryLine = buildRollingSummaryLine(context);
+  const characterCards = buildCharacterCards(context);
+  const settings = buildSettings(context);
+  const events = buildEvents(context);
+  const additionalContextParts: string[] = [];
+
+  if (context.instructions.trim()) {
+    additionalContextParts.push(context.instructions.trim());
+  }
+
+  if (characterCards.length > 0) {
+    additionalContextParts.push(["Other characters: ", ...characterCards].join("\n"));
+  }
+
+  if (settings.length > 0) {
+    additionalContextParts.push(["Settings: ", ...settings].join("\n"));
+  }
+
+  if (events.length > 0) {
+    additionalContextParts.push(["Events:", ...events].join("\n"));
+  }
 
   return `You are a roleplay chat partner. Follow the user's roleplay instructions closely.
 
@@ -87,11 +163,13 @@ Rules:
 The user is playing as ${context.character.name}. ${context.character.description}
 You are playing as all other characters. You can also create new characters as appropriate.
 
-Background: ${context.background}
+Background: ${context.runtimeBackground}
 
 Tone/theme: ${context.toneStyle}
 
-Additional context: ${context.instructions}${rollingSummaryLine ? `\n\n${rollingSummaryLine}` : ""}`;
+Additional context:
+${additionalContextParts.join("\n\n")}
+${rollingSummaryLine ? `\n\n${rollingSummaryLine}` : ""}`;
 }
 
 const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `Return only valid JSON.

@@ -45,6 +45,14 @@ Naturally build toward the story’s starting pressure.
 Prefer second person when grounding the player character and their situation.
 Prefer 3-5 paragraphs.
 
+RuntimeBackground:
+- Write a compact runtime-safe version of the background for the model, not for the reader.
+- Keep it short, direct, and factual.
+- Use neutral reference language instead of directly addressing the player as "you."
+- Use placeholders when needed, such as {{userCharacterName}}, {{userCharacter}}, or {{userCharacterPossessive}}.
+- Preserve the key setup, relationships, and current pressure.
+- Prefer 1 short paragraph.
+
 FirstAction:
 - This is extremely important.
 - firstAction is the player's hidden first input, not opening narration from the assistant.
@@ -73,6 +81,8 @@ StoryCards:
 - Include exactly 3 to 5 cards of type story_event.
 - story_event cards should capture major incidents, revelations, tensions, or future pressures that are likely to matter again during play.
 - Each card needs a title, a concise description, and useful trigger keywords.
+- Character cards may also include an optional short role field, such as MMC, love interest, rival, best friend, mentor, or antagonist.
+- Always return the role field. Use an empty string when no role label applies.
 - Keep cards focused on elements likely to matter again during play.
 
 PlayerCharacters:

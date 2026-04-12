@@ -58,6 +58,14 @@ Prefer second person when grounding the player character and their situation.
 Prefer 3-5 paragraphs.
 Avoid dry exposition, excessive lore, and generic epic phrasing.
 
+RuntimeBackground:
+- Write a compact version of the background for the runtime model, not for the reader.
+- Keep it short, direct, and factual.
+- Use neutral reference language instead of directly addressing the player as "you."
+- Use placeholders when needed, such as {{userCharacterName}}, {{userCharacter}}, or {{userCharacterPossessive}}.
+- Preserve the key setup, relationships, and the starting pressure.
+- Prefer 1-3 short paragraphs.
+
 Objective:
 - Concrete, actionable, and tied to the main tension.
 - Avoid vague or purely thematic objectives.
@@ -76,6 +84,8 @@ StoryCards:
 - Include exactly 3 to 5 cards of type story_event.
 - story_event cards should represent major turning points, revelations, incidents, or looming developments that may recur or echo during play.
 - Each card needs a clear title, a concise description, and useful trigger keywords.
+- Character cards may also include an optional short role field, such as MMC, love interest, rival, best friend, mentor, or antagonist.
+- Always return the role field. Use an empty string when no role label applies.
 - Keep trigger keywords short and searchable.
 
 PlayerCharacters:
@@ -167,6 +177,7 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
     title: output.title.trim(),
     summary: output.summary.trim(),
     background: output.background.trim(),
+    runtimeBackground: output.runtimeBackground.trim(),
     firstAction: output.firstAction.trim(),
     objective: output.objective.trim(),
     pov: "second_person",
@@ -187,6 +198,7 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
         type: card.type,
         title: card.title.trim(),
         description: card.description.trim(),
+        role: card.type === "character" ? (card.role ?? "").trim() : "",
         triggerKeywords: [
           ...new Set(
             card.triggerKeywords

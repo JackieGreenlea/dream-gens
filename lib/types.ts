@@ -16,6 +16,7 @@ export type StoryCard = {
   title: string;
   description: string;
   triggerKeywords: string[];
+  role?: string;
 };
 
 export type WorldCastMember = {
@@ -45,6 +46,7 @@ type PlayableStoryFields = {
   title: string;
   summary: string;
   background: string;
+  runtimeBackground: string;
   firstAction: string;
   objective: string;
   pov: StoryPov;
@@ -84,6 +86,7 @@ export type Session = {
   storyTitle?: string | null;
   storySummary?: string | null;
   storyBackground?: string | null;
+  storyRuntimeBackground?: string | null;
   storyFirstAction?: string | null;
   storyObjective?: string | null;
   storyInstructions?: string | null;

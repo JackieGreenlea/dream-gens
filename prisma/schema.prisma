@@ -51,6 +51,7 @@ model World {
   title             String
   summary           String
   background        String
+  runtimeBackground String            @default("")
   firstAction       String
   objective         String
   pov               StoryPov          @default(second_person)
@@ -99,6 +100,7 @@ model Story {
   title             String
   summary           String
   background        String
+  runtimeBackground String           @default("")
   firstAction       String
   objective         String
   pov               StoryPov         @default(second_person)
@@ -148,6 +150,7 @@ model Session {
   storyTitle         String?
   storySummary       String?
   storyBackground    String?
+  storyRuntimeBackground String?
   storyFirstAction   String?
   storyObjective     String?
   storyInstructions  String?

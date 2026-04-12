@@ -1,4 +1,5 @@
 import { World } from "@/lib/types";
+import { selectCoreStoryCards } from "@/lib/runtime-story-cards";
 
 export type RuntimeContextPacket = {
   mode: "opening" | "turn";
@@ -11,7 +12,9 @@ export type RuntimeContextPacket = {
   continuitySummary: string;
   instructions: string;
   background: string;
+  runtimeBackground: string;
   activeStoryCards: World["storyCards"];
+  coreStoryCards: World["storyCards"];
   recentTurns: Array<{
     turnNumber: number;
     playerAction: string;
@@ -55,7 +58,9 @@ export function buildRuntimeContextPacket(params: {
     continuitySummary: rollingSummary,
     instructions: params.world.instructions,
     background: params.world.background,
+    runtimeBackground: params.world.runtimeBackground || params.world.background,
     activeStoryCards: [],
+    coreStoryCards: selectCoreStoryCards(params.world.storyCards),
     recentTurns: params.session.recentTurns.slice(-10).map((turn) => ({
       turnNumber: turn.turnNumber,
       playerAction: turn.playerAction,

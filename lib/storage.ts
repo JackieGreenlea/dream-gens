@@ -99,6 +99,7 @@ function normalizeWorld(world: StoredWorld): World {
     pov: normalizePov(world.pov),
     victoryEnabled: world.victoryEnabled ?? true,
     defeatEnabled: world.defeatEnabled ?? true,
+    runtimeBackground: world.runtimeBackground ?? world.background ?? "",
     instructions: world.instructions ?? "",
     toneStyle: world.toneStyle ?? world.authorStyle ?? "",
     authorStyle: world.authorStyle ?? world.toneStyle ?? "",

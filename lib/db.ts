@@ -44,6 +44,7 @@ const storySelect = {
   title: true,
   summary: true,
   background: true,
+  runtimeBackground: true,
   firstAction: true,
   objective: true,
   pov: true,
@@ -264,6 +265,7 @@ function readStoryCards(value: Prisma.JsonValue): StoryCard[] {
     const type = typeof item.type === "string" ? item.type.trim() : "";
     const title = typeof item.title === "string" ? item.title.trim() : "";
     const description = typeof item.description === "string" ? item.description.trim() : "";
+    const role = typeof item.role === "string" ? item.role.trim() : "";
     const triggerKeywords = readStringArray(
       "triggerKeywords" in item ? (item.triggerKeywords as Prisma.JsonValue) : [],
     );
@@ -277,6 +279,7 @@ function readStoryCards(value: Prisma.JsonValue): StoryCard[] {
       type,
       title,
       description,
+      role,
       triggerKeywords,
     });
   }
@@ -306,6 +309,7 @@ function mapWorld(record: DbWorld): World {
     title: record.title,
     summary: record.summary,
     background: record.background,
+    runtimeBackground: record.runtimeBackground,
     firstAction: record.firstAction,
     objective: record.objective,
     pov: normalizePov(record.pov),
@@ -333,6 +337,7 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     title: record.title,
     summary: record.summary,
     background: record.background,
+    runtimeBackground: record.runtimeBackground,
     firstAction: record.firstAction,
     objective: record.objective,
     pov: normalizePov(record.pov),
@@ -445,6 +450,7 @@ function mapSession(record: DbSession): Session {
     storyTitle: record.storyTitle ?? null,
     storySummary: record.storySummary ?? null,
     storyBackground: record.storyBackground ?? null,
+    storyRuntimeBackground: record.storyRuntimeBackground ?? null,
     storyFirstAction: record.storyFirstAction ?? null,
     storyObjective: record.storyObjective ?? null,
     storyInstructions: record.storyInstructions ?? null,
@@ -468,6 +474,7 @@ function buildSessionSnapshot(playable: World, character: PlayerCharacter) {
     storyTitle: sanitizeTextForDatabase(playable.title),
     storySummary: sanitizeTextForDatabase(playable.summary),
     storyBackground: sanitizeTextForDatabase(playable.background),
+    storyRuntimeBackground: sanitizeTextForDatabase(playable.runtimeBackground || playable.background),
     storyFirstAction: sanitizeTextForDatabase(playable.firstAction),
     storyObjective: sanitizeTextForDatabase(playable.objective),
     storyInstructions: sanitizeTextForDatabase(playable.instructions),
@@ -500,6 +507,11 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
 
   const characterStrengths = readStringArray(record.characterStrengths ?? [], []);
   const characterWeaknesses = readStringArray(record.characterWeaknesses ?? [], []);
+  const snapshotStoryCards = record.story
+    ? readStoryCards(record.story.storyCards ?? [])
+    : record.world
+      ? readStoryCards(record.world.storyCards ?? [])
+      : [];
 
   return {
     world: {
@@ -507,13 +519,16 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
       title: record.storyTitle,
       summary: record.storySummary,
       background: record.storyBackground,
+      runtimeBackground: record.storyRuntimeBackground ?? record.storyBackground,
       firstAction: record.storyFirstAction,
       objective: record.storyObjective,
       pov: normalizePov(record.storyPov),
       instructions: record.storyInstructions ?? "",
       toneStyle: record.storyAuthorStyle ?? "",
       authorStyle: record.storyAuthorStyle ?? "",
-      storyCards: [],
+      // Snapshot-backed sessions predate frozen story-card storage, so use the linked
+      // Story/World cards as a compatibility fallback until cards are snapshot-backed too.
+      storyCards: snapshotStoryCards,
       victoryCondition: record.victoryCondition ?? "",
       victoryEnabled: record.victoryEnabled ?? true,
       defeatCondition: record.defeatCondition ?? "",
@@ -544,6 +559,7 @@ function worldPersistenceData(world: World) {
     title: sanitizeTextForDatabase(world.title),
     summary: sanitizeTextForDatabase(world.summary),
     background: sanitizeTextForDatabase(world.background),
+    runtimeBackground: sanitizeTextForDatabase(world.runtimeBackground || world.background),
     firstAction: sanitizeTextForDatabase(world.firstAction),
     objective: sanitizeTextForDatabase(world.objective),
     pov: world.pov,
@@ -555,6 +571,7 @@ function worldPersistenceData(world: World) {
       type: card.type,
       title: sanitizeTextForDatabase(card.title),
       description: sanitizeTextForDatabase(card.description),
+      role: sanitizeTextForDatabase(card.role ?? ""),
       triggerKeywords: sanitizeTextArrayForDatabase(card.triggerKeywords),
     })),
     victoryCondition: sanitizeTextForDatabase(world.victoryCondition),
@@ -581,6 +598,7 @@ function worldCanonPersistenceData(world: WorldCanon) {
     })),
     // Legacy standalone-story fields stay empty for canon-only World records.
     background: "",
+    runtimeBackground: "",
     firstAction: "",
     objective: "",
     pov: "second_person" as const,
@@ -603,6 +621,7 @@ function storyPersistenceData(story: Story) {
     title: sanitizeTextForDatabase(story.title),
     summary: sanitizeTextForDatabase(story.summary),
     background: sanitizeTextForDatabase(story.background),
+    runtimeBackground: sanitizeTextForDatabase(story.runtimeBackground || story.background),
     firstAction: sanitizeTextForDatabase(story.firstAction),
     objective: sanitizeTextForDatabase(story.objective),
     pov: story.pov,
@@ -614,6 +633,7 @@ function storyPersistenceData(story: Story) {
       type: card.type,
       title: sanitizeTextForDatabase(card.title),
       description: sanitizeTextForDatabase(card.description),
+      role: sanitizeTextForDatabase(card.role ?? ""),
       triggerKeywords: sanitizeTextArrayForDatabase(card.triggerKeywords),
     })),
     victoryCondition: sanitizeTextForDatabase(story.victoryCondition),
@@ -631,6 +651,7 @@ function storyFromPlayableInput(world: World, worldId: string | null = null): St
     title: world.title,
     summary: world.summary,
     background: world.background,
+    runtimeBackground: world.runtimeBackground,
     firstAction: world.firstAction,
     objective: world.objective,
     pov: world.pov,

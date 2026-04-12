@@ -1,6 +1,8 @@
 import { StoryCard } from "@/lib/types";
 
 export const NON_CHARACTER_ACTIVE_STORY_CARD_LIMIT = 4;
+const OPENING_LOCATION_CORE_CARD_LIMIT = 2;
+const OPENING_STORY_EVENT_CORE_CARD_LIMIT = 1;
 
 function normalizeText(value: string) {
   return value.trim().toLowerCase();
@@ -70,4 +72,16 @@ export function selectActiveStoryCards(params: {
     .map((entry) => entry.card);
 
   return [...characterCards, ...matchingNonCharacterCards];
+}
+
+export function selectCoreStoryCards(storyCards: StoryCard[]) {
+  const characterCards = storyCards.filter((card) => card.type === "character");
+  const locationCards = storyCards
+    .filter((card) => card.type === "location")
+    .slice(0, OPENING_LOCATION_CORE_CARD_LIMIT);
+  const storyEventCards = storyCards
+    .filter((card) => card.type === "story_event")
+    .slice(0, OPENING_STORY_EVENT_CORE_CARD_LIMIT);
+
+  return [...characterCards, ...locationCards, ...storyEventCards];
 }
