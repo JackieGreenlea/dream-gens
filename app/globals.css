@@ -4,22 +4,29 @@
 
 :root {
   color-scheme: dark;
-  --page: #141414;
-  --night: #070707;
-  --surface: #22262a;
-  --elevated: #2b3f5c;
-  --color-line: #2b3340;
-  --color-foreground: #f5f7fa;
-  --color-secondary: #c2c9d3;
-  --color-muted: #8f98a6;
-  --color-field: #151a21;
-  --color-field-border: #313949;
-  --color-focus: #fdd835;
-  --color-cool: #fdd835;
-  --color-warm: #fdd835;
-  --color-success: #7fb58d;
-  --color-warning: #d2a86d;
-  --color-danger: #c97c7c;
+  --app-sidebar-width: 0rem;
+  --page: #0b0e12;
+  --night: #08090c;
+  --surface: #13181e;
+  --elevated: #d6ab72;
+  --color-line: #26303a;
+  --color-foreground: #f7f2e9;
+  --color-secondary: #c4bbad;
+  --color-muted: #8f8678;
+  --color-field: #10151b;
+  --color-field-border: #303945;
+  --color-focus: #d6ab72;
+  --color-cool: #88a5b8;
+  --color-warm: #d6ab72;
+  --color-success: #7fa688;
+  --color-warning: #d6ab72;
+  --color-danger: #c68579;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --app-sidebar-width: 21rem;
+  }
 }
 
 html {
@@ -30,6 +37,10 @@ body {
   @apply min-h-screen antialiased;
   color: var(--color-foreground);
   background-color: var(--color-page);
+  background-image:
+    radial-gradient(circle at top, rgba(214, 171, 114, 0.14), transparent 28%),
+    radial-gradient(circle at 85% 18%, rgba(83, 107, 125, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(11, 14, 18, 0.92) 0%, rgba(11, 14, 18, 1) 100%);
 }
 
 * {
@@ -48,6 +59,12 @@ body {
 .bg-celestial-glow {
   background-color: var(--color-page);
   background-image: none;
+}
+
+.studio-panel {
+  background:
+    linear-gradient(180deg, rgba(19, 24, 30, 0.92) 0%, rgba(11, 14, 18, 0.96) 100%);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
 }
 
 @keyframes everplot-shimmer {

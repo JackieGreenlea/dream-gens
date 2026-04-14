@@ -23,18 +23,20 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthHeader
-          user={user}
-          identity={
-            identity
-              ? {
-                  username: identity.username,
-                  email: identity.email,
-                }
-              : null
-          }
-        />
-        {children}
+        <div className="transition-[padding] duration-300 lg:pl-[var(--app-sidebar-width)]">
+          <AuthHeader
+            user={user}
+            identity={
+              identity
+                ? {
+                    username: identity.username,
+                    email: identity.email,
+                  }
+                : null
+            }
+          />
+          {children}
+        </div>
       </body>
     </html>
   );

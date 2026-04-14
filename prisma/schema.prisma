@@ -43,8 +43,6 @@ model Story {
   summary           String
   background        String
   runtimeBackground String           @default("")
-  firstAction       String
-  objective         String
   pov               StoryPov         @default(second_person)
   instructions      String
   toneStyle         String           @default("")
@@ -70,8 +68,6 @@ model StoryCharacter {
   storyId      String  @map("storyId")
   name         String
   description  String
-  strengths    Json
-  weaknesses   Json
   story        Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
   sessions     Session[]
   createdAt    DateTime @default(now())
@@ -89,8 +85,6 @@ model Session {
   storySummary       String?
   storyBackground    String?
   storyRuntimeBackground String?
-  storyFirstAction   String?
-  storyObjective     String?
   storyInstructions  String?
   storyAuthorStyle   String?
   storyPov           StoryPov?
@@ -100,11 +94,7 @@ model Session {
   defeatEnabled      Boolean?
   characterName      String?
   characterDescription String?
-  characterStrengths Json?
-  characterWeaknesses Json?
   turnCount          Int             @default(0)
-  objective          String
-  currentObjective   String?
   pov                StoryPov        @default(second_person)
   summary            String          @default("")
   inactiveStoryCardIds Json          @default("[]")

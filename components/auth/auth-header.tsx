@@ -17,24 +17,6 @@ type AuthHeaderProps = {
   } | null;
 };
 
-function BellIcon() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-[1.35rem] w-[1.35rem] sm:h-[1.7rem] sm:w-[1.7rem]"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6.75 8.5a5.25 5.25 0 1 1 10.5 0v3.12c0 .7.22 1.38.63 1.95l.92 1.28c.21.3 0 .71-.37.71H5.57c-.37 0-.58-.41-.37-.71l.92-1.28c.41-.57.63-1.25.63-1.95V8.5Z" />
-      <path d="M10 18a2 2 0 0 0 4 0" />
-    </svg>
-  );
-}
-
 function UserIcon() {
   return (
     <svg
@@ -53,21 +35,115 @@ function UserIcon() {
   );
 }
 
+function HomeIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.1rem] w-[1.1rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3.75 10.25 12 3.75l8.25 6.5" />
+      <path d="M6.75 9.75v9h10.5v-9" />
+      <path d="M10 18.75v-4.5h4v4.5" />
+    </svg>
+  );
+}
+
 function ExploreIcon() {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 24 24"
-      className="h-[1.6rem] w-[1.6rem] sm:h-[2.1rem] sm:w-[2.1rem]"
+      className="h-[1.1rem] w-[1.1rem]"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.9"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
       <circle cx="12" cy="12" r="7.5" />
       <path d="m14.9 9.1-1.8 5.1-5.1 1.8 1.8-5.1 5.1-1.8Z" />
       <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function StoriesIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.1rem] w-[1.1rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 5.25h9.5a2.25 2.25 0 0 1 2.25 2.25v10.25H8.25A2.25 2.25 0 0 0 6 20Z" />
+      <path d="M6 5.25A2.25 2.25 0 0 0 3.75 7.5v10.25H14" />
+      <path d="M9 9h5.5" />
+      <path d="M9 12h5.5" />
+    </svg>
+  );
+}
+
+function SessionsIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.1rem] w-[1.1rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4.25l2.5 2.5" />
+    </svg>
+  );
+}
+
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.1rem] w-[1.1rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4.5 7.5h15" />
+      <path d="M4.5 12h15" />
+      <path d="M4.5 16.5h15" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-[1.1rem] w-[1.1rem]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 6l12 12" />
+      <path d="M18 6 6 18" />
     </svg>
   );
 }
@@ -108,7 +184,28 @@ function SparklesIcon({ className = "" }: { className?: string }) {
 }
 
 function headerActionButtonClasses() {
-  return "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-transparent bg-transparent text-secondary transition hover:bg-surface hover:text-foreground sm:h-9 sm:w-9";
+  return "inline-flex h-10 w-10 items-center justify-center rounded-full border border-line/80 bg-white/[0.02] text-secondary transition hover:border-[rgba(214,171,114,0.45)] hover:bg-white/[0.05] hover:text-foreground";
+}
+
+function isActivePath(pathname: string | null, href: string) {
+  if (!pathname) {
+    return false;
+  }
+
+  if (href === "/") {
+    return pathname === "/";
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function drawerLinkClasses(active: boolean) {
+  return [
+    "flex items-center gap-3 rounded-[1rem] border px-4 py-3 text-sm font-medium transition",
+    active
+      ? "border-[rgba(214,171,114,0.35)] bg-[rgba(214,171,114,0.12)] text-foreground"
+      : "border-transparent bg-white/[0.02] text-secondary hover:border-line/80 hover:bg-white/[0.05] hover:text-foreground",
+  ].join(" ");
 }
 
 export function AuthHeader({ user, identity }: AuthHeaderProps) {
@@ -116,14 +213,42 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
   const searchParams = useSearchParams();
   const isSessionPage = /^\/sessions\/[^/]+$/.test(pathname ?? "");
   const showSessionHeader = searchParams.get("nav") === "1";
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const sidebarButtonRef = useRef<HTMLButtonElement | null>(null);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const primaryLabel = identity?.username || user?.email?.split("@")[0] || "Guest";
   const secondaryLabel = identity?.username ? `@${identity.username}` : null;
   const accountLabel = identity?.email ?? user?.email ?? null;
+  const navItems = [
+    { href: "/", label: "Home", icon: <HomeIcon /> },
+    { href: "/explore", label: "Explore", icon: <ExploreIcon /> },
+    ...(user ? [{ href: "/stories", label: "My Stories", icon: <StoriesIcon /> }] : []),
+    ...(user ? [{ href: "/sessions", label: "Sessions", icon: <SessionsIcon /> }] : []),
+  ];
+  const isSidebarOpen = isMobileSidebarOpen || !isDesktopSidebarCollapsed;
+
+  useEffect(() => {
+    const savedValue = window.localStorage.getItem("everplot-sidebar-collapsed");
+
+    if (savedValue === "true") {
+      setIsDesktopSidebarCollapsed(true);
+    }
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
+      if (
+        isMobileSidebarOpen &&
+        window.innerWidth < 1024 &&
+        !sidebarRef.current?.contains(event.target as Node) &&
+        !sidebarButtonRef.current?.contains(event.target as Node)
+      ) {
+        setIsMobileSidebarOpen(false);
+      }
+
       if (!accountMenuRef.current?.contains(event.target as Node)) {
         setIsAccountMenuOpen(false);
       }
@@ -131,6 +256,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        setIsMobileSidebarOpen(false);
         setIsAccountMenuOpen(false);
       }
     }
@@ -142,158 +268,260 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, []);
+  }, [isMobileSidebarOpen]);
 
-  const centerControls = (
-    <>
-      <Link
-        href="/explore"
-        aria-label="Explore"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-transparent bg-transparent px-0 py-0 text-secondary transition hover:bg-surface hover:text-foreground md:h-9 md:w-auto md:px-3 md:py-2"
-      >
-        <ExploreIcon />
-        <span className="hidden text-[0.92rem] font-bold md:inline">Explore</span>
-      </Link>
-      <div className="hidden w-full max-w-[34rem] min-w-[4.5rem] flex-1 md:block">
-        <label className="sr-only" htmlFor="site-search">
-          Search
-        </label>
-        <input
-          id="site-search"
-          type="search"
-          placeholder="Search stories"
-          className="h-9 w-full rounded-lg border border-fieldBorder bg-field px-4 text-[0.92rem] text-foreground placeholder:text-muted focus:border-[#fdd835] focus:outline-none focus:ring-2 focus:ring-[#fdd835]/20"
-        />
-      </div>
-      <Link href="/explore" className={`${headerActionButtonClasses()} md:hidden`} aria-label="Search">
-        <SearchIcon />
-      </Link>
-    </>
-  );
+  useEffect(() => {
+    window.localStorage.setItem(
+      "everplot-sidebar-collapsed",
+      isDesktopSidebarCollapsed ? "true" : "false",
+    );
+    document.documentElement.style.setProperty(
+      "--app-sidebar-width",
+      isDesktopSidebarCollapsed ? "0rem" : "21rem",
+    );
+
+    return () => {
+      document.documentElement.style.removeProperty("--app-sidebar-width");
+    };
+  }, [isDesktopSidebarCollapsed]);
+
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+    setIsAccountMenuOpen(false);
+  }, [pathname]);
+
+  function toggleSidebar() {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsDesktopSidebarCollapsed((collapsed) => !collapsed);
+      return;
+    }
+
+    setIsMobileSidebarOpen((open) => !open);
+  }
 
   if (isSessionPage && !showSessionHeader) {
     return null;
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line/80 bg-night/75 backdrop-blur">
-      <div className="flex w-full items-center gap-2.5 px-4 py-1.5 sm:gap-3 sm:px-8 sm:py-2 lg:mx-auto lg:grid lg:min-h-[58px] lg:max-w-[1440px] lg:grid-cols-[auto_minmax(0,40rem)_auto] lg:items-center lg:gap-6 lg:px-8 lg:py-0">
-        <div className="flex min-w-0 items-center justify-start">
-          <Link
-            href="/"
-            className="inline-flex h-7 items-center sm:h-9"
-            aria-label="Everplot home"
+    <>
+      <header className="sticky top-0 z-50 border-b border-line/70 bg-[rgba(8,9,12,0.82)] backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-[1500px] items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <button
+            ref={sidebarButtonRef}
+            type="button"
+            className={headerActionButtonClasses()}
+            aria-label="Open navigation menu"
+            aria-expanded={isSidebarOpen}
+            onClick={toggleSidebar}
           >
-            <Image src={logo} alt="Everplot" className="h-[1.2rem] w-auto sm:h-7 md:h-7" priority />
-          </Link>
-        </div>
-
-        <div className="hidden min-w-0 items-center justify-self-center lg:flex">{centerControls}</div>
-
-        <div className="ml-auto flex items-center justify-end gap-2 sm:gap-3 lg:ml-0">
-          <div className="flex items-center gap-2 lg:hidden">{centerControls}</div>
-
-          <ButtonLink
-            href="/create"
-            className="h-8 w-8 gap-2 !border-transparent !bg-transparent px-0 py-0 !text-[#fdd835] hover:!bg-[#fdd835]/10 hover:!text-[#fdd835] md:h-9 md:w-auto md:!border-transparent md:!bg-transparent md:px-4 md:!text-[#fdd835] md:hover:!bg-[#fdd835]/10 md:hover:!text-[#fdd835]"
-            aria-label="Create Story"
-          >
-            <span className="md:hidden">
-              <SparklesIcon className="text-[#fdd835]" />
-            </span>
-            <span className="hidden md:inline">
-              <SparklesIcon className="text-[#fdd835]" />
-            </span>
-            <span className="hidden text-[0.92rem] font-bold md:inline">Create Story</span>
-          </ButtonLink>
-
-          <button type="button" className={headerActionButtonClasses()} aria-label="Notifications">
-            <BellIcon />
+            {isSidebarOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
 
-          <div className="relative" ref={accountMenuRef}>
-            <button
-              type="button"
-              className={headerActionButtonClasses()}
-              aria-label="Account menu"
-              aria-expanded={isAccountMenuOpen}
-              onClick={() => setIsAccountMenuOpen((open) => !open)}
-            >
-              <UserIcon />
-            </button>
+          <Link
+            href="/"
+            className="inline-flex shrink-0 items-center gap-3"
+            aria-label="Everplot home"
+          >
+            <Image src={logo} alt="Everplot" className="h-7 w-auto sm:h-8" priority />
+            <div className="hidden min-[430px]:block">
+              <p className="text-[0.68rem] uppercase tracking-[0.24em] text-[rgba(214,171,114,0.88)]">
+                Story Studio
+              </p>
+              <p className="text-sm text-secondary">Prompt, refine, publish, play</p>
+            </div>
+          </Link>
 
-            <div
-              className={`${isAccountMenuOpen ? "block" : "hidden"} absolute right-0 top-14 z-[60] w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 backdrop-blur`}
-            >
-              <div className="flex flex-col">
-                <div className="border-b border-line px-3 pb-3">
-                  <p className="text-sm font-medium text-foreground">{primaryLabel}</p>
-                  {secondaryLabel ? <p className="mt-1 text-xs text-muted">{secondaryLabel}</p> : null}
-                  {accountLabel ? <p className="mt-1 text-xs text-muted">{accountLabel}</p> : null}
-                </div>
+          <div className="hidden min-w-0 flex-1 items-center lg:flex">
+            <label className="relative block w-full" htmlFor="site-search">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+                <SearchIcon />
+              </span>
+              <input
+                id="site-search"
+                type="search"
+                placeholder="Search stories, characters, or authors"
+                className="h-11 w-full rounded-full border border-fieldBorder bg-field/90 pl-12 pr-4 text-[0.95rem] text-foreground placeholder:text-muted focus:border-[rgba(214,171,114,0.55)] focus:outline-none focus:ring-2 focus:ring-[rgba(214,171,114,0.16)]"
+              />
+            </label>
+          </div>
 
-                {user && identity ? (
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <Link href="/explore" className={`${headerActionButtonClasses()} lg:hidden`} aria-label="Search">
+              <SearchIcon />
+            </Link>
+
+            <ButtonLink
+              href="/create"
+              className="h-10 gap-2 rounded-full !border-[rgba(214,171,114,0.36)] !bg-[rgba(214,171,114,0.12)] px-4 !text-[rgba(247,242,233,0.98)] hover:!bg-[rgba(214,171,114,0.2)] hover:!text-white"
+              aria-label="Create Story"
+            >
+              <SparklesIcon className="h-[1.05rem] w-[1.05rem] text-[rgba(214,171,114,0.98)]" />
+              <span className="hidden text-[0.86rem] font-semibold sm:inline">Create Story</span>
+            </ButtonLink>
+
+            <div className="relative" ref={accountMenuRef}>
+              <button
+                type="button"
+                className={headerActionButtonClasses()}
+                aria-label="Account menu"
+                aria-expanded={isAccountMenuOpen}
+                onClick={() => setIsAccountMenuOpen((open) => !open)}
+              >
+                <UserIcon />
+              </button>
+
+              <div
+                className={`${isAccountMenuOpen ? "block" : "hidden"} studio-panel absolute right-0 top-14 z-[60] w-[min(19rem,calc(100vw-2rem))] rounded-[1.35rem] border border-line/90 p-3`}
+              >
+                <div className="flex flex-col">
+                  <div className="border-b border-line/80 px-3 pb-3">
+                    <p className="text-sm font-medium text-foreground">{primaryLabel}</p>
+                    {secondaryLabel ? <p className="mt-1 text-xs text-muted">{secondaryLabel}</p> : null}
+                    {accountLabel ? <p className="mt-1 text-xs text-muted">{accountLabel}</p> : null}
+                  </div>
+
+                  {user && identity ? (
+                    <Link
+                      href={`/u/${identity.username}`}
+                      className="mt-2 px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                    >
+                      My Profile
+                    </Link>
+                  ) : null}
+
+                  {user ? (
+                    <>
+                      <Link
+                        href="/sessions"
+                        className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                        onClick={() => setIsAccountMenuOpen(false)}
+                      >
+                        My Sessions
+                      </Link>
+                      <Link
+                        href="/stories"
+                        className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                        onClick={() => setIsAccountMenuOpen(false)}
+                      >
+                        My Stories
+                      </Link>
+                    </>
+                  ) : null}
+
                   <Link
-                    href={`/u/${identity.username}`}
-                    className="mt-2 px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                    href="/settings"
+                    className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
                     onClick={() => setIsAccountMenuOpen(false)}
                   >
-                    My Profile
+                    Settings
                   </Link>
-                ) : null}
 
-                {user ? (
-                  <>
-                    <Link
-                      href="/sessions"
-                      className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      My Sessions
-                    </Link>
-                    <Link
-                      href="/stories"
-                      className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      My Stories
-                    </Link>
-                  </>
-                ) : null}
-
-                <Link
-                  href="/settings"
-                  className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                  onClick={() => setIsAccountMenuOpen(false)}
-                >
-                  Settings
-                </Link>
-
-                <div className="mt-2 border-t border-line pt-2">
-                  {user ? (
-                    <form action={signOut}>
-                      <button
-                        type="submit"
-                        className="w-full px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
+                  <div className="mt-2 border-t border-line/80 pt-2">
+                    {user ? (
+                      <form action={signOut}>
+                        <button
+                          type="submit"
+                          className="w-full px-3 py-2 text-left text-sm text-secondary transition hover:text-foreground"
+                        >
+                          Sign out
+                        </button>
+                      </form>
+                    ) : (
+                      <Link
+                        href="/auth/sign-in"
+                        className="block px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                        onClick={() => setIsAccountMenuOpen(false)}
                       >
-                        Sign out
-                      </button>
-                    </form>
-                  ) : (
-                    <Link
-                      href="/auth/sign-in"
-                      className="block px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      Sign in
-                    </Link>
-                  )}
+                        Sign in
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      <aside
+        ref={sidebarRef}
+        className={`studio-panel fixed inset-y-0 left-0 z-50 flex w-[min(21rem,calc(100vw-1rem))] flex-col border-r border-line/80 px-4 py-4 transition-transform duration-300 ease-out sm:px-5 lg:w-[21rem] ${isMobileSidebarOpen ? "translate-x-0" : "-translate-x-[105%]"} ${isDesktopSidebarCollapsed ? "lg:-translate-x-[105%]" : "lg:translate-x-0"}`}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="inline-flex items-center gap-3" aria-label="Everplot home">
+            <Image src={logo} alt="Everplot" className="h-7 w-auto" priority />
+            <div>
+              <p className="text-[0.68rem] uppercase tracking-[0.24em] text-[rgba(214,171,114,0.88)]">
+                Story Studio
+              </p>
+              <p className="text-sm text-secondary">Quietly build better sessions</p>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            className={`${headerActionButtonClasses()} lg:hidden`}
+            aria-label="Close navigation menu"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className="mt-5">
+          <label className="relative block" htmlFor="sidebar-search">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+              <SearchIcon />
+            </span>
+            <input
+              id="sidebar-search"
+              type="search"
+              placeholder="Search the library"
+              className="h-11 w-full rounded-full border border-fieldBorder bg-field/90 pl-12 pr-4 text-[0.95rem] text-foreground placeholder:text-muted focus:border-[rgba(214,171,114,0.55)] focus:outline-none focus:ring-2 focus:ring-[rgba(214,171,114,0.16)]"
+            />
+          </label>
+        </div>
+
+        <nav className="mt-6 space-y-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={drawerLinkClasses(isActivePath(pathname, item.href))}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="mt-6 rounded-[1.3rem] border border-line/80 bg-white/[0.03] p-4">
+          <p className="text-[0.7rem] uppercase tracking-[0.22em] text-[rgba(214,171,114,0.9)]">
+            Workflow
+          </p>
+          <h2 className="mt-2 text-lg font-medium text-foreground">Prompt to playable story</h2>
+          <p className="mt-2 text-sm leading-6 text-secondary">
+            Use the compiler for structure, refine the setup, then launch the session when it feels ready.
+          </p>
+          <ButtonLink
+            href="/create"
+            className="mt-4 h-10 w-full justify-center rounded-full !border-[rgba(214,171,114,0.36)] !bg-[rgba(214,171,114,0.12)] !text-[rgba(247,242,233,0.98)] hover:!bg-[rgba(214,171,114,0.2)] hover:!text-white"
+          >
+            <SparklesIcon className="h-[1rem] w-[1rem] text-[rgba(214,171,114,0.98)]" />
+            <span className="text-[0.86rem] font-semibold">Create Story</span>
+          </ButtonLink>
+        </div>
+
+        <div className="mt-auto rounded-[1.3rem] border border-line/80 bg-white/[0.03] p-4">
+          <p className="text-sm font-medium text-foreground">{primaryLabel}</p>
+          {secondaryLabel ? <p className="mt-1 text-xs text-muted">{secondaryLabel}</p> : null}
+          <p className="mt-3 text-sm leading-6 text-secondary">
+            Keep your stories private while drafting, then publish once the setup feels strong.
+          </p>
+        </div>
+      </aside>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { World } from "@/lib/types";
+import { PlayableStory } from "@/lib/types";
 import { selectActiveStoryCards, selectCoreStoryCards } from "@/lib/runtime-story-cards";
 
 export type RuntimeContextPacket = {
@@ -6,15 +6,14 @@ export type RuntimeContextPacket = {
   isFirstTurn: boolean;
   turnCount: number;
   title: string;
-  pov: World["pov"];
+  pov: PlayableStory["pov"];
   toneStyle: string;
-  objective: string;
   continuitySummary: string;
   instructions: string;
   background: string;
   runtimeBackground: string;
-  activeStoryCards: World["storyCards"];
-  coreStoryCards: World["storyCards"];
+  activeStoryCards: PlayableStory["storyCards"];
+  coreStoryCards: PlayableStory["storyCards"];
   recentTurns: Array<{
     turnNumber: number;
     playerAction: string;
@@ -23,17 +22,14 @@ export type RuntimeContextPacket = {
   character: {
     name: string;
     description: string;
-    strengths: string[];
-    weaknesses: string[];
   };
 };
 
 export function buildRuntimeContextPacket(params: {
-  world: World;
-  character: World["playerCharacters"][number];
+  story: PlayableStory;
+  character: PlayableStory["playerCharacters"][number];
   session: {
-    objective: string;
-    pov: World["pov"];
+    pov: PlayableStory["pov"];
     summary: string;
     inactiveStoryCardIds: string[];
     turnCount: number;
@@ -53,11 +49,11 @@ export function buildRuntimeContextPacket(params: {
     playerAction: turn.playerAction,
     storyText: turn.storyText,
   }));
-  const coreStoryCards = selectCoreStoryCards(params.world.storyCards).filter(
+  const coreStoryCards = selectCoreStoryCards(params.story.storyCards).filter(
     (card) => !inactiveStoryCardIds.has(card.id),
   );
   const activeStoryCards = selectActiveStoryCards({
-    storyCards: params.world.storyCards,
+    storyCards: params.story.storyCards,
     playerAction: params.playerAction ?? "",
     rollingSummary,
     recentTurns,
@@ -67,22 +63,19 @@ export function buildRuntimeContextPacket(params: {
     mode: params.mode ?? "turn",
     isFirstTurn: params.session.turnCount === 0,
     turnCount: params.session.turnCount,
-    title: params.world.title,
+    title: params.story.title,
     pov: params.session.pov,
-    toneStyle: params.world.toneStyle || params.world.authorStyle,
-    objective: params.session.objective,
+    toneStyle: params.story.toneStyle || params.story.authorStyle,
     continuitySummary: rollingSummary,
-    instructions: params.world.instructions,
-    background: params.world.background,
-    runtimeBackground: params.world.runtimeBackground || params.world.background,
+    instructions: params.story.instructions,
+    background: params.story.background,
+    runtimeBackground: params.story.runtimeBackground || params.story.background,
     activeStoryCards,
     coreStoryCards,
     recentTurns,
     character: {
       name: params.character.name,
       description: params.character.description,
-      strengths: params.character.strengths,
-      weaknesses: params.character.weaknesses,
     },
   };
 }

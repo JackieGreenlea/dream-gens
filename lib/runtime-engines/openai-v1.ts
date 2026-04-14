@@ -33,7 +33,6 @@ Requirements:
 - Begin with the immediate consequence, reaction, reveal, or next beat.
 - Keep player agency intact and move the scene forward.
 - Respect POV, tone, story logic, and runtime instructions.
-- Use the character's strengths and weaknesses narratively, not as mechanics.
 - Do not expose internal scaffolding.
 - Return only the narrative story prose for this beat.
 - Do not return JSON.
@@ -51,7 +50,6 @@ Requirements:
 - Do not describe a hidden player action or imply the player already chose something.
 - Keep player agency intact and leave room for the player's first move.
 - Respect POV, tone, story logic, and runtime instructions.
-- Use the character's strengths and weaknesses narratively, not as mechanics.
 - Do not expose internal scaffolding.
 - Return only the narrative story prose for this opening.
 - Do not return JSON.
@@ -112,15 +110,12 @@ function buildOpenAIDeveloperMessage(
       `Title: ${context.title}`,
       `POV: ${context.pov.replace("_", " ")}`,
       `Tone / Style: ${context.toneStyle}`,
-      `Objective: ${context.objective}`,
       "",
       "Story Background:",
       context.background,
       "",
       "Selected Playable Character:",
       `${context.character.name}: ${context.character.description}`,
-      `Strengths: ${context.character.strengths.join(", ")}`,
-      `Weaknesses: ${context.character.weaknesses.join(", ")}`,
       activeStoryCardsSection ? "" : null,
       activeStoryCardsSection,
       context.instructions.trim() ? "" : null,
@@ -142,11 +137,8 @@ function buildOpenAIDeveloperMessage(
     `Title: ${context.title}`,
     `POV: ${context.pov.replace("_", " ")}`,
     `Tone / Style: ${context.toneStyle}`,
-    `Objective: ${context.objective}`,
     `Rolling Story Summary: ${context.continuitySummary}`,
     `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `Strengths: ${context.character.strengths.join(", ")}`,
-    `Weaknesses: ${context.character.weaknesses.join(", ")}`,
     activeStoryCardsSection ? "" : null,
     activeStoryCardsSection,
     context.instructions.trim() ? "" : null,
@@ -233,7 +225,7 @@ async function generateOpenAITurn(
 ): Promise<RuntimeEngineGenerateTurnResult> {
   const mode = params.mode ?? "turn";
   const context = buildRuntimeContextPacket({
-    world: params.world,
+    story: params.story,
     character: params.character,
     session: params.session,
     mode,
@@ -286,7 +278,7 @@ async function generateOpenAISuggestedActions(
 ): Promise<RuntimeEngineGenerateSuggestedActionsResult> {
   const mode = params.turn.playerAction.trim() ? "turn" : "opening";
   const context = buildRuntimeContextPacket({
-    world: params.world,
+    story: params.story,
     character: params.character,
     session: params.session,
     mode,

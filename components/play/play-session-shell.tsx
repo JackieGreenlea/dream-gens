@@ -4,24 +4,24 @@ import { FormEvent, KeyboardEvent, ReactNode, useEffect, useRef, useState } from
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { LoadingDots } from "@/components/ui/loading";
-import { PlayerCharacter, Session, SessionTurn, StoryCardType, World } from "@/lib/types";
+import { PlayableStory, PlayerCharacter, Session, SessionTurn, StoryCardType } from "@/lib/types";
 
 type PlaySessionShellProps = {
   sessionId: string;
   initialSession: Session | null;
-  initialWorld: World | null;
+  initialStory: PlayableStory | null;
   initialCharacter: PlayerCharacter | null;
 };
 
 export function PlaySessionShell({
   sessionId,
   initialSession,
-  initialWorld,
+  initialStory,
   initialCharacter,
 }: PlaySessionShellProps) {
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(initialSession);
-  const [world] = useState<World | null>(initialWorld);
+  const [story] = useState<PlayableStory | null>(initialStory);
   const [character] = useState<PlayerCharacter | null>(initialCharacter);
   const [playerAction, setPlayerAction] = useState("");
   const [pendingPlayerAction, setPendingPlayerAction] = useState("");
@@ -147,7 +147,7 @@ export function PlaySessionShell({
     });
   }, [sessionId, streamingStoryText]);
 
-  if (!session || !world || !character) {
+  if (!session || !story || !character) {
     return (
       <Card className="h-full overflow-hidden">
         <p className="text-foreground">Session not found.</p>
@@ -157,7 +157,7 @@ export function PlaySessionShell({
 
   const inactiveStoryCardIds = new Set(session.inactiveStoryCardIds);
   const selectedStoryCardIds = new Set(session.lastSentStoryCardIds);
-  const runtimeSelectedStoryCards = world.storyCards.filter((card) =>
+  const runtimeSelectedStoryCards = story.storyCards.filter((card) =>
     selectedStoryCardIds.has(card.id),
   );
 
@@ -468,7 +468,7 @@ export function PlaySessionShell({
                 </svg>
               </button>
               <h1 className="mr-1 truncate text-[1.05rem] font-semibold leading-none text-foreground sm:text-[1.18rem] lg:text-[1.08rem]">
-                {world.title}
+                {story.title}
               </h1>
               <div className="hidden flex-wrap items-center gap-2 sm:flex">
                 <span className="rounded-md border border-line/70 px-2 py-0.5 sm:px-2.5 sm:py-1">
@@ -537,20 +537,20 @@ export function PlaySessionShell({
                           </div>
                           <div className="space-y-2">
                             <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Background</p>
-                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.background}</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{story.background}</p>
                           </div>
                           <div className="space-y-2">
                             <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Runtime Background</p>
-                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.runtimeBackground || world.background}</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{story.runtimeBackground || story.background}</p>
                           </div>
                           <div className="space-y-2">
                             <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Tone / Theme</p>
-                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.toneStyle || world.authorStyle || "No tone set."}</p>
+                            <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{story.toneStyle || story.authorStyle || "No tone set."}</p>
                           </div>
-                          {world.instructions.trim() ? (
+                          {story.instructions.trim() ? (
                             <div className="space-y-2">
                               <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Additional Context</p>
-                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.instructions}</p>
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{story.instructions}</p>
                             </div>
                           ) : null}
                           <div className="space-y-3">
@@ -596,7 +596,7 @@ export function PlaySessionShell({
                           <div className="space-y-3">
                             <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Cards</p>
                             {storyCardGroups.map((group) => {
-                              const cards = world.storyCards.filter((card) => card.type === group.type);
+                              const cards = story.storyCards.filter((card) => card.type === group.type);
 
                               if (cards.length === 0) {
                                 return null;
@@ -654,12 +654,8 @@ export function PlaySessionShell({
                               <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{character.description}</p>
                             </div>
                             <div className="space-y-2">
-                              <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Objective</p>
-                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{session.objective}</p>
-                            </div>
-                            <div className="space-y-2">
                               <p className="text-xs uppercase tracking-[0.2em] text-secondary lg:text-[0.68rem]">Story Summary</p>
-                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{world.summary}</p>
+                              <p className="text-sm leading-6 text-secondary lg:text-[0.88rem] lg:leading-5">{story.summary}</p>
                             </div>
                           </div>
                         </div>

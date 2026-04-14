@@ -27,15 +27,12 @@ export const sessionSchema = z.object({
   storyId: optionalStoryLinkSchema,
   characterId: z.string().trim().min(1),
   turnCount: z.number().int().min(0),
-  objective: z.string().trim().min(1),
   pov: povSchema.default("second_person"),
   summary: z.string().default(""),
   storyTitle: z.string().trim().nullable().optional(),
   storySummary: z.string().trim().nullable().optional(),
   storyBackground: z.string().trim().nullable().optional(),
   storyRuntimeBackground: z.string().trim().nullable().optional(),
-  storyFirstAction: z.string().trim().nullable().optional(),
-  storyObjective: z.string().trim().nullable().optional(),
   storyInstructions: z.string().trim().nullable().optional(),
   storyAuthorStyle: z.string().trim().nullable().optional(),
   storyPov: povSchema.nullable().optional(),
@@ -45,8 +42,6 @@ export const sessionSchema = z.object({
   defeatEnabled: z.boolean().nullable().optional(),
   characterName: z.string().trim().nullable().optional(),
   characterDescription: z.string().trim().nullable().optional(),
-  characterStrengths: z.array(z.string().trim().min(1)).nullable().optional(),
-  characterWeaknesses: z.array(z.string().trim().min(1)).nullable().optional(),
   previousResponseId: z.string().default(""),
   turns: z.array(sessionTurnSchema),
 });
@@ -55,8 +50,6 @@ export const playerCharacterSchema = z.object({
   id: z.string().trim().optional().default(""),
   name: z.string().trim().min(1),
   description: z.string().trim().min(1),
-  strengths: z.array(z.string().trim().min(1)).length(2),
-  weaknesses: z.array(z.string().trim().min(1)).length(2),
 });
 
 export const storyCardSchema = z.object({
@@ -73,8 +66,6 @@ const compiledStorySchemaBase = z.object({
   summary: z.string().trim().min(1).max(600),
   background: z.string().trim().min(1),
   runtimeBackground: z.string().trim().min(1),
-  firstAction: z.string().trim().min(1),
-  objective: z.string().trim().min(1),
   toneStyle: z.string().trim().min(1),
   storyCards: z.array(storyCardSchema).default([]),
   victoryCondition: z.string().trim().min(1),
@@ -140,8 +131,6 @@ export const storySchema = persistedStorySchema.extend({
 export const customSessionCharacterSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
   description: z.string().trim().min(1, "Description is required."),
-  strengths: z.array(z.string().trim().min(1)).max(8).default([]),
-  weaknesses: z.array(z.string().trim().min(1)).max(8).default([]),
 });
 
 export type CustomSessionCharacter = z.infer<typeof customSessionCharacterSchema>;
@@ -179,8 +168,6 @@ export const compiledStoryJsonSchema = {
     "background",
     "tags",
     "runtimeBackground",
-    "firstAction",
-    "objective",
     "toneStyle",
     "storyCards",
     "victoryCondition",
@@ -201,8 +188,6 @@ export const compiledStoryJsonSchema = {
         enum: [...COMPILER_GENRE_TAG_OPTIONS],
       },
     },
-    firstAction: { type: "string" },
-    objective: { type: "string" },
     toneStyle: { type: "string" },
     storyCards: {
       type: "array",
@@ -237,27 +222,11 @@ export const compiledStoryJsonSchema = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "name", "description", "strengths", "weaknesses"],
+        required: ["id", "name", "description"],
         properties: {
           id: { type: "string" },
           name: { type: "string" },
           description: { type: "string" },
-          strengths: {
-            type: "array",
-            minItems: 2,
-            maxItems: 2,
-            items: {
-              type: "string",
-            },
-          },
-          weaknesses: {
-            type: "array",
-            minItems: 2,
-            maxItems: 2,
-            items: {
-              type: "string",
-            },
-          },
         },
       },
     },

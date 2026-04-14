@@ -27,8 +27,6 @@ export function StoryCharacterSelect({
   const [customCharacter, setCustomCharacter] = useState({
     name: "",
     description: "",
-    strengths: "",
-    weaknesses: "",
   });
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState("");
@@ -85,11 +83,9 @@ export function StoryCharacterSelect({
             id: CUSTOM_CHARACTER_ID,
             name: customCharacter.name.trim(),
             description: customCharacter.description.trim(),
-            strengths: splitCustomCharacterField(customCharacter.strengths),
-            weaknesses: splitCustomCharacterField(customCharacter.weaknesses),
           }
         : liveStory?.playerCharacters.find((character) => character.id === selectedId) ?? null,
-    [customCharacter.description, customCharacter.name, customCharacter.strengths, customCharacter.weaknesses, selectedId, liveStory],
+    [customCharacter.description, customCharacter.name, selectedId, liveStory],
   );
 
   if (!liveStory) {
@@ -102,13 +98,6 @@ export function StoryCharacterSelect({
 
   if (isStarting) {
     return <SessionOpeningSkeletonScreen message="Preparing your opening scene..." />;
-  }
-
-  function splitCustomCharacterField(value: string) {
-    return value
-      .split(/\n|,/)
-      .map((item) => item.trim())
-      .filter(Boolean);
   }
 
   async function beginSession() {
@@ -144,14 +133,12 @@ export function StoryCharacterSelect({
         body: JSON.stringify({
           storyId: liveStory.id,
           ...(isCustomCharacter
-            ? {
-                customCharacter: {
-                  name: selectedCharacter.name,
-                  description: selectedCharacter.description,
-                  strengths: selectedCharacter.strengths,
-                  weaknesses: selectedCharacter.weaknesses,
-                },
-              }
+              ? {
+                  customCharacter: {
+                    name: selectedCharacter.name,
+                    description: selectedCharacter.description,
+                  },
+                }
             : {
                 characterId: selectedCharacter.id,
               }),
@@ -222,28 +209,6 @@ export function StoryCharacterSelect({
                     {isSelected ? "Selected" : "Available"}
                   </span>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.18em] text-secondary">Strengths</p>
-                    <div className="space-y-1.5 text-sm text-secondary">
-                      {character.strengths.map((strength) => (
-                        <p key={`${character.id}-${strength}`}>
-                          {strength}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.18em] text-secondary">Weaknesses</p>
-                    <div className="space-y-1.5 text-sm text-secondary">
-                      {character.weaknesses.map((weakness) => (
-                        <p key={`${character.id}-${weakness}`}>
-                          {weakness}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
               </div>
             </button>
           );
@@ -271,20 +236,11 @@ export function StoryCharacterSelect({
                 {isCustomSelected ? "Selected" : "Available"}
               </span>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-secondary">Required</p>
-                <div className="space-y-1.5 text-sm text-secondary">
-                  <p>Name</p>
-                  <p>Description</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.18em] text-secondary">Optional</p>
-                <div className="space-y-1.5 text-sm text-secondary">
-                  <p>Strengths</p>
-                  <p>Weaknesses</p>
-                </div>
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-[0.18em] text-secondary">Required</p>
+              <div className="space-y-1.5 text-sm text-secondary">
+                <p>Name</p>
+                <p>Description</p>
               </div>
             </div>
           </div>
@@ -326,30 +282,6 @@ export function StoryCharacterSelect({
                 }
                 className="min-h-28 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-base leading-7 text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
                 placeholder="Who is this character in the story?"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Strengths</span>
-              <textarea
-                value={customCharacter.strengths}
-                onChange={(event) =>
-                  setCustomCharacter((current) => ({ ...current, strengths: event.target.value }))
-                }
-                className="min-h-24 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-sm leading-6 text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
-                placeholder="Optional. One per line or comma-separated."
-              />
-            </label>
-
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Weaknesses</span>
-              <textarea
-                value={customCharacter.weaknesses}
-                onChange={(event) =>
-                  setCustomCharacter((current) => ({ ...current, weaknesses: event.target.value }))
-                }
-                className="min-h-24 w-full rounded-lg border border-fieldBorder bg-field px-4 py-3 text-sm leading-6 text-foreground placeholder:text-muted focus:border-focus focus:outline-none focus:ring-2 focus:ring-focus/20"
-                placeholder="Optional. One per line or comma-separated."
               />
             </label>
           </div>

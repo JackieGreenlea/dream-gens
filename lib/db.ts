@@ -7,6 +7,7 @@ import { toPlayableStory } from "@/lib/story";
 import { normalizeStoryTags } from "@/lib/story-tags";
 import { sanitizeTextArrayForDatabase, sanitizeTextForDatabase } from "@/lib/text-sanitize";
 import {
+  PlayableStory,
   PlayerCharacter,
   Session,
   SessionTurn,
@@ -15,7 +16,6 @@ import {
   StoryCardType,
   StoryPov,
   StoryVisibility,
-  World,
 } from "@/lib/types";
 import { createId, slugify } from "@/lib/utils";
 
@@ -32,8 +32,6 @@ const storySelect = {
   summary: true,
   background: true,
   runtimeBackground: true,
-  firstAction: true,
-  objective: true,
   pov: true,
   instructions: true,
   toneStyle: true,
@@ -51,8 +49,6 @@ const storySelect = {
       id: true,
       name: true,
       description: true,
-      strengths: true,
-      weaknesses: true,
     },
   },
 } satisfies Prisma.StorySelect;
@@ -212,15 +208,11 @@ function mapCharacter(record: {
   id: string;
   name: string;
   description: string;
-  strengths: Prisma.JsonValue;
-  weaknesses: Prisma.JsonValue;
 }): PlayerCharacter {
   return {
     id: record.id,
     name: record.name,
     description: record.description,
-    strengths: readStringArray(record.strengths),
-    weaknesses: readStringArray(record.weaknesses),
   };
 }
 
@@ -236,8 +228,6 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     summary: record.summary,
     background: record.background,
     runtimeBackground: record.runtimeBackground,
-    firstAction: record.firstAction,
-    objective: record.objective,
     pov: normalizePov(record.pov),
     instructions: record.instructions,
     toneStyle: record.toneStyle || record.authorStyle,
@@ -271,7 +261,6 @@ function mapSession(record: DbSession): Session {
     storyId: record.storyId ?? null,
     characterId: record.storyCharacterId ?? "",
     turnCount: record.turnCount,
-    objective: record.storyObjective ?? record.objective,
     pov: normalizePov(record.storyPov ?? record.pov),
     summary: record.summary ?? "",
     inactiveStoryCardIds: readStringArray(record.inactiveStoryCardIds ?? [], []),
@@ -280,8 +269,6 @@ function mapSession(record: DbSession): Session {
     storySummary: record.storySummary ?? null,
     storyBackground: record.storyBackground ?? null,
     storyRuntimeBackground: record.storyRuntimeBackground ?? null,
-    storyFirstAction: record.storyFirstAction ?? null,
-    storyObjective: record.storyObjective ?? null,
     storyInstructions: record.storyInstructions ?? null,
     storyAuthorStyle: record.storyAuthorStyle ?? null,
     storyPov: record.storyPov ? normalizePov(record.storyPov) : null,
@@ -291,8 +278,6 @@ function mapSession(record: DbSession): Session {
     defeatEnabled: record.defeatEnabled ?? null,
     characterName: record.characterName ?? null,
     characterDescription: record.characterDescription ?? null,
-    characterStrengths: readStringArray(record.characterStrengths ?? [], []),
-    characterWeaknesses: readStringArray(record.characterWeaknesses ?? [], []),
     previousResponseId: record.previousResponseId ?? "",
     turns: [...record.turns].reverse().map(mapTurn),
   };
@@ -302,8 +287,6 @@ function getStoryPublishValidationError(story: Story) {
   if (!story.title.trim()) return "A title is required before publishing.";
   if (!story.summary.trim()) return "A summary is required before publishing.";
   if (!story.background.trim()) return "Background is required before publishing.";
-  if (!story.firstAction.trim()) return "A first action is required before publishing.";
-  if (!story.objective.trim()) return "An objective is required before publishing.";
   if (!story.toneStyle.trim()) return "Tone style is required before publishing.";
   if (story.playerCharacters.length === 0) {
     return "Add at least one playable character before publishing.";
@@ -354,35 +337,33 @@ async function ensureUniqueStorySlug(
   return `${baseSlug}-${createId("slug").replace("slug-", "")}`;
 }
 
-function buildSessionSnapshot(playable: World, character: PlayerCharacter) {
+function buildSessionSnapshot(playableStory: PlayableStory, character: PlayerCharacter) {
   return {
-    storyTitle: sanitizeTextForDatabase(playable.title),
-    storySummary: sanitizeTextForDatabase(playable.summary),
-    storyBackground: sanitizeTextForDatabase(playable.background),
-    storyRuntimeBackground: sanitizeTextForDatabase(playable.runtimeBackground || playable.background),
-    storyFirstAction: sanitizeTextForDatabase(playable.firstAction),
-    storyObjective: sanitizeTextForDatabase(playable.objective),
-    storyInstructions: sanitizeTextForDatabase(playable.instructions),
-    storyAuthorStyle: sanitizeTextForDatabase(playable.authorStyle || playable.toneStyle),
-    storyPov: playable.pov,
-    victoryCondition: sanitizeTextForDatabase(playable.victoryCondition),
-    victoryEnabled: playable.victoryEnabled,
-    defeatCondition: sanitizeTextForDatabase(playable.defeatCondition),
-    defeatEnabled: playable.defeatEnabled,
+    storyTitle: sanitizeTextForDatabase(playableStory.title),
+    storySummary: sanitizeTextForDatabase(playableStory.summary),
+    storyBackground: sanitizeTextForDatabase(playableStory.background),
+    storyRuntimeBackground: sanitizeTextForDatabase(
+      playableStory.runtimeBackground || playableStory.background,
+    ),
+    storyInstructions: sanitizeTextForDatabase(playableStory.instructions),
+    storyAuthorStyle: sanitizeTextForDatabase(playableStory.authorStyle || playableStory.toneStyle),
+    storyPov: playableStory.pov,
+    victoryCondition: sanitizeTextForDatabase(playableStory.victoryCondition),
+    victoryEnabled: playableStory.victoryEnabled,
+    defeatCondition: sanitizeTextForDatabase(playableStory.defeatCondition),
+    defeatEnabled: playableStory.defeatEnabled,
     characterName: sanitizeTextForDatabase(character.name),
     characterDescription: sanitizeTextForDatabase(character.description),
-    characterStrengths: sanitizeTextArrayForDatabase(character.strengths),
-    characterWeaknesses: sanitizeTextArrayForDatabase(character.weaknesses),
   };
 }
 
-function buildSnapshotPlayable(record: DbSessionBundle): { world: World; character: PlayerCharacter } | null {
+function buildSnapshotPlayable(
+  record: DbSessionBundle,
+): { playableStory: PlayableStory; character: PlayerCharacter } | null {
   if (
     !record.storyTitle ||
     !record.storySummary ||
     !record.storyBackground ||
-    !record.storyFirstAction ||
-    !record.storyObjective ||
     !record.storyPov ||
     !record.characterName ||
     !record.characterDescription
@@ -390,19 +371,15 @@ function buildSnapshotPlayable(record: DbSessionBundle): { world: World; charact
     return null;
   }
 
-  const characterStrengths = readStringArray(record.characterStrengths ?? [], []);
-  const characterWeaknesses = readStringArray(record.characterWeaknesses ?? [], []);
   const snapshotStoryCards = record.story ? readStoryCards(record.story.storyCards ?? []) : [];
 
   return {
-    world: {
+    playableStory: {
       id: record.storyId ?? record.id,
       title: record.storyTitle,
       summary: record.storySummary,
       background: record.storyBackground,
       runtimeBackground: record.storyRuntimeBackground ?? record.storyBackground,
-      firstAction: record.storyFirstAction,
-      objective: record.storyObjective,
       pov: normalizePov(record.storyPov),
       instructions: record.storyInstructions ?? "",
       toneStyle: record.storyAuthorStyle ?? "",
@@ -417,8 +394,6 @@ function buildSnapshotPlayable(record: DbSessionBundle): { world: World; charact
           id: record.storyCharacterId ?? "",
           name: record.characterName,
           description: record.characterDescription,
-          strengths: characterStrengths,
-          weaknesses: characterWeaknesses,
         },
       ],
     },
@@ -426,8 +401,6 @@ function buildSnapshotPlayable(record: DbSessionBundle): { world: World; charact
       id: record.storyCharacterId ?? "",
       name: record.characterName,
       description: record.characterDescription,
-      strengths: characterStrengths,
-      weaknesses: characterWeaknesses,
     },
   };
 }
@@ -440,8 +413,6 @@ function storyPersistenceData(story: Story) {
     summary: sanitizeTextForDatabase(story.summary),
     background: sanitizeTextForDatabase(story.background),
     runtimeBackground: sanitizeTextForDatabase(story.runtimeBackground || story.background),
-    firstAction: sanitizeTextForDatabase(story.firstAction),
-    objective: sanitizeTextForDatabase(story.objective),
     pov: story.pov,
     instructions: sanitizeTextForDatabase(story.instructions),
     toneStyle: sanitizeTextForDatabase(story.toneStyle),
@@ -468,8 +439,6 @@ function buildStoryCharacterRows(storyId: string, characters: Story["playerChara
     storyId,
     name: sanitizeTextForDatabase(character.name),
     description: sanitizeTextForDatabase(character.description),
-    strengths: sanitizeTextArrayForDatabase(character.strengths),
-    weaknesses: sanitizeTextArrayForDatabase(character.weaknesses),
   }));
 }
 
@@ -871,8 +840,6 @@ export async function createSessionFromStory(params: {
       id: "",
       name: params.customCharacter.name,
       description: params.customCharacter.description,
-      strengths: params.customCharacter.strengths,
-      weaknesses: params.customCharacter.weaknesses,
     };
   } else if (params.characterId) {
     const existingCharacter = story.playerCharacters.find(
@@ -898,8 +865,6 @@ export async function createSessionFromStory(params: {
       storyId: story.id,
       storyCharacterId,
       turnCount: 0,
-      objective: sanitizeTextForDatabase(story.objective),
-      currentObjective: sanitizeTextForDatabase(story.objective),
       pov: story.pov,
       ...buildSessionSnapshot(playableStory, selectedCharacter),
       previousResponseId: "",
@@ -925,9 +890,9 @@ export async function getSessionBundle(id: string, userId: string) {
 
   const snapshot = buildSnapshotPlayable(session);
   const story = session.story ? mapStoryRecord(session.story) : null;
-  const playable = snapshot?.world ?? (story ? toPlayableStory(story) : null);
+  const playableStory = snapshot?.playableStory ?? (story ? toPlayableStory(story) : null);
 
-  if (!playable) {
+  if (!playableStory) {
     return null;
   }
 
@@ -935,12 +900,12 @@ export async function getSessionBundle(id: string, userId: string) {
   const fallbackCharacter =
     snapshot?.character ??
     storyCharacter ??
-    playable.playerCharacters.find((item) => item.id === session.storyCharacterId) ??
+    playableStory.playerCharacters.find((item) => item.id === session.storyCharacterId) ??
     null;
 
   return {
     session: mapSession(session),
-    world: playable,
+    playableStory,
     character: fallbackCharacter,
   };
 }

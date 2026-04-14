@@ -28,7 +28,7 @@ export default async function SessionPage({
       <PlaySessionShell
         sessionId={id}
         initialSession={bundle.session}
-        initialWorld={bundle.world}
+        initialStory={bundle.playableStory}
         initialCharacter={bundle.character}
       />
     </main>

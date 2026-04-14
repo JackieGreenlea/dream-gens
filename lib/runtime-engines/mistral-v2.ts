@@ -606,7 +606,7 @@ async function generateMistralTurn(
 ): Promise<RuntimeEngineGenerateTurnResult> {
   const mode = params.mode ?? "turn";
   const context = buildRuntimeContextPacket({
-    world: params.world,
+    story: params.story,
     character: params.character,
     session: params.session,
     mode,
@@ -645,7 +645,7 @@ async function generateMistralSuggestedActions(
 ): Promise<RuntimeEngineGenerateSuggestedActionsResult> {
   const mode = params.turn.playerAction.trim() ? "turn" : "opening";
   const context = buildRuntimeContextPacket({
-    world: params.world,
+    story: params.story,
     character: params.character,
     session: params.session,
     mode,

@@ -54,17 +54,10 @@ export function formatLineList(values: string[]) {
 }
 
 export function buildSuggestedActions(_story: PlayableStory, character: PlayerCharacter) {
-  const leadStrength = character.strengths[0];
-  const definingWeakness = character.weaknesses[0];
-
   return [
     "Question the nearest witness.",
-    leadStrength
-      ? `Use ${leadStrength.toLowerCase()} to seize control.`
-      : "Take decisive action now.",
-    definingWeakness
-      ? `Act before ${definingWeakness.toLowerCase()} costs you.`
-      : "Force the situation to shift.",
+    `Use ${character.name.toLowerCase()} to seize control.`,
+    "Force the situation to shift.",
   ];
 }
 

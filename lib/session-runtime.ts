@@ -103,10 +103,9 @@ async function generateAndPersistSessionTurn(params: {
   const runtimeEngine = getRuntimeEngine();
   const engineStartMs = Date.now();
   const engineResult = await runtimeEngine.generateTurn({
-    world: bundle.world,
+    story: bundle.playableStory,
     character: bundle.character,
     session: {
-      objective: bundle.session.objective,
       pov: bundle.session.pov,
       summary: bundle.session.summary,
       inactiveStoryCardIds: bundle.session.inactiveStoryCardIds,
@@ -129,7 +128,7 @@ async function generateAndPersistSessionTurn(params: {
     playerAction: params.playerAction,
     turnNumber: bundle.session.turnCount + 1,
     output: engineResult.output,
-    background: bundle.world.background,
+    background: bundle.playableStory.background,
     mode: params.mode ?? "turn",
   });
   const nextPreviousResponseId = engineResult.responseId || bundle.session.previousResponseId || "";
@@ -213,10 +212,9 @@ export async function generateSessionSuggestedActions(params: {
 
   const runtimeEngine = getRuntimeEngine();
   const result = await runtimeEngine.generateSuggestedActions({
-    world: bundle.world,
+    story: bundle.playableStory,
     character: bundle.character,
     session: {
-      objective: bundle.session.objective,
       pov: bundle.session.pov,
       summary: bundle.session.summary,
       inactiveStoryCardIds: bundle.session.inactiveStoryCardIds,

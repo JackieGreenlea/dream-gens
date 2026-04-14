@@ -1,10 +1,9 @@
 import { RuntimeTurnOutput } from "@/lib/schemas";
-import { PlayerCharacter, SessionTurn, StoryPov, World } from "@/lib/types";
+import { PlayableStory, PlayerCharacter, SessionTurn, StoryPov } from "@/lib/types";
 
 export type RuntimeEngineMode = "opening" | "turn";
 
 export type RuntimeEngineSessionContext = {
-  objective: string;
   pov: StoryPov;
   summary: string;
   inactiveStoryCardIds: string[];
@@ -14,7 +13,7 @@ export type RuntimeEngineSessionContext = {
 };
 
 export type RuntimeEngineGenerateTurnParams = {
-  world: World;
+  story: PlayableStory;
   character: PlayerCharacter;
   session: RuntimeEngineSessionContext;
   playerAction: string;
@@ -36,7 +35,7 @@ export type RuntimeEngineGenerateTurnResult = {
 };
 
 export type RuntimeEngineGenerateSuggestedActionsParams = {
-  world: World;
+  story: PlayableStory;
   character: PlayerCharacter;
   session: RuntimeEngineSessionContext;
   turn: SessionTurn;

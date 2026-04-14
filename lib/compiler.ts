@@ -66,13 +66,6 @@ RuntimeBackground:
 - Preserve the key setup, relationships, and the starting pressure.
 - Prefer 1-3 short paragraphs.
 
-Objective:
-- Concrete, actionable, and tied to the main tension.
-- Avoid vague or purely thematic objectives.
-- The player should understand what they are trying to do.
-- If there is exactly one playable character, Objective may be specific to that protagonist.
-- If there are two or more playable characters, Objective must stay general enough to make sense for any listed playable character.
-
 ToneStyle:
 - Short description of the story's tone and writing style.
 - Keep it concise, practical, and usable by downstream systems.
@@ -94,8 +87,6 @@ PlayerCharacters:
 - Do not make love interests, rivals, antagonists, or major side characters playable unless the premise clearly calls for it.
 - Character descriptions should be written in 3rd person.
 - Character description should be a meaningful background story and include the character's life story and motive.
-- Each player character should include exactly 2 strengths and exactly 2 weaknesses.
-- Strengths and weaknesses should feel story-relevant, character-specific, and dramatically useful.
 
 
 VictoryCondition / DefeatCondition:
@@ -121,7 +112,6 @@ Compile the user's story premise into a structured Story object.`;
 //LOOK INTO THE ABOVE LINE
 
 
-//- firstAction is the player's hidden first move, not assistant narration or an opening cutscene.
 //- Keep the summary tight, vivid, and specific, but do not clip it so hard that the hook feels cut off.
 
 function formatOptionalField(label: string, value: string) {
@@ -178,8 +168,6 @@ export function normalizeCompiledStory(output: CompiledStoryOutput): Story {
     summary: output.summary.trim(),
     background: output.background.trim(),
     runtimeBackground: output.runtimeBackground.trim(),
-    firstAction: output.firstAction.trim(),
-    objective: output.objective.trim(),
     pov: "second_person",
     instructions: "",
     toneStyle,
@@ -230,8 +218,6 @@ export function normalizeCompiledStory(output: CompiledStoryOutput): Story {
         id: nextId,
         name: character.name.trim(),
         description: character.description.trim(),
-        strengths: character.strengths.map((strength: string) => strength.trim()),
-        weaknesses: character.weaknesses.map((weakness: string) => weakness.trim()),
       };
       },
     ),

@@ -153,11 +153,8 @@ function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContex
     `- Title: ${context.title}`,
     `- POV: ${context.pov.replace("_", " ")}`,
     `- Tone / Style: ${context.toneStyle}`,
-    `- User-controlled character objective in the story: ${context.objective}`,
     `- Story Background: ${context.background}`,
     `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
-    `- User-controlled character's strengths: ${context.character.strengths.join(", ")}`,
-    `- User-controlled character's weaknesses: ${context.character.weaknesses.join(", ")}`,
   ];
 
   const activeStoryCardLines = buildActiveStoryCardLines(context);
@@ -178,7 +175,6 @@ function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeCon
 
   if (shouldIncludeInstructionReminder(context)) {
     lines.push(`- POV: ${context.pov.replace("_", " ")}`);
-    lines.push(`- User's objective in the story: ${context.objective}`);
   }
 
   lines.push(`- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`);
@@ -585,7 +581,7 @@ async function generateMistralTurn(
 ): Promise<RuntimeEngineGenerateTurnResult> {
   const mode = params.mode ?? "turn";
   const context = buildRuntimeContextPacket({
-    world: params.world,
+    story: params.story,
     character: params.character,
     session: params.session,
     mode,
@@ -624,7 +620,7 @@ async function generateMistralSuggestedActions(
 ): Promise<RuntimeEngineGenerateSuggestedActionsResult> {
   const mode = params.turn.playerAction.trim() ? "turn" : "opening";
   const context = buildRuntimeContextPacket({
-    world: params.world,
+    story: params.story,
     character: params.character,
     session: params.session,
     mode,

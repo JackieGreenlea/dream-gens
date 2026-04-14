@@ -6,8 +6,6 @@ export type PlayerCharacter = {
   id: string;
   name: string;
   description: string;
-  strengths: string[];
-  weaknesses: string[];
 };
 
 export type StoryCard = {
@@ -25,8 +23,6 @@ type PlayableStoryFields = {
   summary: string;
   background: string;
   runtimeBackground: string;
-  firstAction: string;
-  objective: string;
   pov: StoryPov;
   instructions: string;
   toneStyle: string;
@@ -49,15 +45,11 @@ export type Story = PlayableStoryFields & {
 
 export type PlayableStory = PlayableStoryFields;
 
-// Legacy alias retained while the Prisma-backed data layer still uses world-era names internally.
-export type World = PlayableStory;
-
 export type Session = {
   id: string;
   storyId?: string | null;
   characterId: string;
   turnCount: number;
-  objective: string;
   pov: StoryPov;
   summary: string;
   inactiveStoryCardIds: string[];
@@ -66,8 +58,6 @@ export type Session = {
   storySummary?: string | null;
   storyBackground?: string | null;
   storyRuntimeBackground?: string | null;
-  storyFirstAction?: string | null;
-  storyObjective?: string | null;
   storyInstructions?: string | null;
   storyAuthorStyle?: string | null;
   storyPov?: StoryPov | null;
@@ -77,8 +67,6 @@ export type Session = {
   defeatEnabled?: boolean | null;
   characterName?: string | null;
   characterDescription?: string | null;
-  characterStrengths?: string[] | null;
-  characterWeaknesses?: string[] | null;
   previousResponseId: string;
   turns: SessionTurn[];
 };

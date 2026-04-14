@@ -12,7 +12,7 @@ import {
   MAX_STORY_COVER_BYTES,
 } from "@/lib/supabase/storage";
 import { PlayerCharacter, Story, StoryCard, StoryCardType } from "@/lib/types";
-import { createId, formatLineList, parseLineList } from "@/lib/utils";
+import { createId, formatLineList } from "@/lib/utils";
 
 const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
   character: "Characters",
@@ -47,9 +47,6 @@ export function StoryEditor({
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [pendingTag, setPendingTag] = useState("");
-  const [characterLineDrafts, setCharacterLineDrafts] = useState<
-    Record<string, { strengths?: string; weaknesses?: string }>
-  >({});
   const [storyCardTriggerDrafts, setStoryCardTriggerDrafts] = useState<Record<string, string>>({});
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
     initialStory?.coverImageUrl ?? null,
@@ -96,38 +93,6 @@ export function StoryEditor({
           }
         : current,
     );
-  }
-
-  function updateCharacterLineDraft(
-    characterId: string,
-    field: "strengths" | "weaknesses",
-    value: string,
-  ) {
-    setCharacterLineDrafts((current) => ({
-      ...current,
-      [characterId]: {
-        ...current[characterId],
-        [field]: value,
-      },
-    }));
-  }
-
-  function clearCharacterLineDraft(characterId: string, field: "strengths" | "weaknesses") {
-    setCharacterLineDrafts((current) => {
-      const nextCharacterDraft = { ...(current[characterId] ?? {}) };
-      delete nextCharacterDraft[field];
-
-      if (Object.keys(nextCharacterDraft).length === 0) {
-        const nextDrafts = { ...current };
-        delete nextDrafts[characterId];
-        return nextDrafts;
-      }
-
-      return {
-        ...current,
-        [characterId]: nextCharacterDraft,
-      };
-    });
   }
 
   function updateStoryCard(cardId: string, updater: (card: StoryCard) => StoryCard) {
@@ -580,13 +545,6 @@ export function StoryEditor({
         {renderParagraphs(story.background)}
       </section>
 
-      {story.objective.trim() && story.victoryEnabled ? (
-        <section className="space-y-3 border-b border-line pb-8">
-          <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Objective</h2>
-          {renderParagraphs(story.objective)}
-        </section>
-      ) : null}
-
       <section className="space-y-4">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">
           Playable Characters
@@ -710,18 +668,6 @@ export function StoryEditor({
                 </div>
               </div>
             </Field>
-            <Field label="First action">
-              <Textarea
-                value={story.firstAction}
-                onChange={(event) => updateField("firstAction", event.target.value)}
-              />
-            </Field>
-            <Field label="Objective">
-              <Textarea
-                value={story.objective}
-                onChange={(event) => updateField("objective", event.target.value)}
-              />
-            </Field>
             <Field label="Instructions">
               <Textarea
                 value={story.instructions}
@@ -734,7 +680,7 @@ export function StoryEditor({
             <div className="space-y-1">
               <p className="text-sm font-medium text-foreground">Player characters</p>
               <p className="text-sm text-secondary">
-                Edit each playable character directly, including their strengths and weaknesses.
+                Edit each playable character directly.
               </p>
             </div>
             <div className="grid gap-4">
@@ -764,50 +710,6 @@ export function StoryEditor({
                             description: event.target.value,
                           }))
                         }
-                      />
-                    </Field>
-                    <Field
-                      label="Strengths"
-                      hint="One per line. Aim to keep 2 story-relevant strengths."
-                    >
-                      <Textarea
-                        value={
-                          characterLineDrafts[character.id]?.strengths ??
-                          formatLineList(character.strengths)
-                        }
-                        onChange={(event) =>
-                          updateCharacterLineDraft(character.id, "strengths", event.target.value)
-                        }
-                        onBlur={(event) => {
-                          updateCharacter(character.id, (current) => ({
-                            ...current,
-                            strengths: parseLineList(event.target.value, current.strengths, 2),
-                          }));
-                          clearCharacterLineDraft(character.id, "strengths");
-                        }}
-                        className="min-h-28"
-                      />
-                    </Field>
-                    <Field
-                      label="Weaknesses"
-                      hint="One per line. Aim to keep 2 story-relevant weaknesses."
-                    >
-                      <Textarea
-                        value={
-                          characterLineDrafts[character.id]?.weaknesses ??
-                          formatLineList(character.weaknesses)
-                        }
-                        onChange={(event) =>
-                          updateCharacterLineDraft(character.id, "weaknesses", event.target.value)
-                        }
-                        onBlur={(event) => {
-                          updateCharacter(character.id, (current) => ({
-                            ...current,
-                            weaknesses: parseLineList(event.target.value, current.weaknesses, 2),
-                          }));
-                          clearCharacterLineDraft(character.id, "weaknesses");
-                        }}
-                        className="min-h-28"
                       />
                     </Field>
                   </div>
