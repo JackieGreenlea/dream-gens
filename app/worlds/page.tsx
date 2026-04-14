@@ -49,6 +49,7 @@ export default async function MyWorldsPage() {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.18em] text-secondary">
                     <span>Updated {formatLibraryDate(world.updatedAt)}</span>
+                    <span>{world.visibility === "public" ? "Published" : "Private"}</span>
                   </div>
                   <h2 className="text-2xl font-semibold text-foreground">{world.title}</h2>
                   <p className="max-w-3xl text-sm leading-6 text-secondary">{world.shortSummary}</p>

@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { WorldCanon } from "@/lib/types";
+import {
+  isAllowedWorldCoverType,
+  MAX_WORLD_COVER_BYTES,
+} from "@/lib/supabase/storage";
 
 type WorldCanonEditorProps = {
   world: WorldCanon;
@@ -15,7 +19,15 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
   const router = useRouter();
   const [world, setWorld] = useState(initialWorld);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
+    initialWorld.coverImageUrl ?? null,
+  );
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setCoverPreviewUrl(initialWorld.coverImageUrl ?? null);
+  }, [initialWorld.coverImageUrl]);
 
   function updateField<Key extends keyof WorldCanon>(key: Key, value: WorldCanon[Key]) {
     setWorld((current) => ({ ...current, [key]: value }));
@@ -99,6 +111,66 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
     }
   }
 
+  async function handleCoverUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file || isUploadingCover) {
+      return;
+    }
+
+    if (!isAllowedWorldCoverType(file.type)) {
+      setError("Upload a JPG, PNG, or WEBP image.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_WORLD_COVER_BYTES) {
+      setError("Image must be 5MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setCoverPreviewUrl(previewUrl);
+    setIsUploadingCover(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch(`/api/worlds/${world.id}/cover`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await response.json()) as {
+        world?: WorldCanon;
+        error?: string;
+      };
+
+      if (response.status === 401) {
+        setCoverPreviewUrl(world.coverImageUrl ?? null);
+        router.push("/auth/sign-in?message=Sign%20in%20to%20upload%20a%20world%20cover.");
+        return;
+      }
+
+      if (!response.ok || !data.world) {
+        throw new Error(data.error || "The world cover could not be uploaded.");
+      }
+
+      setWorld(data.world);
+      setCoverPreviewUrl(data.world.coverImageUrl ?? null);
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "The world cover could not be uploaded.");
+      setCoverPreviewUrl(world.coverImageUrl ?? null);
+    } finally {
+      URL.revokeObjectURL(previewUrl);
+      event.target.value = "";
+      setIsUploadingCover(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {error ? (
@@ -127,6 +199,31 @@ export function WorldCanonEditor({ world: initialWorld }: WorldCanonEditorProps)
         </div>
 
         <div className="grid gap-5">
+          <Field label="Cover image" hint="Upload a JPG, PNG, or WEBP image up to 5MB.">
+            <div className="space-y-4">
+              {coverPreviewUrl ? (
+                <div className="overflow-hidden rounded-lg border border-line/70 bg-surface/40">
+                  <img
+                    src={coverPreviewUrl}
+                    alt={`${world.title} cover preview`}
+                    className="h-56 w-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-line/70 bg-transparent text-sm text-secondary">
+                  No cover image uploaded yet.
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleCoverUpload}
+                disabled={isUploadingCover}
+                className="block w-full text-sm text-secondary file:mr-4 file:rounded-lg file:border file:border-line file:bg-transparent file:px-4 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:border-fieldBorder"
+              />
+              {isUploadingCover ? <p className="text-sm text-secondary">Uploading cover image...</p> : null}
+            </div>
+          </Field>
           <Field label="Title">
             <Input value={world.title} onChange={(event) => updateField("title", event.target.value)} />
           </Field>

@@ -30,6 +30,10 @@ export type WorldCanon = {
   title: string;
   shortSummary: string;
   longDescription: string;
+  visibility?: StoryVisibility;
+  slug?: string | null;
+  publishedAt?: string | null;
+  coverImageUrl?: string | null;
   setting: string;
   lore: string;
   history: string;

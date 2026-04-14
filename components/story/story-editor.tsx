@@ -500,84 +500,87 @@ export function StoryEditor({
         </Card>
       ) : null}
 
-      <section className="space-y-6 border-b border-line pb-8">
-        <div className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.24em] text-warm">Story</p>
-          <h1 className="text-4xl font-semibold tracking-[-0.04em] text-foreground sm:text-5xl">
-            {story.title}
-          </h1>
-          <div className="space-y-1 text-sm text-secondary">
-            {authorName ? <p>by @{authorName}</p> : null}
-            {story.tags.length > 0 ? <p>{story.tags.map(formatStoryTagLabel).join(" • ")}</p> : null}
-            {basePath === "/stories" && isOwner ? (
-              <p>{story.visibility === "public" ? "Published story" : "Private story"}</p>
+      <section className="grid gap-8 border-b border-line pb-8 lg:grid-cols-[minmax(0,1fr)_30rem] lg:items-start">
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <p className="text-sm uppercase tracking-[0.24em] text-warm">Story</p>
+            <h1 className="text-4xl font-semibold tracking-[-0.04em] text-foreground sm:text-5xl">
+              {story.title}
+            </h1>
+            <div className="space-y-1 text-sm text-secondary">
+              {authorName ? <p>by @{authorName}</p> : null}
+              {story.tags.length > 0 ? <p>{story.tags.map(formatStoryTagLabel).join(" • ")}</p> : null}
+              {basePath === "/stories" && isOwner ? (
+                <p>{story.visibility === "public" ? "Published story" : "Private story"}</p>
+              ) : null}
+            </div>
+          </div>
+
+          {story.summary.trim() ? (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Summary</h2>
+              {renderParagraphs(story.summary)}
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Button type="button" onClick={handlePlay} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Play"}
+            </Button>
+            {isOwner ? (
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                {basePath === "/stories" ? (
+                story.visibility === "public" ? (
+                  <button
+                    type="button"
+                    onClick={handleUnpublish}
+                    disabled={isPublishing}
+                    className="text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isPublishing ? "Unpublishing..." : "Unpublish"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={isPublishing}
+                    className="text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isPublishing ? "Publishing..." : "Publish"}
+                  </button>
+                )
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setIsCustomizeOpen((current) => !current)}
+                  aria-expanded={isCustomizeOpen}
+                  className="text-secondary transition hover:text-foreground"
+                >
+                  {isCustomizeOpen ? "Close customization" : "Customize"}
+                </button>
+                {basePath === "/stories" ? (
+                  <DeleteEntryButton
+                    endpoint={`/api/stories/${story.id}`}
+                    label="Delete"
+                    signInMessage="Sign in to delete this story."
+                    confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
+                  />
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <Button type="button" onClick={handlePlay} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Play"}
-          </Button>
-          {isOwner ? (
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              {basePath === "/stories" ? (
-              story.visibility === "public" ? (
-                <button
-                  type="button"
-                  onClick={handleUnpublish}
-                  disabled={isPublishing}
-                  className="text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isPublishing ? "Unpublishing..." : "Unpublish"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={isPublishing}
-                  className="text-secondary transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isPublishing ? "Publishing..." : "Publish"}
-                </button>
-              )
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setIsCustomizeOpen((current) => !current)}
-                aria-expanded={isCustomizeOpen}
-                className="text-secondary transition hover:text-foreground"
-              >
-                {isCustomizeOpen ? "Close customization" : "Customize"}
-              </button>
-              {basePath === "/stories" ? (
-                <DeleteEntryButton
-                  endpoint={`/api/stories/${story.id}`}
-                  label="Delete"
-                  signInMessage="Sign in to delete this story."
-                  confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
-                />
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      {(coverPreviewUrl || story.summary.trim()) ? (
-        <section className="grid gap-8 border-b border-line pb-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] lg:items-start">
-          {coverPreviewUrl ? (
+        {coverPreviewUrl ? (
+          <div className="overflow-hidden rounded-xl lg:mt-10 lg:sticky lg:top-10">
             <img
               src={coverPreviewUrl}
               alt={`${story.title} cover`}
-              className="w-full rounded-xl object-cover"
+              className="aspect-[3/4] w-full object-cover"
             />
-          ) : null}
-          <div className="space-y-3">
-            <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Summary</h2>
-            {renderParagraphs(story.summary)}
           </div>
-        </section>
-      ) : null}
+        ) : null}
+      </section>
 
       <section className="space-y-3 border-b border-line pb-8">
         <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-secondary">Background</h2>

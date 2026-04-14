@@ -41,6 +41,10 @@ model World {
   id                String            @id @default(cuid())
   userId            String?
   kind              WorldKind         @default(legacy_playable)
+  visibility        StoryVisibility   @default(private)
+  slug              String?           @unique
+  publishedAt       DateTime?
+  coverImageUrl     String?
   setting           String?
   lore              String?
   history           String?
@@ -71,6 +75,7 @@ model World {
   updatedAt         DateTime          @updatedAt
 
   @@index([userId])
+  @@index([visibility, publishedAt])
 }
 
 model PlayerCharacter {

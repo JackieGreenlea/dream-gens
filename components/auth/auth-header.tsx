@@ -284,6 +284,14 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                   Roleplay
                 </Link>
 
+                <Link
+                  href="/worlds/create"
+                  className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                >
+                  Create World
+                </Link>
+
                 <div className="mt-2 border-t border-line pt-2">
                   {user ? (
                     <form action={signOut}>

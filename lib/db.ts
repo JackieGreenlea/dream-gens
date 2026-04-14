@@ -134,6 +134,9 @@ export type UserWorldCanonListItem = {
   id: string;
   title: string;
   shortSummary: string;
+  visibility: StoryVisibility;
+  publishedAt: Date | null;
+  coverImageUrl: string | null;
   updatedAt: Date;
 };
 
@@ -169,6 +172,12 @@ export type PublicStoryListItem = {
 
 export type StoryProfileRecord = {
   story: Story;
+  authorName: string | null;
+  isOwner: boolean;
+};
+
+export type WorldProfileRecord = {
+  world: WorldCanon;
   authorName: string | null;
   isOwner: boolean;
 };
@@ -409,12 +418,30 @@ async function ensureUniqueStorySlug(
   return `${baseSlug}-${createId("slug").replace("slug-", "")}`;
 }
 
-function mapWorldCanon(record: DbWorldCanon): WorldCanon {
+function mapWorldCanon(record: {
+  id: string;
+  title: string;
+  summary: string;
+  longDescription: string | null;
+  visibility: StoryVisibility;
+  slug: string | null;
+  publishedAt: Date | null;
+  coverImageUrl: string | null;
+  setting: string | null;
+  lore: string | null;
+  history: string | null;
+  rules: string | null;
+  cast: Prisma.JsonValue | null;
+}): WorldCanon {
   return {
     id: record.id,
     title: record.title,
     shortSummary: record.summary,
     longDescription: record.longDescription ?? "",
+    visibility: record.visibility as StoryVisibility,
+    slug: record.slug,
+    publishedAt: record.publishedAt ? record.publishedAt.toISOString() : null,
+    coverImageUrl: record.coverImageUrl,
     setting: record.setting ?? "",
     lore: record.lore ?? "",
     history: record.history ?? "",
@@ -586,6 +613,10 @@ function worldPersistenceData(world: World) {
 function worldCanonPersistenceData(world: WorldCanon) {
   return {
     kind: "canon" as const,
+    visibility: world.visibility ?? "private",
+    slug: world.slug ?? null,
+    publishedAt: world.publishedAt ? new Date(world.publishedAt) : null,
+    coverImageUrl: world.coverImageUrl ?? null,
     title: sanitizeTextForDatabase(world.title),
     summary: sanitizeTextForDatabase(world.shortSummary),
     longDescription: sanitizeTextForDatabase(world.longDescription),
@@ -682,6 +713,48 @@ function cloneWorldForOwner(world: World): World {
       id: createId("pc"),
     })),
   };
+}
+
+function getWorldPublishValidationError(world: WorldCanon) {
+  if (!world.title.trim()) return "A title is required before publishing.";
+  if (!world.shortSummary.trim()) return "A summary is required before publishing.";
+  if (!world.longDescription.trim()) return "A long description is required before publishing.";
+
+  return null;
+}
+
+async function ensureUniqueWorldSlug(
+  tx: Prisma.TransactionClient,
+  title: string,
+  worldId: string,
+  currentSlug: string | null,
+) {
+  if (currentSlug) {
+    return currentSlug;
+  }
+
+  const baseSlug = slugify(title);
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
+    const existingWorld = await tx.world.findFirst({
+      where: {
+        slug: candidate,
+        NOT: {
+          id: worldId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!existingWorld) {
+      return candidate;
+    }
+  }
+
+  return `${baseSlug}-${createId("slug").replace("slug-", "")}`;
 }
 
 function cloneStoryForOwner(world: World): Story {
@@ -841,6 +914,9 @@ export async function cloneWorldCanonForUser(worldId: string, userId: string) {
     ...world,
     id: createId("world"),
     title: `Copy of ${world.title}`,
+    visibility: "private",
+    slug: null,
+    publishedAt: null,
     cast: world.cast.map((member) => ({
       name: member.name,
       description: member.description,
@@ -1002,6 +1078,65 @@ export async function getOwnedWorldCanonById(id: string, userId: string) {
   return world ? mapWorldCanon(world) : null;
 }
 
+export async function getWorldProfileById(
+  id: string,
+  userId?: string | null,
+): Promise<WorldProfileRecord | null> {
+  const world = await prisma.world.findFirst({
+    where: {
+      id,
+      kind: "canon",
+      OR: userId
+        ? [
+            {
+              userId,
+            },
+            {
+              visibility: "public",
+            },
+          ]
+        : [
+            {
+              visibility: "public",
+            },
+          ],
+    },
+    select: {
+      id: true,
+      userId: true,
+      visibility: true,
+      slug: true,
+      publishedAt: true,
+      coverImageUrl: true,
+      title: true,
+      summary: true,
+      longDescription: true,
+      setting: true,
+      lore: true,
+      history: true,
+      rules: true,
+      cast: true,
+      user: {
+        select: {
+          username: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!world) {
+    return null;
+  }
+
+  return {
+    world: mapWorldCanon(world),
+    authorName: world.user?.username ?? world.user?.name ?? world.user?.email ?? null,
+    isOwner: Boolean(userId && world.userId === userId),
+  };
+}
+
 export async function listWorldCanonsForUser(userId: string): Promise<UserWorldCanonListItem[]> {
   const worlds = await prisma.world.findMany({
     where: {
@@ -1015,6 +1150,9 @@ export async function listWorldCanonsForUser(userId: string): Promise<UserWorldC
       id: true,
       title: true,
       summary: true,
+      visibility: true,
+      publishedAt: true,
+      coverImageUrl: true,
       updatedAt: true,
     },
   });
@@ -1023,8 +1161,43 @@ export async function listWorldCanonsForUser(userId: string): Promise<UserWorldC
     id: world.id,
     title: world.title,
     shortSummary: world.summary,
+    visibility: world.visibility as StoryVisibility,
+    publishedAt: world.publishedAt ?? null,
+    coverImageUrl: world.coverImageUrl ?? null,
     updatedAt: world.updatedAt,
   }));
+}
+
+export async function updateWorldCoverImageForUser(
+  worldId: string,
+  userId: string,
+  coverImageUrl: string | null,
+) {
+  const existingWorld = await prisma.world.findFirst({
+    where: {
+      id: worldId,
+      userId,
+      kind: "canon",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingWorld) {
+    return null;
+  }
+
+  const world = await prisma.world.update({
+    where: {
+      id: worldId,
+    },
+    data: {
+      coverImageUrl,
+    },
+  });
+
+  return mapWorldCanon(world);
 }
 
 // Story helpers
@@ -1262,6 +1435,86 @@ export async function unpublishStoryForUser(storyId: string, userId: string) {
   });
 
   return getOwnedStoryById(storyId, userId);
+}
+
+export async function publishWorldCanonForUser(worldId: string, userId: string) {
+  const existingWorld = await getOwnedWorldCanonById(worldId, userId);
+
+  if (!existingWorld) {
+    return { world: null, error: "World not found." };
+  }
+
+  const validationError = getWorldPublishValidationError(existingWorld);
+
+  if (validationError) {
+    return { world: null, error: validationError };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const world = await tx.world.findFirst({
+      where: {
+        id: worldId,
+        userId,
+        kind: "canon",
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+      },
+    });
+
+    if (!world) {
+      throw new Error("World not found.");
+    }
+
+    const slug = await ensureUniqueWorldSlug(tx, world.title, world.id, world.slug);
+
+    await tx.world.update({
+      where: {
+        id: world.id,
+      },
+      data: {
+        visibility: "public",
+        slug,
+        publishedAt: new Date(),
+      },
+    });
+  });
+
+  return {
+    world: await getOwnedWorldCanonById(worldId, userId),
+    error: null,
+  };
+}
+
+export async function unpublishWorldCanonForUser(worldId: string, userId: string) {
+  const existingWorld = await prisma.world.findFirst({
+    where: {
+      id: worldId,
+      userId,
+      kind: "canon",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!existingWorld) {
+    return null;
+  }
+
+  await prisma.world.update({
+    where: {
+      id: worldId,
+    },
+    data: {
+      visibility: "private",
+      publishedAt: null,
+    },
+  });
+
+  return getOwnedWorldCanonById(worldId, userId);
 }
 
 export async function listPlayableEntriesForUser(userId: string): Promise<UserWorldListItem[]> {
