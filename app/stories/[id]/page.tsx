@@ -25,8 +25,6 @@ export default async function StorySetupPage({
         initialStory={profile.story}
         authorName={profile.authorName}
         isOwner={profile.isOwner}
-        basePath="/stories"
-        apiBasePath="/api/stories"
       />
     </main>
   );

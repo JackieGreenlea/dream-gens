@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import {
-  createSessionFromLegacyWorld,
-  createSessionFromStory,
-  resolvePlayableSourceForSessionStart,
-} from "@/lib/db";
+import { createSessionFromStory, getPlayableStoryById } from "@/lib/db";
 import { runSessionOpeningTurn } from "@/lib/session-runtime";
 import { sessionStartRequestSchema } from "@/lib/schemas";
 import { getCurrentUser } from "@/lib/supabase/server";
@@ -24,33 +20,25 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const input = sessionStartRequestSchema.parse(body);
-    const setup = await resolvePlayableSourceForSessionStart(input.worldId, user.id);
+    const story = await getPlayableStoryById(input.storyId, user.id);
 
-    if (!setup) {
-      return NextResponse.json({ error: "World not found." }, { status: 404 });
+    if (!story) {
+      return NextResponse.json({ error: "Story not found." }, { status: 404 });
     }
 
     if (
       input.characterId &&
-      !setup.playable.playerCharacters.some((character) => character.id === input.characterId)
+      !story.playerCharacters.some((character) => character.id === input.characterId)
     ) {
-      return NextResponse.json({ error: "Character not found for this world." }, { status: 400 });
+      return NextResponse.json({ error: "Character not found for this story." }, { status: 400 });
     }
 
-    const session =
-      setup.source === "story"
-        ? await createSessionFromStory({
-            storyId: setup.story.id,
-            characterId: input.characterId ?? null,
-            customCharacter: input.customCharacter ?? null,
-            userId: user.id,
-          })
-        : await createSessionFromLegacyWorld({
-            worldId: setup.world.id,
-            characterId: input.characterId ?? null,
-            customCharacter: input.customCharacter ?? null,
-            userId: user.id,
-          });
+    const session = await createSessionFromStory({
+      storyId: story.id,
+      characterId: input.characterId ?? null,
+      customCharacter: input.customCharacter ?? null,
+      userId: user.id,
+    });
 
     if (!session) {
       throw new Error("Session could not be created.");
@@ -71,8 +59,7 @@ export async function POST(request: Request) {
 
       console.error("[sessions/start] opening turn failed after session creation", {
         sessionId: session.id,
-        storyId: setup.source === "story" ? setup.story.id : null,
-        worldId: setup.source === "world" ? setup.world.id : null,
+        storyId: story.id,
         message,
       });
 

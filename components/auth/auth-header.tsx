@@ -161,7 +161,7 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
         <input
           id="site-search"
           type="search"
-          placeholder="Search"
+          placeholder="Search stories"
           className="h-9 w-full rounded-lg border border-fieldBorder bg-field px-4 text-[0.92rem] text-foreground placeholder:text-muted focus:border-[#fdd835] focus:outline-none focus:ring-2 focus:ring-[#fdd835]/20"
         />
       </div>
@@ -258,13 +258,6 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                     >
                       My Stories
                     </Link>
-                    <Link
-                      href="/worlds"
-                      className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                      onClick={() => setIsAccountMenuOpen(false)}
-                    >
-                      My Worlds
-                    </Link>
                   </>
                 ) : null}
 
@@ -274,22 +267,6 @@ export function AuthHeader({ user, identity }: AuthHeaderProps) {
                   onClick={() => setIsAccountMenuOpen(false)}
                 >
                   Settings
-                </Link>
-
-                <Link
-                  href="/roleplay"
-                  className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                  onClick={() => setIsAccountMenuOpen(false)}
-                >
-                  Roleplay
-                </Link>
-
-                <Link
-                  href="/worlds/create"
-                  className="px-3 py-2 text-sm text-secondary transition hover:text-foreground"
-                  onClick={() => setIsAccountMenuOpen(false)}
-                >
-                  Create World
                 </Link>
 
                 <div className="mt-2 border-t border-line pt-2">

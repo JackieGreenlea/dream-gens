@@ -79,25 +79,25 @@ export default async function HomePage({
               <div className="w-full rounded-[1.4rem] bg-[linear-gradient(135deg,rgba(13,16,20,0.52)_0%,rgba(13,16,20,0.28)_100%)] px-4 py-4 sm:max-w-xl sm:px-8 sm:py-8">
                 <div className="space-y-5">
                   <h1 className="max-w-none text-[2.65rem] font-semibold leading-[0.94] tracking-[-0.045em] text-foreground sm:max-w-md sm:text-5xl sm:leading-[0.96] lg:text-[3.55rem] lg:leading-[0.95]">
-                    Step into a world of your own imagination.
+                    Turn a spark of an idea into a playable story.
                   </h1>
                   <p className="max-w-none text-base leading-7 text-secondary sm:max-w-xl sm:text-lg">
-                    Create your own worlds and play through immersive interactive fiction built
-                    for romance, fantasy, sci-fi, adventure, and more.
+                    Start with a prompt, compile it into a structured story setup, refine the
+                    details you care about, then jump straight into play.
                   </p>
                   <div className="space-y-4">
                     <Link
                       href="/create"
                       className="inline-flex items-center rounded-lg bg-accent px-5 py-3 text-sm font-semibold text-night transition hover:bg-[#e6c600]"
                     >
-                      Start your Story
+                      Start a Story
                     </Link>
                     <div>
                       <Link
                         href="/explore"
                         className="text-sm font-medium text-foreground transition hover:text-accent"
                       >
-                        Explore the Worlds &gt;
+                        Explore Published Stories &gt;
                       </Link>
                     </div>
                   </div>

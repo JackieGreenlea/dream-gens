@@ -42,10 +42,10 @@ export function CreateStoryForm() {
       });
 
       const data = (await response.json()) as {
-        world?: Story;
+        story?: Story;
         error?: string;
       };
-      const compiledStory = data.world;
+      const compiledStory = data.story;
 
       if (response.status === 401) {
         router.push("/auth/sign-in?message=Sign%20in%20to%20compile%20and%20save%20a%20story.");
@@ -77,7 +77,7 @@ export function CreateStoryForm() {
         <fieldset disabled={isCompiling} className="space-y-6 disabled:opacity-100">
           <Field
             label="Story premise"
-            hint="Start messy. The compiler will turn it into a structured, editable story setup."
+            hint="Start messy. The compiler will turn it into a structured story setup with a playable opening."
           >
             <Textarea
               required
@@ -118,7 +118,7 @@ export function CreateStoryForm() {
           </div>
         ) : null}
         <Button type="submit" disabled={isCompiling}>
-          {isCompiling ? "Compiling story..." : "Compile story"}
+          {isCompiling ? "Compiling story..." : "Compile story setup"}
         </Button>
       </form>
     </Card>

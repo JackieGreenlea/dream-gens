@@ -26,8 +26,8 @@ type StoryEditorProps = {
   storyId: string;
   authorName?: string | null;
   isOwner?: boolean;
-  basePath?: "/worlds" | "/stories";
-  apiBasePath?: "/api/worlds" | "/api/stories";
+  basePath?: "/stories";
+  apiBasePath?: "/api/stories";
 };
 
 export function StoryEditor({
@@ -35,8 +35,8 @@ export function StoryEditor({
   storyId,
   authorName = null,
   isOwner = true,
-  basePath = "/worlds",
-  apiBasePath = "/api/worlds",
+  basePath = "/stories",
+  apiBasePath = "/api/stories",
 }: StoryEditorProps) {
   const router = useRouter();
   const [story, setStory] = useState<Story | null>(initialStory);
@@ -280,10 +280,9 @@ export function StoryEditor({
 
       const data = (await response.json()) as {
         story?: Story;
-        world?: Story;
         error?: string;
       };
-      const savedStory = data.story ?? data.world;
+      const savedStory = data.story;
 
       if (response.status === 401) {
         router.push("/auth/sign-in?message=Sign%20in%20to%20save%20and%20play%20your%20story.");
@@ -303,13 +302,11 @@ export function StoryEditor({
         setIsCustomizeOpen(false);
         setIsAdvancedOpen(false);
 
-        if (basePath === "/stories" && savedStory.id !== currentStoryId) {
+        if (savedStory.id !== currentStoryId) {
           router.replace(`${basePath}/${savedStory.id}`);
         }
       } else if (savedStory.id !== currentStoryId || savedStory.id !== storyId) {
-        router.replace(
-          basePath === "/stories" ? `${basePath}/${savedStory.id}` : `${basePath}/${savedStory.id}/edit`,
-        );
+        router.replace(`${basePath}/${savedStory.id}`);
       }
 
       return true;
@@ -510,7 +507,7 @@ export function StoryEditor({
             <div className="space-y-1 text-sm text-secondary">
               {authorName ? <p>by @{authorName}</p> : null}
               {story.tags.length > 0 ? <p>{story.tags.map(formatStoryTagLabel).join(" • ")}</p> : null}
-              {basePath === "/stories" && isOwner ? (
+              {isOwner ? (
                 <p>{story.visibility === "public" ? "Published story" : "Private story"}</p>
               ) : null}
             </div>
@@ -529,8 +526,7 @@ export function StoryEditor({
             </Button>
             {isOwner ? (
               <div className="flex flex-wrap items-center gap-4 text-sm">
-                {basePath === "/stories" ? (
-                story.visibility === "public" ? (
+                {story.visibility === "public" ? (
                   <button
                     type="button"
                     onClick={handleUnpublish}
@@ -548,8 +544,7 @@ export function StoryEditor({
                   >
                     {isPublishing ? "Publishing..." : "Publish"}
                   </button>
-                )
-                ) : null}
+                )}
                 <button
                   type="button"
                   onClick={() => setIsCustomizeOpen((current) => !current)}
@@ -558,14 +553,12 @@ export function StoryEditor({
                 >
                   {isCustomizeOpen ? "Close customization" : "Customize"}
                 </button>
-                {basePath === "/stories" ? (
-                  <DeleteEntryButton
-                    endpoint={`/api/stories/${story.id}`}
-                    label="Delete"
-                    signInMessage="Sign in to delete this story."
-                    confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
-                  />
-                ) : null}
+                <DeleteEntryButton
+                  endpoint={`/api/stories/${story.id}`}
+                  label="Delete"
+                  signInMessage="Sign in to delete this story."
+                  confirmMessage={`Delete "${story.title}"? Existing sessions will remain playable, but this story will be removed from My Stories.`}
+                />
               </div>
             ) : null}
           </div>
@@ -955,11 +948,9 @@ export function StoryEditor({
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  {basePath === "/stories" ? (
-                    <Button type="button" variant="ghost" onClick={handleSaveAndExit} disabled={isSaving}>
-                      {isSaving ? "Saving..." : "Save & Exit"}
-                    </Button>
-                  ) : null}
+                  <Button type="button" variant="ghost" onClick={handleSaveAndExit} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save & Exit"}
+                  </Button>
                   <Button type="button" onClick={handleSaveAndPlay} disabled={isSaving}>
                     {isSaving ? "Saving..." : "Save & Play"}
                   </Button>
@@ -1066,11 +1057,9 @@ export function StoryEditor({
               </div>
 
               <div className="flex flex-wrap justify-end gap-3">
-                {basePath === "/stories" ? (
-                  <Button type="button" variant="ghost" onClick={handleSaveAndExit} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Save & Exit"}
-                  </Button>
-                ) : null}
+                <Button type="button" variant="ghost" onClick={handleSaveAndExit} disabled={isSaving}>
+                  {isSaving ? "Saving..." : "Save & Exit"}
+                </Button>
                 <Button type="button" onClick={handleSaveAndPlay} disabled={isSaving}>
                   {isSaving ? "Saving..." : "Save & Play"}
                 </Button>

@@ -24,7 +24,6 @@ export const sessionTurnSchema = z.object({
 
 export const sessionSchema = z.object({
   id: z.string().trim().min(1),
-  worldId: z.string().trim().min(1).nullable().optional(),
   storyId: optionalStoryLinkSchema,
   characterId: z.string().trim().min(1),
   turnCount: z.number().int().min(0),
@@ -69,7 +68,7 @@ export const storyCardSchema = z.object({
   role: z.string().trim().optional().default(""),
 });
 
-const compiledWorldSchemaBase = z.object({
+const compiledStorySchemaBase = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).max(600),
   background: z.string().trim().min(1),
@@ -83,20 +82,8 @@ const compiledWorldSchemaBase = z.object({
   playerCharacters: z.array(playerCharacterSchema).min(1).max(6),
 });
 
-export const compiledWorldSchema = compiledWorldSchemaBase.superRefine((output, context) => {
-  const storyEventCount = output.storyCards.filter((card) => card.type === "story_event").length;
-
-  if (storyEventCount < 3 || storyEventCount > 5) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["storyCards"],
-      message: "Compiler output must include between 3 and 5 story_event cards.",
-    });
-  }
-});
-
 export type CompileRequest = z.infer<typeof compileRequestSchema>;
-export const compiledStorySchema = compiledWorldSchemaBase.extend({
+export const compiledStorySchema = compiledStorySchemaBase.extend({
   tags: z.array(compilerGenreTagSchema).length(1),
 }).superRefine((output, context) => {
   const storyEventCount = output.storyCards.filter((card) => card.type === "story_event").length;
@@ -110,7 +97,7 @@ export const compiledStorySchema = compiledWorldSchemaBase.extend({
   }
 });
 
-export type CompiledWorldOutput = z.infer<typeof compiledStorySchema>;
+export type CompiledStoryOutput = z.infer<typeof compiledStorySchema>;
 export type StoredSession = z.infer<typeof sessionSchema>;
 
 export const runtimeTurnOutputSchema = z.object({
@@ -134,7 +121,7 @@ export const sessionSuggestedActionsRequestSchema = z.object({
   sessionId: z.string().trim().min(1),
 });
 
-export const persistedWorldSchema = compiledWorldSchemaBase.extend({
+export const persistedStorySchema = compiledStorySchemaBase.extend({
   id: z.string().trim().min(1),
   pov: povSchema.default("second_person"),
   instructions: z.string().trim().default(""),
@@ -145,55 +132,10 @@ export const persistedWorldSchema = compiledWorldSchemaBase.extend({
   defeatEnabled: z.boolean().default(true),
 });
 
-export const storySchema = persistedWorldSchema.extend({
-  worldId: optionalStoryLinkSchema,
+export const storySchema = persistedStorySchema.extend({
   coverImageUrl: z.string().trim().url().nullable().optional(),
   tags: z.array(storyTagSchema).max(8).default([]).transform((tags) => normalizeStoryTags(tags)),
 });
-
-export const worldCastMemberSchema = z.object({
-  name: z.string().trim().min(1),
-  description: z.string().trim().min(1),
-  role: z.string().trim().optional().default(""),
-});
-
-export const worldCanonSchema = z.object({
-  id: z.string().trim().min(1),
-  title: z.string().trim().min(1),
-  shortSummary: z.string().trim().min(1),
-  longDescription: z.string().trim().min(1),
-  visibility: z.enum(["private", "public"]).default("private"),
-  slug: z.string().trim().nullable().optional().default(null),
-  publishedAt: z.string().trim().datetime().nullable().optional().default(null),
-  coverImageUrl: z.string().trim().url().nullable().optional().default(null),
-  setting: z.string().trim().default(""),
-  lore: z.string().trim().default(""),
-  history: z.string().trim().default(""),
-  rules: z.string().trim().default(""),
-  cast: z.array(worldCastMemberSchema).default([]),
-});
-
-export const compileWorldCanonRequestSchema = compileRequestSchema;
-
-export const createStoryFromWorldRequestSchema = z.object({
-  prompt: z.string().trim().max(600).optional().default(""),
-  tone: optionalCompilerFieldSchema,
-  themes: optionalCompilerFieldSchema,
-});
-
-export const compiledWorldCanonSchema = z.object({
-  title: z.string().trim().min(1),
-  shortSummary: z.string().trim().min(1).max(400),
-  longDescription: z.string().trim().min(1),
-  setting: z.string().trim().min(1),
-  lore: z.string().trim().min(1),
-  history: z.string().trim().min(1),
-  rules: z.string().trim().min(1),
-  cast: z.array(worldCastMemberSchema).max(12).default([]),
-});
-
-export type CompiledWorldCanonOutput = z.infer<typeof compiledWorldCanonSchema>;
-export type CreateStoryFromWorldRequest = z.infer<typeof createStoryFromWorldRequestSchema>;
 
 export const customSessionCharacterSchema = z.object({
   name: z.string().trim().min(1, "Name is required."),
@@ -206,7 +148,7 @@ export type CustomSessionCharacter = z.infer<typeof customSessionCharacterSchema
 
 export const sessionStartRequestSchema = z
   .object({
-    worldId: z.string().trim().min(1),
+    storyId: z.string().trim().min(1),
     characterId: z.string().trim().min(1).optional(),
     customCharacter: customSessionCharacterSchema.optional(),
   })
@@ -227,90 +169,6 @@ export const sessionStartRequestSchema = z
       });
     }
   });
-
-export const compiledWorldJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "title",
-    "summary",
-    "background",
-    "runtimeBackground",
-    "firstAction",
-    "objective",
-    "toneStyle",
-    "storyCards",
-    "victoryCondition",
-    "defeatCondition",
-    "playerCharacters",
-  ],
-  properties: {
-    title: { type: "string" },
-    summary: { type: "string", maxLength: 600 },
-    background: { type: "string" },
-    runtimeBackground: { type: "string" },
-    firstAction: { type: "string" },
-    objective: { type: "string" },
-    toneStyle: { type: "string" },
-    storyCards: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["id", "type", "title", "description", "role", "triggerKeywords"],
-        properties: {
-          id: { type: "string" },
-          type: {
-            type: "string",
-            enum: ["character", "location", "faction", "story_event"],
-          },
-          title: { type: "string" },
-          description: { type: "string" },
-          role: { type: "string" },
-          triggerKeywords: {
-            type: "array",
-            items: {
-              type: "string",
-            },
-          },
-        },
-      },
-    },
-    victoryCondition: { type: "string" },
-    defeatCondition: { type: "string" },
-    playerCharacters: {
-      type: "array",
-      minItems: 1,
-      maxItems: 6,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["id", "name", "description", "strengths", "weaknesses"],
-        properties: {
-          id: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          strengths: {
-            type: "array",
-            minItems: 2,
-            maxItems: 2,
-            items: {
-              type: "string",
-            },
-          },
-          weaknesses: {
-            type: "array",
-            minItems: 2,
-            maxItems: 2,
-            items: {
-              type: "string",
-            },
-          },
-        },
-      },
-    },
-  },
-} as const;
 
 export const compiledStoryJsonSchema = {
   type: "object",
@@ -426,44 +284,6 @@ export const runtimeTurnFinalizationJsonSchema = {
       maxItems: 3,
       items: {
         type: "string",
-      },
-    },
-  },
-} as const;
-
-export const compiledWorldCanonJsonSchema = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "title",
-    "shortSummary",
-    "longDescription",
-    "setting",
-    "lore",
-    "history",
-    "rules",
-    "cast",
-  ],
-  properties: {
-    title: { type: "string" },
-    shortSummary: { type: "string", maxLength: 400 },
-    longDescription: { type: "string" },
-    setting: { type: "string" },
-    lore: { type: "string" },
-    history: { type: "string" },
-    rules: { type: "string" },
-    cast: {
-      type: "array",
-      maxItems: 12,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["name", "description", "role"],
-        properties: {
-          name: { type: "string" },
-          description: { type: "string" },
-          role: { type: "string" },
-        },
       },
     },
   },

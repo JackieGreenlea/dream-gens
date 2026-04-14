@@ -7,7 +7,6 @@ import {
   saveStoryPlayableForUser,
 } from "@/lib/db";
 import { storySchema } from "@/lib/schemas";
-import { createWorldFromStory } from "@/lib/story";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { ensureDatabaseUser } from "@/lib/user-sync";
 
@@ -33,7 +32,7 @@ export async function GET(
     return NextResponse.json({ error: "Story not found." }, { status: 404 });
   }
 
-  return NextResponse.json({ story, world: createWorldFromStory(story) });
+  return NextResponse.json({ story });
 }
 
 export async function PATCH(
@@ -59,15 +58,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Story id mismatch." }, { status: 400 });
     }
 
-    const world = await saveStoryPlayableForUser(input, user.id);
+    const story = await saveStoryPlayableForUser(input, user.id);
 
-    if (!world) {
+    if (!story) {
       return NextResponse.json({ error: "Story not found." }, { status: 404 });
     }
 
-    const story = await getOwnedStoryById(id, user.id);
+    const refreshedStory = await getOwnedStoryById(id, user.id);
 
-    return NextResponse.json({ story, world });
+    return NextResponse.json({ story: refreshedStory ?? story });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(

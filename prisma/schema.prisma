@@ -18,11 +18,6 @@ enum StoryVisibility {
   public
 }
 
-enum WorldKind {
-  legacy_playable
-  canon
-}
-
 model User {
   id          String    @id @default(cuid())
   email       String?   @unique
@@ -30,73 +25,15 @@ model User {
   username    String    @unique
   displayName String?
   bio         String?
-  worlds      World[]
   stories     Story[]
   sessions    Session[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
-model World {
-  id                String            @id @default(cuid())
-  userId            String?
-  kind              WorldKind         @default(legacy_playable)
-  visibility        StoryVisibility   @default(private)
-  slug              String?           @unique
-  publishedAt       DateTime?
-  coverImageUrl     String?
-  setting           String?
-  lore              String?
-  history           String?
-  rules             String?
-  longDescription   String?
-  cast              Json?
-  // Legacy standalone-story fields retained for compatibility with the current flow.
-  title             String
-  summary           String
-  background        String
-  runtimeBackground String            @default("")
-  firstAction       String
-  objective         String
-  pov               StoryPov          @default(second_person)
-  instructions      String
-  toneStyle         String            @default("")
-  authorStyle       String
-  storyCards        Json              @default("[]")
-  victoryCondition  String
-  victoryEnabled    Boolean           @default(true)
-  defeatCondition   String
-  defeatEnabled     Boolean           @default(true)
-  user              User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
-  playerCharacters  PlayerCharacter[]
-  stories           Story[]
-  sessions          Session[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  @@index([userId])
-  @@index([visibility, publishedAt])
-}
-
-model PlayerCharacter {
-  id          String    @id @default(cuid())
-  worldId      String
-  name         String
-  description  String
-  strengths    Json
-  weaknesses   Json
-  world        World     @relation(fields: [worldId], references: [id], onDelete: Cascade)
-  sessions     Session[]
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([worldId])
-}
-
 model Story {
   id                String           @id @default(cuid())
   userId            String?
-  worldId           String?
   visibility        StoryVisibility  @default(private)
   slug              String?          @unique
   publishedAt       DateTime?
@@ -118,14 +55,12 @@ model Story {
   defeatCondition   String
   defeatEnabled     Boolean          @default(true)
   user              User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  world             World?           @relation(fields: [worldId], references: [id], onDelete: SetNull)
   playerCharacters  StoryCharacter[]
   sessions          Session[]
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
   @@index([userId])
-  @@index([worldId])
   @@index([visibility, publishedAt])
   @@map("Story")
 }
@@ -148,9 +83,7 @@ model StoryCharacter {
 model Session {
   id                 String          @id @default(cuid())
   userId             String?
-  worldId            String?
   storyId            String?         @map("storyId")
-  characterId        String?
   storyCharacterId   String?         @map("storyCharacterId")
   storyTitle         String?
   storySummary       String?
@@ -178,18 +111,14 @@ model Session {
   lastSentStoryCardIds Json          @default("[]")
   previousResponseId String?
   user               User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
-  world              World?          @relation(fields: [worldId], references: [id], onDelete: Cascade)
   story              Story?          @relation(fields: [storyId], references: [id], onDelete: SetNull)
-  character          PlayerCharacter? @relation(fields: [characterId], references: [id], onDelete: SetNull)
   storyCharacter     StoryCharacter? @relation(fields: [storyCharacterId], references: [id], onDelete: SetNull)
   turns              Turn[]
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
   @@index([userId])
-  @@index([worldId])
   @@index([storyId])
-  @@index([characterId])
   @@index([storyCharacterId])
   @@map("Session")
 }

@@ -1,4 +1,4 @@
-import { CompiledWorldOutput, CompileRequest } from "@/lib/schemas";
+import { CompiledStoryOutput, CompileRequest } from "@/lib/schemas";
 import { COMPILER_GENRE_TAG_OPTIONS, normalizeStoryTags } from "@/lib/story-tags";
 import { Story } from "@/lib/types";
 import { createId } from "@/lib/utils";
@@ -19,7 +19,7 @@ import { createId } from "@/lib/utils";
 
 export const COMPILER_SYSTEM_PROMPT = `You are Everplot's story compiler.
 
-Your job is to turn a rough story idea into a structured, interactive fiction world.
+Your job is to turn a rough story idea into a structured, playable story setup.
 
 
 
@@ -117,7 +117,7 @@ export const COMPILER_DEVELOPER_PROMPT = `Design notes:
 - Favor scenes, pressure, and player agency over encyclopedia-style lore.
 
 
-Compile the user's story premise into a structured World object.`;
+Compile the user's story premise into a structured Story object.`;
 //LOOK INTO THE ABOVE LINE
 
 
@@ -166,7 +166,7 @@ export function buildCompilerUserPrompt(input: CompileRequest) {
   ].join("\n");
 }
 
-export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
+export function normalizeCompiledStory(output: CompiledStoryOutput): Story {
   const usedCharacterIds = new Set<string>();
   const usedCardIds = new Set<string>();
   const toneStyle = output.toneStyle.trim();
@@ -184,7 +184,7 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
     instructions: "",
     toneStyle,
     authorStyle: toneStyle,
-    storyCards: output.storyCards.map((card: CompiledWorldOutput["storyCards"][number]) => {
+    storyCards: output.storyCards.map((card: CompiledStoryOutput["storyCards"][number]) => {
       let nextId = normalizeStoryCardId(card.id);
 
       while (usedCardIds.has(nextId)) {
@@ -212,13 +212,12 @@ export function normalizeCompiledWorld(output: CompiledWorldOutput): Story {
     victoryEnabled: true,
     defeatCondition: output.defeatCondition.trim(),
     defeatEnabled: true,
-    worldId: null,
     visibility: "private",
     slug: null,
     publishedAt: null,
     coverImageUrl: null,
     playerCharacters: output.playerCharacters.map(
-      (character: CompiledWorldOutput["playerCharacters"][number]) => {
+      (character: CompiledStoryOutput["playerCharacters"][number]) => {
       let nextId = normalizeCharacterId(character.id);
 
       while (usedCharacterIds.has(nextId)) {

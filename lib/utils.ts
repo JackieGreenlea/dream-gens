@@ -1,4 +1,4 @@
-import { PlayerCharacter, World } from "@/lib/types";
+import { PlayableStory, PlayerCharacter } from "@/lib/types";
 
 export function cn(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(" ");
@@ -24,7 +24,7 @@ export function titleFromPremise(premise: string) {
   const trimmed = premise.trim();
 
   if (!trimmed) {
-    return "Untitled World";
+    return "Untitled Story";
   }
 
   const words = trimmed
@@ -53,7 +53,7 @@ export function formatLineList(values: string[]) {
   return values.join("\n");
 }
 
-export function buildSuggestedActions(world: World, character: PlayerCharacter) {
+export function buildSuggestedActions(_story: PlayableStory, character: PlayerCharacter) {
   const leadStrength = character.strengths[0];
   const definingWeakness = character.weaknesses[0];
 

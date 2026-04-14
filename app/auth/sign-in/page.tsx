@@ -12,7 +12,7 @@ export default async function SignInPage({
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-10 sm:px-8 lg:px-10">
       <AuthFormCard
         title="Sign in"
-        description="Access your account to keep working inside Story World Studio."
+        description="Access your account to keep building, publishing, and playing your stories."
         action={signIn}
         submitLabel="Sign in"
         alternateHref="/auth/sign-up"

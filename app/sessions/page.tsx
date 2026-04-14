@@ -47,7 +47,7 @@ export default async function MySessionsPage() {
                     <span>Updated {formatLibraryDate(session.updatedAt)}</span>
                     <span>Turn {session.turnCount}</span>
                   </div>
-                  <h2 className="text-2xl font-semibold text-foreground">{session.worldTitle}</h2>
+                  <h2 className="text-2xl font-semibold text-foreground">{session.storyTitle}</h2>
                   <p className="text-sm leading-6 text-secondary">
                     {session.characterName
                       ? `Playing as ${session.characterName}`
@@ -60,7 +60,7 @@ export default async function MySessionsPage() {
                     endpoint={`/api/sessions/${session.id}`}
                     label="Delete"
                     signInMessage="Sign in to delete this session."
-                    confirmMessage={`Delete this session for "${session.worldTitle}"? This permanently removes the run and its turn history.`}
+                    confirmMessage={`Delete this session for "${session.storyTitle}"? This permanently removes the run and its turn history.`}
                   />
                 </div>
               </Card>

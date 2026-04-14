@@ -12,12 +12,12 @@ const CUSTOM_CHARACTER_ID = "__custom_character__";
 
 type StoryCharacterSelectProps = {
   initialStory: Story | null;
-  apiBasePath?: "/api/worlds" | "/api/stories" | null;
+  apiBasePath?: "/api/stories" | null;
 };
 
 export function StoryCharacterSelect({
   initialStory,
-  apiBasePath = "/api/worlds",
+  apiBasePath = "/api/stories",
 }: StoryCharacterSelectProps) {
   const router = useRouter();
   const [liveStory, setLiveStory] = useState<Story | null>(initialStory);
@@ -52,9 +52,8 @@ export function StoryCharacterSelect({
         });
         const data = (await response.json()) as {
           story?: Story;
-          world?: Story;
         };
-        const fetchedStory = data.story ?? data.world;
+        const fetchedStory = data.story;
 
         if (!response.ok || !fetchedStory || !isMounted) {
           return;
@@ -143,7 +142,7 @@ export function StoryCharacterSelect({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          worldId: liveStory.id,
+          storyId: liveStory.id,
           ...(isCustomCharacter
             ? {
                 customCharacter: {

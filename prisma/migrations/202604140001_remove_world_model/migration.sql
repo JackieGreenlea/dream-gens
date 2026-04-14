@@ -1,0 +1,11 @@
+ALTER TABLE "Session"
+DROP COLUMN IF EXISTS "worldId",
+DROP COLUMN IF EXISTS "characterId";
+
+ALTER TABLE "Story"
+DROP COLUMN IF EXISTS "worldId";
+
+DROP TABLE IF EXISTS "PlayerCharacter";
+DROP TABLE IF EXISTS "World";
+
+DROP TYPE IF EXISTS "WorldKind";

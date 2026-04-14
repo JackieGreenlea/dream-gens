@@ -3,8 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { CustomSessionCharacter } from "@/lib/schemas";
-import { getSampleWorldById } from "@/lib/sampleData";
-import { createWorldFromStory } from "@/lib/story";
+import { toPlayableStory } from "@/lib/story";
 import { normalizeStoryTags } from "@/lib/story-tags";
 import { sanitizeTextArrayForDatabase, sanitizeTextForDatabase } from "@/lib/text-sanitize";
 import {
@@ -13,29 +12,17 @@ import {
   SessionTurn,
   Story,
   StoryCard,
-  StoryPov,
   StoryCardType,
+  StoryPov,
   StoryVisibility,
   World,
-  WorldCanon,
-  WorldCastMember,
 } from "@/lib/types";
 import { createId, slugify } from "@/lib/utils";
 
 const RECENT_TURN_LIMIT = 10;
 
-const worldInclude = {
-  playerCharacters: {
-    orderBy: {
-      createdAt: "asc",
-    },
-  },
-} satisfies Prisma.WorldInclude;
-
-// Real path: Story setup/template records live in Prisma Story.
 const storySelect = {
   id: true,
-  worldId: true,
   visibility: true,
   slug: true,
   publishedAt: true,
@@ -81,25 +68,15 @@ const recentTurnsInclude = {
 
 const sessionBundleInclude = {
   ...recentTurnsInclude,
-  world: {
-    include: worldInclude,
-  },
   story: {
     select: storySelect,
   },
-  character: true,
   storyCharacter: true,
 } satisfies Prisma.SessionInclude;
-
-type DbWorld = Prisma.WorldGetPayload<{
-  include: typeof worldInclude;
-}>;
 
 type DbStoryRecord = Prisma.StoryGetPayload<{
   select: typeof storySelect;
 }>;
-
-type DbWorldCanon = Prisma.WorldGetPayload<Record<string, never>>;
 
 type DbSession = Prisma.SessionGetPayload<{
   include: typeof recentTurnsInclude;
@@ -109,40 +86,9 @@ type DbSessionBundle = Prisma.SessionGetPayload<{
   include: typeof sessionBundleInclude;
 }>;
 
-// Session start prefers Story-backed setups. World-backed setups remain as legacy/sample fallback.
-type PlayableSourceRecord =
-  | {
-      source: "story";
-      story: Story;
-      playable: World;
-    }
-  | {
-      source: "world";
-      world: World;
-      playable: World;
-    };
-
-export type UserWorldListItem = {
-  id: string;
-  source: "story" | "world";
-  title: string;
-  summary: string;
-  updatedAt: Date;
-};
-
-export type UserWorldCanonListItem = {
-  id: string;
-  title: string;
-  shortSummary: string;
-  visibility: StoryVisibility;
-  publishedAt: Date | null;
-  coverImageUrl: string | null;
-  updatedAt: Date;
-};
-
 export type UserStoryListItem = {
   id: string;
-  source: "story" | "world";
+  source: "story";
   title: string;
   summary: string;
   visibility?: StoryVisibility;
@@ -152,8 +98,8 @@ export type UserStoryListItem = {
 
 export type UserSessionListItem = {
   id: string;
-  worldId: string;
-  worldTitle: string;
+  storyId: string | null;
+  storyTitle: string;
   characterName: string;
   turnCount: number;
   updatedAt: Date;
@@ -176,19 +122,11 @@ export type StoryProfileRecord = {
   isOwner: boolean;
 };
 
-export type WorldProfileRecord = {
-  world: WorldCanon;
-  authorName: string | null;
-  isOwner: boolean;
-};
-
 export type PublicUserProfileRecord = {
   username: string;
   bio: string | null;
   stories: PublicStoryListItem[];
 };
-
-// Internal shared mapping helpers
 
 function getStoryAuthorLabel(record: {
   user: {
@@ -221,32 +159,6 @@ function readStringArray(value: Prisma.JsonValue, fallback: string[] = []) {
   return value
     .map((item) => (typeof item === "string" ? item.trim() : ""))
     .filter(Boolean);
-}
-
-function readCastMembers(value: Prisma.JsonValue): WorldCastMember[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  const members: WorldCastMember[] = [];
-
-  for (const item of value) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      continue;
-    }
-
-    const name = typeof item.name === "string" ? item.name.trim() : "";
-    const description = typeof item.description === "string" ? item.description.trim() : "";
-    const role = typeof item.role === "string" ? item.role.trim() : "";
-
-    if (!name || !description) {
-      continue;
-    }
-
-    members.push({ name, description, role });
-  }
-
-  return members;
 }
 
 function isStoryCardType(value: string): value is StoryCardType {
@@ -312,32 +224,9 @@ function mapCharacter(record: {
   };
 }
 
-function mapWorld(record: DbWorld): World {
-  return {
-    id: record.id,
-    title: record.title,
-    summary: record.summary,
-    background: record.background,
-    runtimeBackground: record.runtimeBackground,
-    firstAction: record.firstAction,
-    objective: record.objective,
-    pov: normalizePov(record.pov),
-    instructions: record.instructions,
-    toneStyle: record.toneStyle || record.authorStyle,
-    authorStyle: record.authorStyle || record.toneStyle || "",
-    storyCards: readStoryCards(record.storyCards ?? []),
-    victoryCondition: record.victoryCondition,
-    victoryEnabled: record.victoryEnabled,
-    defeatCondition: record.defeatCondition,
-    defeatEnabled: record.defeatEnabled,
-    playerCharacters: record.playerCharacters.map(mapCharacter),
-  };
-}
-
 function mapStoryRecord(record: DbStoryRecord): Story {
   return {
     id: record.id,
-    worldId: record.worldId,
     visibility: record.visibility as StoryVisibility,
     slug: record.slug,
     publishedAt: record.publishedAt ? record.publishedAt.toISOString() : null,
@@ -359,6 +248,53 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     defeatCondition: record.defeatCondition,
     defeatEnabled: record.defeatEnabled,
     playerCharacters: record.playerCharacters.map(mapCharacter),
+  };
+}
+
+function mapTurn(record: {
+  turnNumber: number;
+  playerAction: string;
+  storyText: string;
+  suggestedActions: Prisma.JsonValue;
+}): SessionTurn {
+  return {
+    turnNumber: record.turnNumber,
+    playerAction: record.playerAction,
+    storyText: record.storyText,
+    suggestedActions: readStringArray(record.suggestedActions),
+  };
+}
+
+function mapSession(record: DbSession): Session {
+  return {
+    id: record.id,
+    storyId: record.storyId ?? null,
+    characterId: record.storyCharacterId ?? "",
+    turnCount: record.turnCount,
+    objective: record.storyObjective ?? record.objective,
+    pov: normalizePov(record.storyPov ?? record.pov),
+    summary: record.summary ?? "",
+    inactiveStoryCardIds: readStringArray(record.inactiveStoryCardIds ?? [], []),
+    lastSentStoryCardIds: readStringArray(record.lastSentStoryCardIds ?? [], []),
+    storyTitle: record.storyTitle ?? null,
+    storySummary: record.storySummary ?? null,
+    storyBackground: record.storyBackground ?? null,
+    storyRuntimeBackground: record.storyRuntimeBackground ?? null,
+    storyFirstAction: record.storyFirstAction ?? null,
+    storyObjective: record.storyObjective ?? null,
+    storyInstructions: record.storyInstructions ?? null,
+    storyAuthorStyle: record.storyAuthorStyle ?? null,
+    storyPov: record.storyPov ? normalizePov(record.storyPov) : null,
+    victoryCondition: record.victoryCondition ?? null,
+    victoryEnabled: record.victoryEnabled ?? null,
+    defeatCondition: record.defeatCondition ?? null,
+    defeatEnabled: record.defeatEnabled ?? null,
+    characterName: record.characterName ?? null,
+    characterDescription: record.characterDescription ?? null,
+    characterStrengths: readStringArray(record.characterStrengths ?? [], []),
+    characterWeaknesses: readStringArray(record.characterWeaknesses ?? [], []),
+    previousResponseId: record.previousResponseId ?? "",
+    turns: [...record.turns].reverse().map(mapTurn),
   };
 }
 
@@ -418,86 +354,6 @@ async function ensureUniqueStorySlug(
   return `${baseSlug}-${createId("slug").replace("slug-", "")}`;
 }
 
-function mapWorldCanon(record: {
-  id: string;
-  title: string;
-  summary: string;
-  longDescription: string | null;
-  visibility: StoryVisibility;
-  slug: string | null;
-  publishedAt: Date | null;
-  coverImageUrl: string | null;
-  setting: string | null;
-  lore: string | null;
-  history: string | null;
-  rules: string | null;
-  cast: Prisma.JsonValue | null;
-}): WorldCanon {
-  return {
-    id: record.id,
-    title: record.title,
-    shortSummary: record.summary,
-    longDescription: record.longDescription ?? "",
-    visibility: record.visibility as StoryVisibility,
-    slug: record.slug,
-    publishedAt: record.publishedAt ? record.publishedAt.toISOString() : null,
-    coverImageUrl: record.coverImageUrl,
-    setting: record.setting ?? "",
-    lore: record.lore ?? "",
-    history: record.history ?? "",
-    rules: record.rules ?? "",
-    cast: readCastMembers(record.cast ?? []),
-  };
-}
-
-function mapTurn(record: {
-  turnNumber: number;
-  playerAction: string;
-  storyText: string;
-  suggestedActions: Prisma.JsonValue;
-}): SessionTurn {
-  return {
-    turnNumber: record.turnNumber,
-    playerAction: record.playerAction,
-    storyText: record.storyText,
-    suggestedActions: readStringArray(record.suggestedActions),
-  };
-}
-
-function mapSession(record: DbSession): Session {
-  return {
-    id: record.id,
-    worldId: record.worldId ?? null,
-    storyId: record.storyId ?? null,
-    characterId: record.storyCharacterId ?? record.characterId ?? "",
-    turnCount: record.turnCount,
-    objective: record.storyObjective ?? record.objective,
-    pov: normalizePov(record.storyPov ?? record.pov),
-    summary: record.summary ?? "",
-    inactiveStoryCardIds: readStringArray(record.inactiveStoryCardIds ?? [], []),
-    lastSentStoryCardIds: readStringArray(record.lastSentStoryCardIds ?? [], []),
-    storyTitle: record.storyTitle ?? null,
-    storySummary: record.storySummary ?? null,
-    storyBackground: record.storyBackground ?? null,
-    storyRuntimeBackground: record.storyRuntimeBackground ?? null,
-    storyFirstAction: record.storyFirstAction ?? null,
-    storyObjective: record.storyObjective ?? null,
-    storyInstructions: record.storyInstructions ?? null,
-    storyAuthorStyle: record.storyAuthorStyle ?? null,
-    storyPov: record.storyPov ? normalizePov(record.storyPov) : null,
-    victoryCondition: record.victoryCondition ?? null,
-    victoryEnabled: record.victoryEnabled ?? null,
-    defeatCondition: record.defeatCondition ?? null,
-    defeatEnabled: record.defeatEnabled ?? null,
-    characterName: record.characterName ?? null,
-    characterDescription: record.characterDescription ?? null,
-    characterStrengths: readStringArray(record.characterStrengths ?? [], []),
-    characterWeaknesses: readStringArray(record.characterWeaknesses ?? [], []),
-    previousResponseId: record.previousResponseId ?? "",
-    turns: [...record.turns].reverse().map(mapTurn),
-  };
-}
-
 function buildSessionSnapshot(playable: World, character: PlayerCharacter) {
   return {
     storyTitle: sanitizeTextForDatabase(playable.title),
@@ -520,7 +376,7 @@ function buildSessionSnapshot(playable: World, character: PlayerCharacter) {
   };
 }
 
-function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; character: PlayerCharacter } | null {
+function buildSnapshotPlayable(record: DbSessionBundle): { world: World; character: PlayerCharacter } | null {
   if (
     !record.storyTitle ||
     !record.storySummary ||
@@ -536,15 +392,11 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
 
   const characterStrengths = readStringArray(record.characterStrengths ?? [], []);
   const characterWeaknesses = readStringArray(record.characterWeaknesses ?? [], []);
-  const snapshotStoryCards = record.story
-    ? readStoryCards(record.story.storyCards ?? [])
-    : record.world
-      ? readStoryCards(record.world.storyCards ?? [])
-      : [];
+  const snapshotStoryCards = record.story ? readStoryCards(record.story.storyCards ?? []) : [];
 
   return {
     world: {
-      id: record.storyId ?? record.worldId ?? record.id,
+      id: record.storyId ?? record.id,
       title: record.storyTitle,
       summary: record.storySummary,
       background: record.storyBackground,
@@ -555,8 +407,6 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
       instructions: record.storyInstructions ?? "",
       toneStyle: record.storyAuthorStyle ?? "",
       authorStyle: record.storyAuthorStyle ?? "",
-      // Snapshot-backed sessions predate frozen story-card storage, so use the linked
-      // Story/World cards as a compatibility fallback until cards are snapshot-backed too.
       storyCards: snapshotStoryCards,
       victoryCondition: record.victoryCondition ?? "",
       victoryEnabled: record.victoryEnabled ?? true,
@@ -564,7 +414,7 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
       defeatEnabled: record.defeatEnabled ?? true,
       playerCharacters: [
         {
-          id: record.storyCharacterId ?? record.characterId ?? "",
+          id: record.storyCharacterId ?? "",
           name: record.characterName,
           description: record.characterDescription,
           strengths: characterStrengths,
@@ -573,7 +423,7 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
       ],
     },
     character: {
-      id: record.storyCharacterId ?? record.characterId ?? "",
+      id: record.storyCharacterId ?? "",
       name: record.characterName,
       description: record.characterDescription,
       strengths: characterStrengths,
@@ -582,73 +432,8 @@ function buildPlayableSnapshotWorld(record: DbSessionBundle): { world: World; ch
   };
 }
 
-function worldPersistenceData(world: World) {
-  return {
-    kind: "legacy_playable" as const,
-    title: sanitizeTextForDatabase(world.title),
-    summary: sanitizeTextForDatabase(world.summary),
-    background: sanitizeTextForDatabase(world.background),
-    runtimeBackground: sanitizeTextForDatabase(world.runtimeBackground || world.background),
-    firstAction: sanitizeTextForDatabase(world.firstAction),
-    objective: sanitizeTextForDatabase(world.objective),
-    pov: world.pov,
-    instructions: sanitizeTextForDatabase(world.instructions),
-    toneStyle: sanitizeTextForDatabase(world.toneStyle),
-    authorStyle: sanitizeTextForDatabase(world.authorStyle || world.toneStyle),
-    storyCards: world.storyCards.map((card) => ({
-      id: sanitizeTextForDatabase(card.id),
-      type: card.type,
-      title: sanitizeTextForDatabase(card.title),
-      description: sanitizeTextForDatabase(card.description),
-      role: sanitizeTextForDatabase(card.role ?? ""),
-      triggerKeywords: sanitizeTextArrayForDatabase(card.triggerKeywords),
-    })),
-    victoryCondition: sanitizeTextForDatabase(world.victoryCondition),
-    victoryEnabled: world.victoryEnabled,
-    defeatCondition: sanitizeTextForDatabase(world.defeatCondition),
-    defeatEnabled: world.defeatEnabled,
-  };
-}
-
-function worldCanonPersistenceData(world: WorldCanon) {
-  return {
-    kind: "canon" as const,
-    visibility: world.visibility ?? "private",
-    slug: world.slug ?? null,
-    publishedAt: world.publishedAt ? new Date(world.publishedAt) : null,
-    coverImageUrl: world.coverImageUrl ?? null,
-    title: sanitizeTextForDatabase(world.title),
-    summary: sanitizeTextForDatabase(world.shortSummary),
-    longDescription: sanitizeTextForDatabase(world.longDescription),
-    setting: sanitizeTextForDatabase(world.setting),
-    lore: sanitizeTextForDatabase(world.lore),
-    history: sanitizeTextForDatabase(world.history),
-    rules: sanitizeTextForDatabase(world.rules),
-    cast: world.cast.map((member) => ({
-      name: sanitizeTextForDatabase(member.name),
-      description: sanitizeTextForDatabase(member.description),
-      role: sanitizeTextForDatabase(member.role ?? ""),
-    })),
-    // Legacy standalone-story fields stay empty for canon-only World records.
-    background: "",
-    runtimeBackground: "",
-    firstAction: "",
-    objective: "",
-    pov: "second_person" as const,
-    instructions: "",
-    toneStyle: "",
-    authorStyle: "",
-    storyCards: [],
-    victoryCondition: "",
-    victoryEnabled: true,
-    defeatCondition: "",
-    defeatEnabled: true,
-  };
-}
-
 function storyPersistenceData(story: Story) {
   return {
-    worldId: story.worldId ?? null,
     coverImageUrl: story.coverImageUrl ?? null,
     tags: sanitizeTextArrayForDatabase(normalizeStoryTags(story.tags)),
     title: sanitizeTextForDatabase(story.title),
@@ -676,98 +461,9 @@ function storyPersistenceData(story: Story) {
   };
 }
 
-function storyFromPlayableInput(world: World, worldId: string | null = null): Story {
-  return {
-    id: world.id,
-    worldId,
-    tags: [],
-    title: world.title,
-    summary: world.summary,
-    background: world.background,
-    runtimeBackground: world.runtimeBackground,
-    firstAction: world.firstAction,
-    objective: world.objective,
-    pov: world.pov,
-    instructions: world.instructions,
-    toneStyle: world.toneStyle,
-    authorStyle: world.authorStyle,
-    storyCards: world.storyCards,
-    victoryCondition: world.victoryCondition,
-    victoryEnabled: world.victoryEnabled,
-    defeatCondition: world.defeatCondition,
-    defeatEnabled: world.defeatEnabled,
-    playerCharacters: world.playerCharacters,
-  };
-}
-
-function isSampleWorld(id: string) {
-  return Boolean(getSampleWorldById(id));
-}
-
-function cloneWorldForOwner(world: World): World {
-  return {
-    ...world,
-    id: createId("world"),
-    playerCharacters: world.playerCharacters.map((character) => ({
-      ...character,
-      id: createId("pc"),
-    })),
-  };
-}
-
-function getWorldPublishValidationError(world: WorldCanon) {
-  if (!world.title.trim()) return "A title is required before publishing.";
-  if (!world.shortSummary.trim()) return "A summary is required before publishing.";
-  if (!world.longDescription.trim()) return "A long description is required before publishing.";
-
-  return null;
-}
-
-async function ensureUniqueWorldSlug(
-  tx: Prisma.TransactionClient,
-  title: string,
-  worldId: string,
-  currentSlug: string | null,
-) {
-  if (currentSlug) {
-    return currentSlug;
-  }
-
-  const baseSlug = slugify(title);
-
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-    const existingWorld = await tx.world.findFirst({
-      where: {
-        slug: candidate,
-        NOT: {
-          id: worldId,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!existingWorld) {
-      return candidate;
-    }
-  }
-
-  return `${baseSlug}-${createId("slug").replace("slug-", "")}`;
-}
-
-function cloneStoryForOwner(world: World): Story {
-  return {
-    ...storyFromPlayableInput(world),
-    id: createId("story"),
-  };
-}
-
-function buildStoryCharacterRows(storyId: string, characters: World["playerCharacters"]) {
+function buildStoryCharacterRows(storyId: string, characters: Story["playerCharacters"]) {
   return characters.map((character) => ({
-    // Incoming playable setup ids are not safe to reuse for StoryCharacter rows because
-    // they can come from legacy/sample payloads or a different Story.
+    // Incoming ids are compiler/editor ids, not stable DB row ids.
     id: createId("sc"),
     storyId,
     name: sanitizeTextForDatabase(character.name),
@@ -777,50 +473,6 @@ function buildStoryCharacterRows(storyId: string, characters: World["playerChara
   }));
 }
 
-async function persistWorldRecord(world: World, userId: string | null) {
-  await prisma.$transaction(async (tx) => {
-    await tx.world.upsert({
-      where: { id: world.id },
-      create: {
-        id: world.id,
-        userId,
-        ...worldPersistenceData(world),
-      },
-      update: {
-        userId,
-        ...worldPersistenceData(world),
-      },
-    });
-
-    await tx.playerCharacter.deleteMany({
-      where: {
-        worldId: world.id,
-      },
-    });
-
-    if (world.playerCharacters.length > 0) {
-      await tx.playerCharacter.createMany({
-        data: world.playerCharacters.map((character) => ({
-          id: character.id,
-          worldId: world.id,
-          name: sanitizeTextForDatabase(character.name),
-          description: sanitizeTextForDatabase(character.description),
-          strengths: sanitizeTextArrayForDatabase(character.strengths),
-          weaknesses: sanitizeTextArrayForDatabase(character.weaknesses),
-        })),
-      });
-    }
-  });
-
-  const savedWorld = await prisma.world.findUnique({
-    where: { id: world.id },
-    include: worldInclude,
-  });
-
-  return savedWorld ? mapWorld(savedWorld) : null;
-}
-
-// Real path: user-facing Story setup/template persistence.
 async function persistStoryRecord(story: Story, userId: string | null) {
   await prisma.$transaction(async (tx) => {
     await tx.story.upsert({
@@ -857,148 +509,7 @@ async function persistStoryRecord(story: Story, userId: string | null) {
   return savedStory ? mapStoryRecord(savedStory) : null;
 }
 
-async function persistWorldCanonRecord(world: WorldCanon, userId: string | null) {
-  const savedWorld = await prisma.world.upsert({
-    where: { id: world.id },
-    create: {
-      id: world.id,
-      userId,
-      ...worldCanonPersistenceData(world),
-    },
-    update: {
-      userId,
-      ...worldCanonPersistenceData(world),
-    },
-  });
-
-  return mapWorldCanon(savedWorld);
-}
-
-// World helpers
-
-export async function createWorld(world: World, userId: string) {
-  return persistWorldRecord(world, userId);
-}
-
-export async function createWorldCanon(world: WorldCanon, userId: string) {
-  return persistWorldCanonRecord(world, userId);
-}
-
-export async function updateWorldCanonForUser(world: WorldCanon, userId: string) {
-  const existingWorld = await prisma.world.findFirst({
-    where: {
-      id: world.id,
-      userId,
-      kind: "canon",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingWorld) {
-    return null;
-  }
-
-  return persistWorldCanonRecord(world, userId);
-}
-
-export async function cloneWorldCanonForUser(worldId: string, userId: string) {
-  const world = await getOwnedWorldCanonById(worldId, userId);
-
-  if (!world) {
-    return null;
-  }
-
-  const clonedWorld: WorldCanon = {
-    ...world,
-    id: createId("world"),
-    title: `Copy of ${world.title}`,
-    visibility: "private",
-    slug: null,
-    publishedAt: null,
-    cast: world.cast.map((member) => ({
-      name: member.name,
-      description: member.description,
-      role: member.role ?? "",
-    })),
-  };
-
-  return persistWorldCanonRecord(clonedWorld, userId);
-}
-
-export async function deleteWorldCanonForUser(worldId: string, userId: string) {
-  const existingWorld = await prisma.world.findFirst({
-    where: {
-      id: worldId,
-      userId,
-      kind: "canon",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingWorld) {
-    return false;
-  }
-
-  await prisma.world.delete({
-    where: {
-      id: worldId,
-    },
-  });
-
-  return true;
-}
-
-export async function createStory(story: Story, userId: string) {
-  return persistStoryRecord(story, userId);
-}
-
-export async function createSampleWorldRecord(id: string) {
-  const sampleWorld = getSampleWorldById(id);
-
-  if (!sampleWorld) {
-    return null;
-  }
-
-  const existingWorld = await prisma.world.findFirst({
-    where: {
-      id,
-      userId: null,
-      kind: "legacy_playable",
-    },
-    include: worldInclude,
-  });
-
-  if (existingWorld) {
-    return mapWorld(existingWorld);
-  }
-
-  return persistWorldRecord(sampleWorld, null);
-}
-
-export async function updateWorldForUser(world: World, userId: string) {
-  const existingWorld = await prisma.world.findFirst({
-    where: {
-      id: world.id,
-      userId,
-      kind: "legacy_playable",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingWorld) {
-    return null;
-  }
-
-  return persistWorldRecord(world, userId);
-}
-
-export async function updateStoryForUser(story: Story, userId: string) {
+async function updateStoryForUser(story: Story, userId: string) {
   const existingStory = await prisma.story.findFirst({
     where: {
       id: story.id,
@@ -1016,191 +527,9 @@ export async function updateStoryForUser(story: Story, userId: string) {
   return persistStoryRecord(story, userId);
 }
 
-export async function updateStoryCoverImageForUser(
-  storyId: string,
-  userId: string,
-  coverImageUrl: string | null,
-) {
-  const existingStory = await prisma.story.findFirst({
-    where: {
-      id: storyId,
-      userId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingStory) {
-    return null;
-  }
-
-  const story = await prisma.story.update({
-    where: {
-      id: storyId,
-    },
-    data: {
-      coverImageUrl,
-    },
-    select: storySelect,
-  });
-
-  return mapStoryRecord(story);
+export async function createStory(story: Story, userId: string) {
+  return persistStoryRecord(story, userId);
 }
-
-export async function createOwnedCopyFromWorld(world: World, userId: string) {
-  const ownedWorld = cloneWorldForOwner(world);
-  return createWorld(ownedWorld, userId);
-}
-
-export async function getOwnedWorldById(id: string, userId: string) {
-  const world = await prisma.world.findFirst({
-    where: {
-      id,
-      userId,
-      kind: "legacy_playable",
-    },
-    include: worldInclude,
-  });
-
-  return world ? mapWorld(world) : null;
-}
-
-export async function getOwnedWorldCanonById(id: string, userId: string) {
-  const world = await prisma.world.findFirst({
-    where: {
-      id,
-      userId,
-      kind: "canon",
-    },
-  });
-
-  return world ? mapWorldCanon(world) : null;
-}
-
-export async function getWorldProfileById(
-  id: string,
-  userId?: string | null,
-): Promise<WorldProfileRecord | null> {
-  const world = await prisma.world.findFirst({
-    where: {
-      id,
-      kind: "canon",
-      OR: userId
-        ? [
-            {
-              userId,
-            },
-            {
-              visibility: "public",
-            },
-          ]
-        : [
-            {
-              visibility: "public",
-            },
-          ],
-    },
-    select: {
-      id: true,
-      userId: true,
-      visibility: true,
-      slug: true,
-      publishedAt: true,
-      coverImageUrl: true,
-      title: true,
-      summary: true,
-      longDescription: true,
-      setting: true,
-      lore: true,
-      history: true,
-      rules: true,
-      cast: true,
-      user: {
-        select: {
-          username: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  if (!world) {
-    return null;
-  }
-
-  return {
-    world: mapWorldCanon(world),
-    authorName: world.user?.username ?? world.user?.name ?? world.user?.email ?? null,
-    isOwner: Boolean(userId && world.userId === userId),
-  };
-}
-
-export async function listWorldCanonsForUser(userId: string): Promise<UserWorldCanonListItem[]> {
-  const worlds = await prisma.world.findMany({
-    where: {
-      userId,
-      kind: "canon",
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-    select: {
-      id: true,
-      title: true,
-      summary: true,
-      visibility: true,
-      publishedAt: true,
-      coverImageUrl: true,
-      updatedAt: true,
-    },
-  });
-
-  return worlds.map((world) => ({
-    id: world.id,
-    title: world.title,
-    shortSummary: world.summary,
-    visibility: world.visibility as StoryVisibility,
-    publishedAt: world.publishedAt ?? null,
-    coverImageUrl: world.coverImageUrl ?? null,
-    updatedAt: world.updatedAt,
-  }));
-}
-
-export async function updateWorldCoverImageForUser(
-  worldId: string,
-  userId: string,
-  coverImageUrl: string | null,
-) {
-  const existingWorld = await prisma.world.findFirst({
-    where: {
-      id: worldId,
-      userId,
-      kind: "canon",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingWorld) {
-    return null;
-  }
-
-  const world = await prisma.world.update({
-    where: {
-      id: worldId,
-    },
-    data: {
-      coverImageUrl,
-    },
-  });
-
-  return mapWorldCanon(world);
-}
-
-// Story helpers
 
 export async function getOwnedStoryById(id: string, userId: string) {
   const story = await prisma.story.findFirst({
@@ -1218,19 +547,16 @@ export async function getPlayableStoryById(id: string, userId: string) {
   const story = await prisma.story.findFirst({
     where: {
       id,
-      OR: [
-        {
-          userId,
-        },
-        {
-          visibility: "public",
-        },
-      ],
+      OR: [{ userId }, { visibility: "public" }],
     },
     select: storySelect,
   });
 
   return story ? mapStoryRecord(story) : null;
+}
+
+export async function getStoryPlayableById(id: string, userId: string) {
+  return getPlayableStoryById(id, userId);
 }
 
 export async function getStoryProfileById(
@@ -1240,20 +566,7 @@ export async function getStoryProfileById(
   const story = await prisma.story.findFirst({
     where: {
       id,
-      OR: userId
-        ? [
-            {
-              userId,
-            },
-            {
-              visibility: "public",
-            },
-          ]
-        : [
-            {
-              visibility: "public",
-            },
-          ],
+      OR: userId ? [{ userId }, { visibility: "public" }] : [{ visibility: "public" }],
     },
     select: {
       ...storySelect,
@@ -1437,313 +750,101 @@ export async function unpublishStoryForUser(storyId: string, userId: string) {
   return getOwnedStoryById(storyId, userId);
 }
 
-export async function publishWorldCanonForUser(worldId: string, userId: string) {
-  const existingWorld = await getOwnedWorldCanonById(worldId, userId);
-
-  if (!existingWorld) {
-    return { world: null, error: "World not found." };
-  }
-
-  const validationError = getWorldPublishValidationError(existingWorld);
-
-  if (validationError) {
-    return { world: null, error: validationError };
-  }
-
-  await prisma.$transaction(async (tx) => {
-    const world = await tx.world.findFirst({
-      where: {
-        id: worldId,
-        userId,
-        kind: "canon",
-      },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-      },
-    });
-
-    if (!world) {
-      throw new Error("World not found.");
-    }
-
-    const slug = await ensureUniqueWorldSlug(tx, world.title, world.id, world.slug);
-
-    await tx.world.update({
-      where: {
-        id: world.id,
-      },
-      data: {
-        visibility: "public",
-        slug,
-        publishedAt: new Date(),
-      },
-    });
+export async function listStoriesForUser(userId: string): Promise<UserStoryListItem[]> {
+  const stories = await prisma.story.findMany({
+    where: {
+      userId,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+    select: {
+      id: true,
+      title: true,
+      summary: true,
+      visibility: true,
+      publishedAt: true,
+      updatedAt: true,
+    },
   });
 
-  return {
-    world: await getOwnedWorldCanonById(worldId, userId),
-    error: null,
-  };
+  return stories.map((story) => ({
+    id: story.id,
+    source: "story",
+    title: story.title,
+    summary: story.summary,
+    visibility: story.visibility,
+    publishedAt: story.publishedAt ?? null,
+    updatedAt: story.updatedAt,
+  }));
 }
 
-export async function unpublishWorldCanonForUser(worldId: string, userId: string) {
-  const existingWorld = await prisma.world.findFirst({
+export async function updateStoryCoverImageForUser(
+  storyId: string,
+  userId: string,
+  coverImageUrl: string | null,
+) {
+  const existingStory = await prisma.story.findFirst({
     where: {
-      id: worldId,
+      id: storyId,
       userId,
-      kind: "canon",
     },
     select: {
       id: true,
     },
   });
 
-  if (!existingWorld) {
+  if (!existingStory) {
     return null;
   }
 
-  await prisma.world.update({
+  const story = await prisma.story.update({
     where: {
-      id: worldId,
+      id: storyId,
     },
     data: {
-      visibility: "private",
-      publishedAt: null,
+      coverImageUrl,
     },
+    select: storySelect,
   });
 
-  return getOwnedWorldCanonById(worldId, userId);
+  return mapStoryRecord(story);
 }
 
-export async function listPlayableEntriesForUser(userId: string): Promise<UserWorldListItem[]> {
-  const [stories, worlds] = await Promise.all([
-    prisma.story.findMany({
-      where: {
-        userId,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      select: {
-        id: true,
-        title: true,
-        summary: true,
-        updatedAt: true,
-      },
-    }),
-    prisma.world.findMany({
-      where: {
-        userId,
-        kind: "legacy_playable",
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      select: {
-        id: true,
-        title: true,
-        summary: true,
-        updatedAt: true,
-      },
-    }),
-  ]);
+export async function saveStoryPlayableForUser(story: Story, userId: string) {
+  const existingStory = await getOwnedStoryById(story.id, userId);
 
-  return [
-    ...stories.map((story) => ({
-      ...story,
-      source: "story" as const,
-    })),
-    ...worlds.map((world) => ({
-      ...world,
-      source: "world" as const,
-    })),
-  ]
-    .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
-    .map((item) => ({
-      id: item.id,
-      source: item.source,
-      title: item.title,
-      summary: item.summary,
-      updatedAt: item.updatedAt,
-    }));
-}
-
-export async function listWorldsForUser(userId: string): Promise<UserWorldListItem[]> {
-  return listPlayableEntriesForUser(userId);
-}
-
-export async function getPlayableByIdOrSample(id: string, userId?: string | null) {
-  if (isSampleWorld(id)) {
-    return getSampleWorldById(id);
-  }
-
-  if (!userId) {
+  if (!existingStory) {
     return null;
   }
 
-  // Compatibility path for /worlds/[id] loaders:
-  // prefer a real Story setup first, then fall back to legacy playable World rows.
-  const story = await getOwnedStoryById(id, userId);
-
-  if (story) {
-    return createWorldFromStory(story);
-  }
-
-  return getOwnedWorldById(id, userId);
+  return updateStoryForUser(story, userId);
 }
 
-export async function getStoryPlayableById(id: string, userId: string) {
-  return getPlayableStoryById(id, userId);
-}
-
-export async function getWorldByIdOrSample(id: string, userId?: string | null) {
-  return getPlayableByIdOrSample(id, userId);
-}
-
-export async function resolvePlayableSourceForSessionStart(
-  id: string,
-  userId: string,
-): Promise<PlayableSourceRecord | null> {
-  // Real path: new runs start from Story. Everything below Story is legacy/sample fallback.
-  const story = await getPlayableStoryById(id, userId);
-
-  if (story) {
-    return {
-      source: "story",
-      story,
-      playable: createWorldFromStory(story),
-    };
-  }
-
-  if (isSampleWorld(id)) {
-    const world = await createSampleWorldRecord(id);
-
-    if (!world) {
-      return null;
-    }
-
-    return {
-      source: "world",
-      world,
-      playable: world,
-    };
-  }
-
-  const world = await getOwnedWorldById(id, userId);
-
-  if (!world) {
-    return null;
-  }
-
-  return {
-    source: "world",
-    world,
-    playable: world,
-  };
-}
-
-export async function getPlayableSetupForSession(id: string, userId: string) {
-  return resolvePlayableSourceForSessionStart(id, userId);
-}
-
-// Session helpers
-
-export async function createSessionFromLegacyWorld(params: {
-  worldId: string;
-  characterId?: string | null;
-  customCharacter?: CustomSessionCharacter | null;
-  userId: string;
-}) {
-  const world = await prisma.world.findFirst({
+export async function deleteStoryForUser(storyId: string, userId: string) {
+  const existingStory = await prisma.story.findFirst({
     where: {
-      id: params.worldId,
-      kind: "legacy_playable",
-      OR: [{ userId: params.userId }, { userId: null }],
+      id: storyId,
+      userId,
+    },
+    select: {
+      id: true,
     },
   });
 
-  if (!world) {
-    return null;
+  if (!existingStory) {
+    return false;
   }
 
-  let selectedCharacter: PlayerCharacter | null = null;
-  let characterId: string | null = null;
-
-  if (params.customCharacter) {
-    selectedCharacter = {
-      id: "",
-      name: params.customCharacter.name,
-      description: params.customCharacter.description,
-      strengths: params.customCharacter.strengths,
-      weaknesses: params.customCharacter.weaknesses,
-    };
-  } else if (params.characterId) {
-    const characterRecord = await prisma.playerCharacter.findFirst({
-      where: {
-        id: params.characterId,
-        worldId: params.worldId,
-      },
-    });
-
-    if (!characterRecord) {
-      return null;
-    }
-
-    selectedCharacter = mapCharacter(characterRecord);
-    characterId = params.characterId;
-  }
-
-  if (!selectedCharacter) {
-    return null;
-  }
-
-  const playable = mapWorld({
-    ...world,
-    playerCharacters: characterId
-      ? [
-          {
-            id: characterId,
-            name: selectedCharacter.name,
-            description: selectedCharacter.description,
-            strengths: selectedCharacter.strengths,
-            weaknesses: selectedCharacter.weaknesses,
-          },
-        ]
-      : [],
-  } as DbWorld);
-
-  const session = await prisma.session.create({
-    data: {
-      userId: params.userId,
-      worldId: params.worldId,
-      characterId,
-      storyId: null,
-      storyCharacterId: null,
-      turnCount: 0,
-      objective: sanitizeTextForDatabase(world.objective),
-      currentObjective: sanitizeTextForDatabase(world.objective),
-      pov: world.pov,
-      ...buildSessionSnapshot(playable, selectedCharacter),
-      previousResponseId: "",
+  await prisma.story.delete({
+    where: {
+      id: storyId,
     },
-    include: recentTurnsInclude,
   });
 
-  return mapSession(session);
+  return true;
 }
 
-export async function createSession(params: {
-  worldId: string;
-  characterId: string;
-  userId: string;
-}) {
-  // Compatibility wrapper for older world-backed callers.
-  return createSessionFromLegacyWorld(params);
-}
-
-// Real path: Start Game from a Story creates a Session from Story.
 export async function createSessionFromStory(params: {
   storyId: string;
   characterId?: string | null;
@@ -1753,14 +854,7 @@ export async function createSessionFromStory(params: {
   const story = await prisma.story.findFirst({
     where: {
       id: params.storyId,
-      OR: [
-        {
-          userId: params.userId,
-        },
-        {
-          visibility: "public",
-        },
-      ],
+      OR: [{ userId: params.userId }, { visibility: "public" }],
     },
     select: storySelect,
   });
@@ -1797,36 +891,23 @@ export async function createSessionFromStory(params: {
     return null;
   }
 
+  const playableStory = mapStoryRecord(story);
   const session = await prisma.session.create({
     data: {
       userId: params.userId,
-      worldId: story.worldId ?? null,
       storyId: story.id,
-      characterId: null,
       storyCharacterId,
       turnCount: 0,
       objective: sanitizeTextForDatabase(story.objective),
       currentObjective: sanitizeTextForDatabase(story.objective),
       pov: story.pov,
-      ...buildSessionSnapshot(mapStoryRecord(story), mapCharacter(selectedCharacter)),
+      ...buildSessionSnapshot(playableStory, selectedCharacter),
       previousResponseId: "",
     },
     include: recentTurnsInclude,
   });
 
   return mapSession(session);
-}
-
-export async function getSessionById(id: string, userId: string) {
-  const session = await prisma.session.findFirst({
-    where: {
-      id,
-      userId,
-    },
-    include: recentTurnsInclude,
-  });
-
-  return session ? mapSession(session) : null;
 }
 
 export async function getSessionBundle(id: string, userId: string) {
@@ -1842,24 +923,19 @@ export async function getSessionBundle(id: string, userId: string) {
     return null;
   }
 
-  // Real runtime path: frozen session snapshot takes priority so later story edits
-  // do not mutate prior runs. Story/World reads below are compatibility fallback.
-  const snapshot = buildPlayableSnapshotWorld(session);
+  const snapshot = buildSnapshotPlayable(session);
   const story = session.story ? mapStoryRecord(session.story) : null;
-  const worldRecord = session.world ? mapWorld(session.world) : null;
-  const playable = snapshot?.world ?? (story ? createWorldFromStory(story) : worldRecord);
+  const playable = snapshot?.world ?? (story ? toPlayableStory(story) : null);
 
   if (!playable) {
     return null;
   }
 
   const storyCharacter = session.storyCharacter ? mapCharacter(session.storyCharacter) : null;
-  const worldCharacter = session.character ? mapCharacter(session.character) : null;
   const fallbackCharacter =
     snapshot?.character ??
     storyCharacter ??
-    worldCharacter ??
-    playable.playerCharacters.find((item) => item.id === session.storyCharacterId || item.id === session.characterId) ??
+    playable.playerCharacters.find((item) => item.id === session.storyCharacterId) ??
     null;
 
   return {
@@ -1867,63 +943,6 @@ export async function getSessionBundle(id: string, userId: string) {
     world: playable,
     character: fallbackCharacter,
   };
-}
-
-export async function listStoriesForUser(userId: string): Promise<UserStoryListItem[]> {
-  const [stories, worlds] = await Promise.all([
-    prisma.story.findMany({
-      where: {
-        userId,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      select: {
-        id: true,
-        title: true,
-        summary: true,
-        visibility: true,
-        publishedAt: true,
-        updatedAt: true,
-      },
-    }),
-    prisma.world.findMany({
-      where: {
-        userId,
-        kind: "legacy_playable",
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      select: {
-        id: true,
-        title: true,
-        summary: true,
-        updatedAt: true,
-      },
-    }),
-  ]);
-
-  return [
-    ...stories.map((story) => ({
-      ...story,
-      source: "story" as const,
-    })),
-    ...worlds.map((world) => ({
-      ...world,
-      source: "world" as const,
-    })),
-  ]
-    .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
-    .map((item) => ({
-      id: item.id,
-      source: item.source,
-      title: item.title,
-      summary: item.summary,
-      visibility: "visibility" in item ? item.visibility : undefined,
-      publishedAt: "publishedAt" in item ? item.publishedAt : undefined,
-      updatedAt: item.updatedAt,
-    }));
 }
 
 export async function listSessionsForUser(userId: string): Promise<UserSessionListItem[]> {
@@ -1936,25 +955,14 @@ export async function listSessionsForUser(userId: string): Promise<UserSessionLi
     },
     select: {
       id: true,
-      worldId: true,
       storyId: true,
       storyTitle: true,
       characterName: true,
       turnCount: true,
       updatedAt: true,
-      world: {
-        select: {
-          title: true,
-        },
-      },
       story: {
         select: {
           title: true,
-        },
-      },
-      character: {
-        select: {
-          name: true,
         },
       },
       storyCharacter: {
@@ -1967,114 +975,12 @@ export async function listSessionsForUser(userId: string): Promise<UserSessionLi
 
   return sessions.map((session) => ({
     id: session.id,
-    worldId: session.storyId ?? session.worldId ?? session.id,
-    worldTitle: session.storyTitle ?? session.story?.title ?? session.world?.title ?? "Untitled Story",
-    characterName:
-      session.characterName ?? session.storyCharacter?.name ?? session.character?.name ?? "",
+    storyId: session.storyId ?? null,
+    storyTitle: session.storyTitle ?? session.story?.title ?? "Untitled Story",
+    characterName: session.characterName ?? session.storyCharacter?.name ?? "",
     turnCount: session.turnCount,
     updatedAt: session.updatedAt,
   }));
-}
-
-export async function savePlayableSetupForUser(world: World, userId: string) {
-  // Compatibility entry point for world-shaped editor payloads. The real persistence
-  // target is Story when the id belongs to a Story-backed setup.
-  const existingStory = await getOwnedStoryById(world.id, userId);
-
-  if (getSampleWorldById(world.id)) {
-    const savedStory = await createStory(cloneStoryForOwner(world), userId);
-    return savedStory ? createWorldFromStory(savedStory) : null;
-  }
-
-  if (existingStory) {
-    const savedStory = await updateStoryForUser(
-      storyFromPlayableInput(world, existingStory.worldId ?? null),
-      userId,
-    );
-
-    return savedStory ? createWorldFromStory(savedStory) : null;
-  }
-
-  return updateWorldForUser(world, userId);
-}
-
-export async function saveStoryPlayableForUser(story: Story, userId: string) {
-  const existingStory = await getOwnedStoryById(story.id, userId);
-
-  if (!existingStory) {
-    return null;
-  }
-
-  const savedStory = await updateStoryForUser(
-    {
-      ...story,
-      worldId: existingStory.worldId ?? story.worldId ?? null,
-    },
-    userId,
-  );
-
-  return savedStory ? createWorldFromStory(savedStory) : null;
-}
-
-export async function deleteStoryForUser(storyId: string, userId: string) {
-  const existingStory = await prisma.story.findFirst({
-    where: {
-      id: storyId,
-      userId,
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingStory) {
-    return false;
-  }
-
-  await prisma.story.delete({
-    where: {
-      id: storyId,
-    },
-  });
-
-  return true;
-}
-
-export async function deleteWorldForUser(worldId: string, userId: string) {
-  const existingWorld = await prisma.world.findFirst({
-    where: {
-      id: worldId,
-      userId,
-      kind: "legacy_playable",
-    },
-    select: {
-      id: true,
-    },
-  });
-
-  if (!existingWorld) {
-    return false;
-  }
-
-  await prisma.$transaction(async (tx) => {
-    await tx.session.updateMany({
-      where: {
-        worldId,
-        userId,
-      },
-      data: {
-        worldId: null,
-      },
-    });
-
-    await tx.world.delete({
-      where: {
-        id: worldId,
-      },
-    });
-  });
-
-  return true;
 }
 
 export async function deleteSessionForUser(sessionId: string, userId: string) {
@@ -2107,7 +1013,6 @@ export async function saveTurn(params: {
   previousResponseId: string;
   sentStoryCardIds?: string[];
 }) {
-  // Postgres text columns reject embedded null characters, so strip them before writes.
   await prisma.$transaction(async (tx) => {
     await tx.turn.create({
       data: {
@@ -2272,9 +1177,3 @@ export async function updateTurnSuggestedActions(params: {
 
   return savedSession ? mapSession(savedSession) : null;
 }
-
-// Compatibility helpers
-// These remain because the app still supports:
-// - sample worlds
-// - legacy playable World records
-// - /worlds/[id] compatibility wrappers that can resolve Story first, then fall back

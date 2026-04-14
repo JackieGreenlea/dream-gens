@@ -19,32 +19,6 @@ export type StoryCard = {
   role?: string;
 };
 
-export type WorldCastMember = {
-  name: string;
-  description: string;
-  role?: string;
-};
-
-export type WorldCanon = {
-  id: string;
-  title: string;
-  shortSummary: string;
-  longDescription: string;
-  visibility?: StoryVisibility;
-  slug?: string | null;
-  publishedAt?: string | null;
-  coverImageUrl?: string | null;
-  setting: string;
-  lore: string;
-  history: string;
-  rules: string;
-  cast: WorldCastMember[];
-};
-
-// Real product model:
-// - WorldCanon = reusable canon container
-// - Story = user-facing setup/template
-// - Session = user-facing run/play state
 type PlayableStoryFields = {
   id: string;
   title: string;
@@ -66,7 +40,6 @@ type PlayableStoryFields = {
 };
 
 export type Story = PlayableStoryFields & {
-  worldId?: string | null;
   visibility?: StoryVisibility;
   slug?: string | null;
   publishedAt?: string | null;
@@ -74,13 +47,13 @@ export type Story = PlayableStoryFields & {
   tags: string[];
 };
 
-// Compatibility shape for routes/components that still expect a world-shaped playable setup.
-// The real setup record is Story; World remains only for sample and legacy playable records.
-export type World = PlayableStoryFields;
+export type PlayableStory = PlayableStoryFields;
+
+// Legacy alias retained while the Prisma-backed data layer still uses world-era names internally.
+export type World = PlayableStory;
 
 export type Session = {
   id: string;
-  worldId?: string | null;
   storyId?: string | null;
   characterId: string;
   turnCount: number;
@@ -108,13 +81,6 @@ export type Session = {
   characterWeaknesses?: string[] | null;
   previousResponseId: string;
   turns: SessionTurn[];
-};
-
-export type CreateWorldInput = {
-  premise: string;
-  tone?: string;
-  setting?: string;
-  themes?: string;
 };
 
 export type SessionTurn = {

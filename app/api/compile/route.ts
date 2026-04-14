@@ -5,7 +5,7 @@ import {
   buildCompilerUserPrompt,
   COMPILER_DEVELOPER_PROMPT,
   COMPILER_SYSTEM_PROMPT,
-  normalizeCompiledWorld,
+  normalizeCompiledStory,
 } from "@/lib/compiler";
 import { createStructuredOutput } from "@/lib/openai";
 import {
@@ -13,7 +13,6 @@ import {
   compiledStorySchema,
   compileRequestSchema,
 } from "@/lib/schemas";
-import { createStoryFromWorld, createWorldFromStory } from "@/lib/story";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { ensureDatabaseUser } from "@/lib/user-sync";
 
@@ -36,8 +35,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const input = compileRequestSchema.parse(body);
-    const rawWorld = await createStructuredOutput<unknown>({
-      schemaName: "story_world",
+    const rawStory = await createStructuredOutput<unknown>({
+      schemaName: "story",
       schema: compiledStoryJsonSchema,
       input: [
         {
@@ -54,10 +53,10 @@ export async function POST(request: Request) {
         },
       ],
     });
-    let compiledWorld;
+    let compiledStory;
 
     try {
-      compiledWorld = compiledStorySchema.parse(rawWorld);
+      compiledStory = compiledStorySchema.parse(rawStory);
     } catch (error) {
       if (error instanceof ZodError) {
         console.error("[compile] schema failure", error.flatten());
@@ -74,8 +73,8 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    const normalizedWorld = normalizeCompiledWorld(compiledWorld);
-    const story = await createStory(createStoryFromWorld(normalizedWorld), user.id);
+    const normalizedStory = normalizeCompiledStory(compiledStory);
+    const story = await createStory(normalizedStory, user.id);
 
     if (!story) {
       throw new Error("The compiled story could not be saved.");
@@ -86,7 +85,7 @@ export async function POST(request: Request) {
       characterCount: story.playerCharacters.length,
     });
 
-    return NextResponse.json({ world: createWorldFromStory(story) });
+    return NextResponse.json({ story });
   } catch (error) {
     if (error instanceof ZodError) {
       console.error("[compile] request schema failure", error.flatten());

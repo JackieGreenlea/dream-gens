@@ -23,7 +23,7 @@ import {
 } from "@/lib/runtime-engines/types";
 import { StoryCardType } from "@/lib/types";
 
-const RUNTIME_STORY_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
+const RUNTIME_STORY_SYSTEM_PROMPT = `You are Everplot's session runtime.
 
 Requirements:
 - The latest user message is the action already taken.
@@ -41,7 +41,7 @@ Requirements:
 - Keep the prose to 1-3 short paragraphs.
 - Avoid one dense block of text.`;
 
-const RUNTIME_OPENING_SYSTEM_PROMPT = `You are Story World Studio's session runtime.
+const RUNTIME_OPENING_SYSTEM_PROMPT = `You are Everplot's session runtime.
 
 Requirements:
 - Generate the opening scene for this session before the player has acted.
@@ -60,7 +60,7 @@ Requirements:
 - Do not end responses with explicit player-prompt questions.
 - Avoid one dense block of text.`;
 
-const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `You are Story World Studio's suggested-actions generator.
+const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `You are Everplot's suggested-actions generator.
 
 Requirements:
 - Read the completed story beat and return strictly valid JSON matching the requested schema.

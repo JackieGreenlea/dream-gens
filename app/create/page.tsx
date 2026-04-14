@@ -10,7 +10,8 @@ export default function CreateStoryPage() {
             <p className="text-sm uppercase tracking-[0.28em] text-warm">Story Compiler</p>
             <h1 className="text-4xl font-semibold text-foreground">Create a story</h1>
             <p className="max-w-2xl text-sm leading-6 text-secondary">
-              Capture a rough premise, add a little direction if you want, and compile it into an editable playable story.
+              Start with a rough prompt and compile it into a structured story setup you can edit
+              before you play.
             </p>
           </div>
           <ButtonLink href="/" variant="ghost">
