@@ -1,6 +1,22 @@
 import { PlayableStory } from "@/lib/types";
 import { selectActiveStoryCards, selectCoreStoryCards } from "@/lib/runtime-story-cards";
 
+function compactText(value: string, maxLength: number) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength).trimEnd()}...`;
+}
+
+function stripStorySectionLabels(value: string) {
+  return value
+    .replace(/(?:^|\n)(?:Background|Opening):\n/gi, "\n")
+    .trim();
+}
+
 export type RuntimeContextPacket = {
   mode: "opening" | "turn";
   isFirstTurn: boolean;
@@ -8,12 +24,21 @@ export type RuntimeContextPacket = {
   title: string;
   pov: PlayableStory["pov"];
   toneStyle: string;
+  relationshipStructure: string;
+  intensityLevel: PlayableStory["intensityLevel"];
   continuitySummary: string;
   instructions: string;
   background: string;
   runtimeBackground: string;
+  openingScene: string;
   activeStoryCards: PlayableStory["storyCards"];
   coreStoryCards: PlayableStory["storyCards"];
+  sceneState: {
+    focalCharacterNames: string[];
+    currentLocation: string;
+    activePressure: string;
+    latestBeat: string;
+  };
   recentTurns: Array<{
     turnNumber: number;
     playerAction: string;
@@ -58,6 +83,24 @@ export function buildRuntimeContextPacket(params: {
     rollingSummary,
     recentTurns,
   }).filter((card) => !inactiveStoryCardIds.has(card.id));
+  const focalCharacterNames = [...new Set(
+    [...activeStoryCards, ...coreStoryCards]
+      .filter((card) => card.type === "character")
+      .map((card) => card.title.trim())
+      .filter((name) => name && name !== params.character.name),
+  )].slice(0, 3);
+  const currentLocation =
+    [...activeStoryCards, ...coreStoryCards]
+      .find((card) => card.type === "location")
+      ?.title.trim() ?? "";
+  const activePressure =
+    [...activeStoryCards, ...coreStoryCards]
+      .find((card) => card.type === "story_event")
+      ?.description.trim() ??
+    compactText(params.story.openingScene, 220);
+  const latestBeat = params.session.recentTurns.at(-1)?.storyText?.trim()
+    ? compactText(stripStorySectionLabels(params.session.recentTurns.at(-1)?.storyText ?? ""), 220)
+    : compactText(params.story.openingScene, 220);
 
   return {
     mode: params.mode ?? "turn",
@@ -66,12 +109,21 @@ export function buildRuntimeContextPacket(params: {
     title: params.story.title,
     pov: params.session.pov,
     toneStyle: params.story.toneStyle || params.story.authorStyle,
+    relationshipStructure: params.story.relationshipStructure,
+    intensityLevel: params.story.intensityLevel,
     continuitySummary: rollingSummary,
     instructions: params.story.instructions,
     background: params.story.background,
     runtimeBackground: params.story.runtimeBackground || params.story.background,
+    openingScene: params.story.openingScene,
     activeStoryCards,
     coreStoryCards,
+    sceneState: {
+      focalCharacterNames,
+      currentLocation,
+      activePressure,
+      latestBeat,
+    },
     recentTurns,
     character: {
       name: params.character.name,

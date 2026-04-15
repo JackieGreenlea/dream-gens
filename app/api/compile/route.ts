@@ -2,16 +2,24 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { createStory } from "@/lib/db";
 import {
-  buildCompilerUserPrompt,
-  COMPILER_DEVELOPER_PROMPT,
-  COMPILER_SYSTEM_PROMPT,
+  buildFinalStoryCompilerUserPrompt,
+  buildScenarioBlueprintUserPrompt,
+  FINAL_STORY_COMPILER_DEVELOPER_PROMPT,
+  FINAL_STORY_COMPILER_SYSTEM_PROMPT,
   normalizeCompiledStory,
+  SCENARIO_BLUEPRINT_DEVELOPER_PROMPT,
+  SCENARIO_BLUEPRINT_SYSTEM_PROMPT,
 } from "@/lib/compiler";
-import { createStructuredOutput } from "@/lib/openai";
+import { createStructuredOutput as createMistralStructuredOutput } from "@/lib/mistral";
+import { createStructuredOutput as createOpenAIStructuredOutput } from "@/lib/openai";
 import {
+  CompiledStoryOutput,
   compiledStoryJsonSchema,
   compiledStorySchema,
   compileRequestSchema,
+  ScenarioBlueprintOutput,
+  scenarioBlueprintJsonSchema,
+  scenarioBlueprintSchema,
 } from "@/lib/schemas";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { ensureDatabaseUser } from "@/lib/user-sync";
@@ -35,25 +43,70 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const input = compileRequestSchema.parse(body);
-    const rawStory = await createStructuredOutput<unknown>({
+    // Job 1: hidden blueprint generation stays on OpenAI.
+    const rawBlueprint = await createOpenAIStructuredOutput<unknown>({
+      schemaName: "scenario_blueprint",
+      schema: scenarioBlueprintJsonSchema,
+      input: [
+        {
+          role: "system",
+          content: [{ type: "input_text", text: SCENARIO_BLUEPRINT_SYSTEM_PROMPT }],
+        },
+        {
+          role: "developer",
+          content: [{ type: "input_text", text: SCENARIO_BLUEPRINT_DEVELOPER_PROMPT }],
+        },
+        {
+          role: "user",
+          content: [{ type: "input_text", text: buildScenarioBlueprintUserPrompt(input) }],
+        },
+      ],
+    });
+    let blueprint: ScenarioBlueprintOutput;
+
+    try {
+      blueprint = scenarioBlueprintSchema.parse(rawBlueprint);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error("[compile] blueprint schema failure", error.flatten());
+
+        return NextResponse.json(
+          {
+            error: "The compiler returned data that did not match the expected scenario blueprint schema.",
+            details: error.flatten(),
+          },
+          { status: 502 },
+        );
+      }
+
+      throw error;
+    }
+
+    // Job 2: final saved story profile generation runs on Mistral.
+    const rawStory = await createMistralStructuredOutput<unknown>({
       schemaName: "story",
       schema: compiledStoryJsonSchema,
       input: [
         {
           role: "system",
-          content: [{ type: "input_text", text: COMPILER_SYSTEM_PROMPT }],
+          content: [{ type: "input_text", text: FINAL_STORY_COMPILER_SYSTEM_PROMPT }],
         },
         {
           role: "developer",
-          content: [{ type: "input_text", text: COMPILER_DEVELOPER_PROMPT }],
+          content: [{ type: "input_text", text: FINAL_STORY_COMPILER_DEVELOPER_PROMPT }],
         },
         {
           role: "user",
-          content: [{ type: "input_text", text: buildCompilerUserPrompt(input) }],
+          content: [
+            {
+              type: "input_text",
+              text: buildFinalStoryCompilerUserPrompt(input, blueprint),
+            },
+          ],
         },
       ],
     });
-    let compiledStory;
+    let compiledStory: CompiledStoryOutput;
 
     try {
       compiledStory = compiledStorySchema.parse(rawStory);
@@ -100,7 +153,8 @@ export async function POST(request: Request) {
     }
 
     const message = error instanceof Error ? error.message : "Unable to compile story.";
-    const status = message.includes("OPENAI_API_KEY") ? 500 : 502;
+    const status =
+      message.includes("OPENAI_API_KEY") || message.includes("MISTRAL_API_KEY") ? 500 : 502;
     console.error("[compile] api failure", { message, status });
 
     return NextResponse.json({ error: message }, { status });

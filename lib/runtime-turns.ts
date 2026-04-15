@@ -2,9 +2,9 @@ import { RuntimeTurnOutput } from "@/lib/schemas";
 import { SessionTurn } from "@/lib/types";
 
 const FALLBACK_ACTIONS = [
-  "Question the nearest witness.",
-  "Press the advantage immediately.",
-  "Change the balance now.",
+  "Close the distance carefully.",
+  "Push the tension into words.",
+  "Seize the opening now.",
 ];
 
 function normalizeSuggestedAction(action: string, fallback: string) {
@@ -99,15 +99,11 @@ export function createSessionTurn(params: {
   playerAction: string;
   turnNumber: number;
   output: RuntimeTurnOutput;
-  background?: string;
   mode?: "opening" | "turn";
 }): SessionTurn {
-  const openingStoryText = [
-    params.background?.trim() ? `Background:\n${params.background.trim()}` : "",
-    params.output.storyText.trim() ? `Opening:\n${params.output.storyText.trim()}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const openingStoryText = params.output.storyText.trim()
+    ? `Opening:\n${params.output.storyText.trim()}`
+    : "";
 
   return {
     turnNumber: params.turnNumber,

@@ -1,6 +1,7 @@
 export type StoryPov = "second_person" | "first_person" | "third_person";
 export type StoryVisibility = "private" | "public";
 export type StoryCardType = "character" | "location" | "faction" | "story_event";
+export type StoryIntensityLevel = "low" | "medium" | "high" | "explicit";
 
 export type PlayerCharacter = {
   id: string;
@@ -23,15 +24,14 @@ type PlayableStoryFields = {
   summary: string;
   background: string;
   runtimeBackground: string;
+  openingScene: string;
   pov: StoryPov;
   instructions: string;
   toneStyle: string;
   authorStyle: string;
+  relationshipStructure: string;
+  intensityLevel: StoryIntensityLevel;
   storyCards: StoryCard[];
-  victoryCondition: string;
-  victoryEnabled: boolean;
-  defeatCondition: string;
-  defeatEnabled: boolean;
   playerCharacters: PlayerCharacter[];
 };
 
@@ -58,13 +58,12 @@ export type Session = {
   storySummary?: string | null;
   storyBackground?: string | null;
   storyRuntimeBackground?: string | null;
+  storyOpeningScene?: string | null;
+  storyRelationshipStructure?: string | null;
+  storyIntensityLevel?: StoryIntensityLevel | null;
   storyInstructions?: string | null;
   storyAuthorStyle?: string | null;
   storyPov?: StoryPov | null;
-  victoryCondition?: string | null;
-  victoryEnabled?: boolean | null;
-  defeatCondition?: string | null;
-  defeatEnabled?: boolean | null;
   characterName?: string | null;
   characterDescription?: string | null;
   previousResponseId: string;

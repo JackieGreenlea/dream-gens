@@ -165,6 +165,7 @@ export async function summarizeTurnBlock(turns: SessionTurn[]) {
     systemPrompt: [
       "Summarize where the story stands now after this 8-turn block.",
       "Preserve the current situation, who currently matters and why they matter, relationship shifts, unresolved tensions, secrets, promises, goals, conflicts, notable injuries, objects, obligations, revelations, and any major change in story direction.",
+      "When relevant, preserve where the scene currently is, who is physically present, proximity/touch status, and the current emotional or erotic temperature.",
       "Write one compact, information-dense paragraph in plain usable prose.",
       "Do not write back-cover copy. Do not be flowery. Do not use a list unless absolutely necessary.",
     ].join("\n"),
@@ -181,6 +182,7 @@ export async function synthesizeRollingStorySummary(params: {
     systemPrompt: [
       "Synthesize a rolling story summary.",
       "Preserve where the story stands now, who currently matters and why they matter, relationship shifts, unresolved tensions, secrets, promises, goals, conflicts, notable injuries, objects, obligations, revelations, and major direction changes that still matter.",
+      "When relevant, preserve current location, who is physically present, proximity/touch status, and the current emotional or erotic temperature.",
       "Treat the previous rolling summary as continuity state that should be carried forward unless a detail has clearly been resolved, replaced, or contradicted by the latest block.",
       "Do not collapse the summary into only the newest block.",
       "When in doubt, preserve still-relevant facts from the previous summary.",

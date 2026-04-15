@@ -45,6 +45,28 @@ function buildRollingSummaryLine(context: ReturnType<typeof buildRuntimeContextP
   return `Earlier in the story: ${summary}`;
 }
 
+function buildSceneStateNotes(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const notes: string[] = [];
+
+  if (context.sceneState.focalCharacterNames.length > 0) {
+    notes.push(`Foregrounded counterparts: ${context.sceneState.focalCharacterNames.join(", ")}`);
+  }
+
+  if (context.sceneState.currentLocation) {
+    notes.push(`Current location: ${context.sceneState.currentLocation}`);
+  }
+
+  if (context.sceneState.activePressure) {
+    notes.push(`Active pressure: ${context.sceneState.activePressure}`);
+  }
+
+  if (context.sceneState.latestBeat) {
+    notes.push(`Latest beat: ${context.sceneState.latestBeat}`);
+  }
+
+  return notes;
+}
+
 function getPromptStoryCards(context: ReturnType<typeof buildRuntimeContextPacket>) {
   const cards = context.mode === "opening" ? context.coreStoryCards : [...context.coreStoryCards, ...context.activeStoryCards];
   const seenCardIds = new Set<string>();
@@ -126,21 +148,27 @@ Rules:
 - Never write thoughts, actions, or dialogue for the user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer dialogue, interaction, and concrete response over scenic elaboration.
+- Begin inside the opening scene instead of summarizing setup.
+- Keep the central fantasy, chemistry, and immediate pressure active on the page.
+- Maintain continuity of proximity, touch, gaze, and body positioning.
+- Avoid generic filler, lore-dump openings, and vague anticipation.
 - Stay in character.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.
 - Do not end on vague anticipation.
-- Keep track of body positioning.
 
 The user is playing as ${context.character.name}. ${context.character.description}
 You are playing as all other characters. You can also create new characters as appropriate.
 
 Background: ${context.runtimeBackground}
+Opening scene anchor: ${context.openingScene}
+Relationship structure: ${context.relationshipStructure}
+Intensity level: ${context.intensityLevel}
 
 Tone/theme: ${context.toneStyle}
 
 Additional context:
-${additionalContextParts.join("\n\n")}
+${[...buildSceneStateNotes(context), ...additionalContextParts].join("\n\n")}
 
 Write the opening scene now.`;
 }
@@ -178,17 +206,21 @@ Rules:
 - Never write dialogue, actions, or thoughts for the player/user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
-- Keep track of body positioning.
+- Preserve the core fantasy, current scene pressure, and relationship dynamic.
+- Maintain continuity of body positioning, touch, gaze, and proximity unless the scene clearly changes them.
+- Avoid generic filler, vague "wait and see" endings, and detached narrator voice.
 
 The user is playing as ${context.character.name}. ${context.character.description}
 You are playing as all other characters. You can also create new characters as appropriate.
 
 Background: ${context.runtimeBackground}
+Relationship structure: ${context.relationshipStructure}
+Intensity level: ${context.intensityLevel}
 
 Tone/theme: ${context.toneStyle}
 
 Additional context:
-${additionalContextParts.join("\n\n")}
+${[...buildSceneStateNotes(context), ...additionalContextParts].join("\n\n")}
 ${rollingSummaryLine ? `\n\n${rollingSummaryLine}` : ""}`;
 }
 
@@ -200,6 +232,8 @@ Required keys:
 Rules:
 - suggestedActions: 2 to 3 short next moves.
 - Start each suggested action with a clear verb when possible.
+- Make them specific to the current pressure, counterpart dynamic, and scene temperature.
+- Favor emotionally charged or erotically charged options when the story supports them.
 - Do not include commentary, labels, or recap text outside the JSON object.`;
 
 type MistralChatResponse = {
@@ -333,6 +367,14 @@ function buildMistralStoryMessages(params: {
   ];
 
   if (params.context.mode === "opening") {
+    messages.push({
+      role: "user",
+      content: [
+        "Write the opening scene now.",
+        `Begin inside this opening beat: ${params.context.openingScene}`,
+        "Do not summarize setup first.",
+      ].join("\n\n"),
+    });
     return messages;
   }
 
@@ -364,11 +406,15 @@ function buildMistralFinalizationMessages(params: {
               "# Suggested Actions",
               "Return JSON only with key suggestedActions.",
               "The assistant message above is the opening scene.",
+              `Relationship structure: ${params.context.relationshipStructure}`,
+              `Intensity level: ${params.context.intensityLevel}`,
             ].join("\n\n")
           : [
               "# Suggested Actions",
               "Return JSON only with key suggestedActions.",
               `The user action that led to the assistant message above was:\n${params.playerAction.trim()}`,
+              `Relationship structure: ${params.context.relationshipStructure}`,
+              `Intensity level: ${params.context.intensityLevel}`,
             ].join("\n\n"),
     },
   ];

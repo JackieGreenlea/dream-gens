@@ -14,6 +14,7 @@ import {
   Story,
   StoryCard,
   StoryCardType,
+  StoryIntensityLevel,
   StoryPov,
   StoryVisibility,
 } from "@/lib/types";
@@ -32,15 +33,14 @@ const storySelect = {
   summary: true,
   background: true,
   runtimeBackground: true,
+  openingScene: true,
   pov: true,
   instructions: true,
   toneStyle: true,
   authorStyle: true,
+  relationshipStructure: true,
+  intensityLevel: true,
   storyCards: true,
-  victoryCondition: true,
-  victoryEnabled: true,
-  defeatCondition: true,
-  defeatEnabled: true,
   playerCharacters: {
     orderBy: {
       createdAt: "asc",
@@ -147,6 +147,16 @@ function normalizePov(value: string | StoryPov | null | undefined): StoryPov {
   return "second_person";
 }
 
+function normalizeIntensityLevel(
+  value: string | StoryIntensityLevel | null | undefined,
+): StoryIntensityLevel {
+  if (value === "low" || value === "high" || value === "explicit") {
+    return value;
+  }
+
+  return "medium";
+}
+
 function readStringArray(value: Prisma.JsonValue, fallback: string[] = []) {
   if (!Array.isArray(value)) {
     return fallback;
@@ -228,15 +238,14 @@ function mapStoryRecord(record: DbStoryRecord): Story {
     summary: record.summary,
     background: record.background,
     runtimeBackground: record.runtimeBackground,
+    openingScene: record.openingScene,
     pov: normalizePov(record.pov),
     instructions: record.instructions,
     toneStyle: record.toneStyle || record.authorStyle,
     authorStyle: record.authorStyle || record.toneStyle || "",
+    relationshipStructure: record.relationshipStructure,
+    intensityLevel: normalizeIntensityLevel(record.intensityLevel),
     storyCards: readStoryCards(record.storyCards ?? []),
-    victoryCondition: record.victoryCondition,
-    victoryEnabled: record.victoryEnabled,
-    defeatCondition: record.defeatCondition,
-    defeatEnabled: record.defeatEnabled,
     playerCharacters: record.playerCharacters.map(mapCharacter),
   };
 }
@@ -269,13 +278,14 @@ function mapSession(record: DbSession): Session {
     storySummary: record.storySummary ?? null,
     storyBackground: record.storyBackground ?? null,
     storyRuntimeBackground: record.storyRuntimeBackground ?? null,
+    storyOpeningScene: record.storyOpeningScene ?? null,
+    storyRelationshipStructure: record.storyRelationshipStructure ?? null,
+    storyIntensityLevel: record.storyIntensityLevel
+      ? normalizeIntensityLevel(record.storyIntensityLevel)
+      : null,
     storyInstructions: record.storyInstructions ?? null,
     storyAuthorStyle: record.storyAuthorStyle ?? null,
     storyPov: record.storyPov ? normalizePov(record.storyPov) : null,
-    victoryCondition: record.victoryCondition ?? null,
-    victoryEnabled: record.victoryEnabled ?? null,
-    defeatCondition: record.defeatCondition ?? null,
-    defeatEnabled: record.defeatEnabled ?? null,
     characterName: record.characterName ?? null,
     characterDescription: record.characterDescription ?? null,
     previousResponseId: record.previousResponseId ?? "",
@@ -287,7 +297,11 @@ function getStoryPublishValidationError(story: Story) {
   if (!story.title.trim()) return "A title is required before publishing.";
   if (!story.summary.trim()) return "A summary is required before publishing.";
   if (!story.background.trim()) return "Background is required before publishing.";
+  if (!story.openingScene.trim()) return "An opening scene is required before publishing.";
   if (!story.toneStyle.trim()) return "Tone style is required before publishing.";
+  if (!story.relationshipStructure.trim()) {
+    return "Relationship structure is required before publishing.";
+  }
   if (story.playerCharacters.length === 0) {
     return "Add at least one playable character before publishing.";
   }
@@ -345,13 +359,12 @@ function buildSessionSnapshot(playableStory: PlayableStory, character: PlayerCha
     storyRuntimeBackground: sanitizeTextForDatabase(
       playableStory.runtimeBackground || playableStory.background,
     ),
+    storyOpeningScene: sanitizeTextForDatabase(playableStory.openingScene),
+    storyRelationshipStructure: sanitizeTextForDatabase(playableStory.relationshipStructure),
+    storyIntensityLevel: playableStory.intensityLevel,
     storyInstructions: sanitizeTextForDatabase(playableStory.instructions),
     storyAuthorStyle: sanitizeTextForDatabase(playableStory.authorStyle || playableStory.toneStyle),
     storyPov: playableStory.pov,
-    victoryCondition: sanitizeTextForDatabase(playableStory.victoryCondition),
-    victoryEnabled: playableStory.victoryEnabled,
-    defeatCondition: sanitizeTextForDatabase(playableStory.defeatCondition),
-    defeatEnabled: playableStory.defeatEnabled,
     characterName: sanitizeTextForDatabase(character.name),
     characterDescription: sanitizeTextForDatabase(character.description),
   };
@@ -364,6 +377,9 @@ function buildSnapshotPlayable(
     !record.storyTitle ||
     !record.storySummary ||
     !record.storyBackground ||
+    !record.storyOpeningScene ||
+    !record.storyRelationshipStructure ||
+    !record.storyIntensityLevel ||
     !record.storyPov ||
     !record.characterName ||
     !record.characterDescription
@@ -380,15 +396,14 @@ function buildSnapshotPlayable(
       summary: record.storySummary,
       background: record.storyBackground,
       runtimeBackground: record.storyRuntimeBackground ?? record.storyBackground,
+      openingScene: record.storyOpeningScene,
       pov: normalizePov(record.storyPov),
       instructions: record.storyInstructions ?? "",
       toneStyle: record.storyAuthorStyle ?? "",
       authorStyle: record.storyAuthorStyle ?? "",
+      relationshipStructure: record.storyRelationshipStructure,
+      intensityLevel: normalizeIntensityLevel(record.storyIntensityLevel),
       storyCards: snapshotStoryCards,
-      victoryCondition: record.victoryCondition ?? "",
-      victoryEnabled: record.victoryEnabled ?? true,
-      defeatCondition: record.defeatCondition ?? "",
-      defeatEnabled: record.defeatEnabled ?? true,
       playerCharacters: [
         {
           id: record.storyCharacterId ?? "",
@@ -413,10 +428,13 @@ function storyPersistenceData(story: Story) {
     summary: sanitizeTextForDatabase(story.summary),
     background: sanitizeTextForDatabase(story.background),
     runtimeBackground: sanitizeTextForDatabase(story.runtimeBackground || story.background),
+    openingScene: sanitizeTextForDatabase(story.openingScene),
     pov: story.pov,
     instructions: sanitizeTextForDatabase(story.instructions),
     toneStyle: sanitizeTextForDatabase(story.toneStyle),
     authorStyle: sanitizeTextForDatabase(story.authorStyle || story.toneStyle),
+    relationshipStructure: sanitizeTextForDatabase(story.relationshipStructure),
+    intensityLevel: story.intensityLevel,
     storyCards: story.storyCards.map((card) => ({
       id: sanitizeTextForDatabase(card.id),
       type: card.type,
@@ -425,10 +443,6 @@ function storyPersistenceData(story: Story) {
       role: sanitizeTextForDatabase(card.role ?? ""),
       triggerKeywords: sanitizeTextArrayForDatabase(card.triggerKeywords),
     })),
-    victoryCondition: sanitizeTextForDatabase(story.victoryCondition),
-    victoryEnabled: story.victoryEnabled,
-    defeatCondition: sanitizeTextForDatabase(story.defeatCondition),
-    defeatEnabled: story.defeatEnabled,
   };
 }
 

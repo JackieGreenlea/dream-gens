@@ -32,7 +32,13 @@ Requirements:
 - Do not restate or paraphrase the player's submitted action at the start.
 - Begin with the immediate consequence, reaction, reveal, or next beat.
 - Keep player agency intact and move the scene forward.
-- Respect POV, tone, story logic, and runtime instructions.
+- Respect POV, tone, story logic, relationship structure, intensity level, and runtime instructions.
+- Prioritize live interaction over explanation.
+- Keep character voices sharp, socially specific, and emotionally legible.
+- Maintain continuity of proximity, touch, gaze, and body positioning unless the scene clearly changes them.
+- Keep the central fantasy and current interpersonal pressure in motion.
+- Avoid generic assistant-y narration, filler recap, lore-dump paragraphs, and vague stall-outs.
+- Do not end on passive "wait and see" beats.
 - Do not expose internal scaffolding.
 - Return only the narrative story prose for this beat.
 - Do not return JSON.
@@ -45,11 +51,15 @@ const RUNTIME_OPENING_SYSTEM_PROMPT = `You are Everplot's session runtime.
 Requirements:
 - Generate the opening scene for this session before the player has acted.
 - Set the scene around the selected character.
-- Establish tone, motion, and immediate tension.
+- Begin inside the opening scene, not with a synopsis.
+- Establish tone, motion, chemistry, and immediate tension.
 - Move directly into an opening beat that invites the player's first action.
 - Do not describe a hidden player action or imply the player already chose something.
 - Keep player agency intact and leave room for the player's first move.
-- Respect POV, tone, story logic, and runtime instructions.
+- Respect POV, tone, story logic, relationship structure, intensity level, and runtime instructions.
+- Foreground the most important counterpart, temptation, or pressure when appropriate.
+- Maintain concrete physical staging, proximity, gaze, and emotional temperature.
+- Avoid throat-clearing exposition, generic setup language, and bland scene-setter prose.
 - Do not expose internal scaffolding.
 - Return only the narrative story prose for this opening.
 - Do not return JSON.
@@ -63,10 +73,13 @@ const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `You are Everplot's suggested-ac
 Requirements:
 - Read the completed story beat and return strictly valid JSON matching the requested schema.
 - Suggested actions must reflect reasonable next moves in the current scene.
+- Make them specific to the current pressure, relationship dynamic, and emotional temperature.
+- Favor actions with clear interpersonal or erotic stakes when the scenario supports them.
 - Return 2 to 3 suggested actions.
 - Each suggested action must be 1-2 short sentences and no more than 20 words.
 - Start each suggested action with a clear verb when possible.
-- Do not restate the scene or write strategy commentary.`;
+- Do not restate the scene or write strategy commentary.
+- Avoid bland menu actions that could fit any story.`;
 
 const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
   character: "Characters",
@@ -103,6 +116,7 @@ function buildOpenAIDeveloperMessage(
   context: ReturnType<typeof buildRuntimeContextPacket>,
 ) {
   const activeStoryCardsSection = buildActiveStoryCardsSection(context);
+  const sceneStateLines = buildSceneStateLines(context);
 
   if (context.isFirstTurn) {
     return [
@@ -110,12 +124,20 @@ function buildOpenAIDeveloperMessage(
       `Title: ${context.title}`,
       `POV: ${context.pov.replace("_", " ")}`,
       `Tone / Style: ${context.toneStyle}`,
+      `Relationship Structure: ${context.relationshipStructure}`,
+      `Intensity Level: ${context.intensityLevel}`,
       "",
-      "Story Background:",
-      context.background,
+      "Runtime Background:",
+      context.runtimeBackground,
+      "",
+      "Opening Scene Anchor:",
+      context.openingScene,
       "",
       "Selected Playable Character:",
       `${context.character.name}: ${context.character.description}`,
+      sceneStateLines.length > 0 ? "" : null,
+      sceneStateLines.length > 0 ? "Current Scene State:" : null,
+      ...sceneStateLines,
       activeStoryCardsSection ? "" : null,
       activeStoryCardsSection,
       context.instructions.trim() ? "" : null,
@@ -137,8 +159,11 @@ function buildOpenAIDeveloperMessage(
     `Title: ${context.title}`,
     `POV: ${context.pov.replace("_", " ")}`,
     `Tone / Style: ${context.toneStyle}`,
+    `Relationship Structure: ${context.relationshipStructure}`,
+    `Intensity Level: ${context.intensityLevel}`,
     `Rolling Story Summary: ${context.continuitySummary}`,
     `Character Anchor: ${context.character.name} — ${compactText(context.character.description, 180)}`,
+    ...sceneStateLines.map((line, index) => (index === 0 ? `Scene State: ${line}` : line)),
     activeStoryCardsSection ? "" : null,
     activeStoryCardsSection,
     context.instructions.trim() ? "" : null,
@@ -170,6 +195,28 @@ function buildActiveStoryCardsSection(context: ReturnType<typeof buildRuntimeCon
   return lines.join("\n");
 }
 
+function buildSceneStateLines(context: ReturnType<typeof buildRuntimeContextPacket>) {
+  const lines: string[] = [];
+
+  if (context.sceneState.focalCharacterNames.length > 0) {
+    lines.push(`Foregrounded Counterparts: ${context.sceneState.focalCharacterNames.join(", ")}`);
+  }
+
+  if (context.sceneState.currentLocation) {
+    lines.push(`Current Location: ${context.sceneState.currentLocation}`);
+  }
+
+  if (context.sceneState.activePressure) {
+    lines.push(`Active Pressure: ${context.sceneState.activePressure}`);
+  }
+
+  if (context.sceneState.latestBeat) {
+    lines.push(`Latest Beat: ${context.sceneState.latestBeat}`);
+  }
+
+  return lines;
+}
+
 function buildOpenAIInputMessages(params: {
   context: ReturnType<typeof buildRuntimeContextPacket>;
   playerAction: string;
@@ -183,7 +230,13 @@ function buildOpenAIInputMessages(params: {
     toInputMessage(
       "user",
       params.context.mode === "opening"
-        ? "Generate the opening scene for this session. Introduce the selected character, establish the situation, and end by inviting the player's first action."
+        ? [
+            "Generate the opening scene for this session.",
+            "",
+            `Begin inside this exact opening moment: ${params.context.openingScene}`,
+            "Drop immediately into a live, charged scene rather than summarizing setup.",
+            "Keep the focus on the selected character, the most important counterpart or pressure, and the player's next opportunity to act.",
+          ].join("\n")
         : params.playerAction.trim(),
     ),
   ];

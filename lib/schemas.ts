@@ -3,16 +3,33 @@ import { COMPILER_GENRE_TAG_OPTIONS, normalizeStoryTags } from "@/lib/story-tags
 
 const povSchema = z.enum(["second_person", "first_person", "third_person"]);
 const optionalCompilerFieldSchema = z.string().trim().max(400).optional().default("");
+const optionalCompilerPreferenceFieldSchema = z.string().trim().max(800).optional().default("");
 const optionalStoryLinkSchema = z.string().trim().min(1).nullable().optional();
 const storyTagSchema = z.string().trim().min(1);
 const compilerGenreTagSchema = z.enum(COMPILER_GENRE_TAG_OPTIONS);
 const storyCardTypeSchema = z.enum(["character", "location", "faction", "story_event"]);
+const scenarioBlueprintIntensitySchema = z.enum(["low", "medium", "high", "explicit"]);
+const scenarioBlueprintCharacterRoleSchema = z.enum([
+  "primary_counterpart",
+  "secondary_counterpart",
+  "rival",
+  "authority_figure",
+  "spouse",
+  "observer",
+  "protector",
+  "threat",
+  "supporting",
+]);
 
 export const compileRequestSchema = z.object({
-  premise: z.string().trim().min(1, "Premise is required."),
-  tone: optionalCompilerFieldSchema,
+  prompt: z.string().trim().min(1, "Prompt is required."),
+  relationshipStructure: optionalCompilerFieldSchema,
+  intensityLevel: scenarioBlueprintIntensitySchema.optional().default("medium"),
+  vibe: optionalCompilerFieldSchema,
   setting: optionalCompilerFieldSchema,
-  themes: optionalCompilerFieldSchema,
+  playerRole: optionalCompilerFieldSchema,
+  include: optionalCompilerPreferenceFieldSchema,
+  avoid: optionalCompilerPreferenceFieldSchema,
 });
 
 export const sessionTurnSchema = z.object({
@@ -33,13 +50,12 @@ export const sessionSchema = z.object({
   storySummary: z.string().trim().nullable().optional(),
   storyBackground: z.string().trim().nullable().optional(),
   storyRuntimeBackground: z.string().trim().nullable().optional(),
+  storyOpeningScene: z.string().trim().nullable().optional(),
+  storyRelationshipStructure: z.string().trim().nullable().optional(),
+  storyIntensityLevel: scenarioBlueprintIntensitySchema.nullable().optional(),
   storyInstructions: z.string().trim().nullable().optional(),
   storyAuthorStyle: z.string().trim().nullable().optional(),
   storyPov: povSchema.nullable().optional(),
-  victoryCondition: z.string().trim().nullable().optional(),
-  victoryEnabled: z.boolean().nullable().optional(),
-  defeatCondition: z.string().trim().nullable().optional(),
-  defeatEnabled: z.boolean().nullable().optional(),
   characterName: z.string().trim().nullable().optional(),
   characterDescription: z.string().trim().nullable().optional(),
   previousResponseId: z.string().default(""),
@@ -61,19 +77,94 @@ export const storyCardSchema = z.object({
   role: z.string().trim().optional().default(""),
 });
 
+const scenarioBlueprintCharacterSchema = z.object({
+  id: z.string().trim().min(1),
+  role: scenarioBlueprintCharacterRoleSchema,
+  archetype: z.string().trim().min(1),
+  persona: z.string().trim().min(1),
+  dominanceStyle: z.string().trim().min(1),
+  emotionalHook: z.string().trim().min(1),
+  functionInFantasy: z.string().trim().min(1),
+});
+
+const scenarioBlueprintRelationshipDynamicSchema = z.object({
+  type: z.string().trim().min(1),
+  charactersInvolved: z.array(z.string().trim().min(1)).min(1).max(6),
+  description: z.string().trim().min(1),
+});
+
+const SCENARIO_BLUEPRINT_SPECIAL_CHARACTER_IDS = new Set(["player"]);
+
+export const scenarioBlueprintSchema = z
+  .object({
+    coreFantasy: z.string().trim().min(1),
+    playerRole: z.string().trim().min(1),
+    setting: z.string().trim().min(1),
+    startingPressure: z.string().trim().min(1),
+    storyPromise: z.string().trim().min(1),
+    eroticTone: z.string().trim().min(1),
+    intensityLevel: scenarioBlueprintIntensitySchema,
+    relationshipStructure: z.string().trim().min(1),
+    kinkIncludes: z.array(z.string().trim().min(1)).max(12).default([]),
+    hardLimits: z.array(z.string().trim().min(1)).max(12).default([]),
+    openingHook: z.string().trim().min(1),
+    primaryEroticFocus: z.string().trim().min(1),
+    characters: z.array(scenarioBlueprintCharacterSchema).min(1).max(8),
+    relationshipDynamics: z
+      .array(scenarioBlueprintRelationshipDynamicSchema)
+      .min(1)
+      .max(12),
+    recurringElements: z.object({
+      characters: z.array(z.string().trim().min(1)).max(8).default([]),
+      locations: z.array(z.string().trim().min(1)).max(8).default([]),
+      factions: z.array(z.string().trim().min(1)).max(8).default([]),
+      storyEvents: z.array(z.string().trim().min(1)).min(3).max(6),
+    }),
+  })
+  .superRefine((blueprint, context) => {
+    const characterIds = new Set([
+      ...blueprint.characters.map((character) => character.id),
+      ...SCENARIO_BLUEPRINT_SPECIAL_CHARACTER_IDS,
+    ]);
+
+    for (const [index, dynamic] of blueprint.relationshipDynamics.entries()) {
+      for (const characterId of dynamic.charactersInvolved) {
+        if (!characterIds.has(characterId)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["relationshipDynamics", index, "charactersInvolved"],
+            message: `Relationship dynamics must reference defined character ids. Unknown id: ${characterId}`,
+          });
+        }
+      }
+    }
+
+    for (const [index, characterId] of blueprint.recurringElements.characters.entries()) {
+      if (!characterIds.has(characterId)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["recurringElements", "characters", index],
+          message: `Recurring character references must use defined character ids. Unknown id: ${characterId}`,
+        });
+      }
+    }
+  });
+
 const compiledStorySchemaBase = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).max(600),
   background: z.string().trim().min(1),
   runtimeBackground: z.string().trim().min(1),
+  openingScene: z.string().trim().min(1),
   toneStyle: z.string().trim().min(1),
+  relationshipStructure: z.string().trim().min(1),
+  intensityLevel: scenarioBlueprintIntensitySchema,
   storyCards: z.array(storyCardSchema).default([]),
-  victoryCondition: z.string().trim().min(1),
-  defeatCondition: z.string().trim().min(1),
   playerCharacters: z.array(playerCharacterSchema).min(1).max(6),
 });
 
 export type CompileRequest = z.infer<typeof compileRequestSchema>;
+export type ScenarioBlueprintOutput = z.infer<typeof scenarioBlueprintSchema>;
 export const compiledStorySchema = compiledStorySchemaBase.extend({
   tags: z.array(compilerGenreTagSchema).length(1),
 }).superRefine((output, context) => {
@@ -119,8 +210,6 @@ export const persistedStorySchema = compiledStorySchemaBase.extend({
   toneStyle: z.string().trim().default(""),
   authorStyle: z.string().trim().default(""),
   storyCards: z.array(storyCardSchema).default([]),
-  victoryEnabled: z.boolean().default(true),
-  defeatEnabled: z.boolean().default(true),
 });
 
 export const storySchema = persistedStorySchema.extend({
@@ -168,10 +257,11 @@ export const compiledStoryJsonSchema = {
     "background",
     "tags",
     "runtimeBackground",
+    "openingScene",
     "toneStyle",
+    "relationshipStructure",
+    "intensityLevel",
     "storyCards",
-    "victoryCondition",
-    "defeatCondition",
     "playerCharacters",
   ],
   properties: {
@@ -179,6 +269,7 @@ export const compiledStoryJsonSchema = {
     summary: { type: "string", maxLength: 600 },
     background: { type: "string" },
     runtimeBackground: { type: "string" },
+    openingScene: { type: "string" },
     tags: {
       type: "array",
       minItems: 1,
@@ -189,6 +280,11 @@ export const compiledStoryJsonSchema = {
       },
     },
     toneStyle: { type: "string" },
+    relationshipStructure: { type: "string" },
+    intensityLevel: {
+      type: "string",
+      enum: ["low", "medium", "high", "explicit"],
+    },
     storyCards: {
       type: "array",
       items: {
@@ -213,8 +309,6 @@ export const compiledStoryJsonSchema = {
         },
       },
     },
-    victoryCondition: { type: "string" },
-    defeatCondition: { type: "string" },
     playerCharacters: {
       type: "array",
       minItems: 1,
@@ -227,6 +321,136 @@ export const compiledStoryJsonSchema = {
           id: { type: "string" },
           name: { type: "string" },
           description: { type: "string" },
+        },
+      },
+    },
+  },
+} as const;
+
+export const scenarioBlueprintJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "coreFantasy",
+    "playerRole",
+    "setting",
+    "startingPressure",
+    "storyPromise",
+    "eroticTone",
+    "intensityLevel",
+    "relationshipStructure",
+    "kinkIncludes",
+    "hardLimits",
+    "openingHook",
+    "primaryEroticFocus",
+    "characters",
+    "relationshipDynamics",
+    "recurringElements",
+  ],
+  properties: {
+    coreFantasy: { type: "string" },
+    playerRole: { type: "string" },
+    setting: { type: "string" },
+    startingPressure: { type: "string" },
+    storyPromise: { type: "string" },
+    eroticTone: { type: "string" },
+    intensityLevel: {
+      type: "string",
+      enum: ["low", "medium", "high", "explicit"],
+    },
+    relationshipStructure: { type: "string" },
+    kinkIncludes: {
+      type: "array",
+      items: { type: "string" },
+    },
+    hardLimits: {
+      type: "array",
+      items: { type: "string" },
+    },
+    openingHook: { type: "string" },
+    primaryEroticFocus: { type: "string" },
+    characters: {
+      type: "array",
+      minItems: 1,
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: [
+          "id",
+          "role",
+          "archetype",
+          "persona",
+          "dominanceStyle",
+          "emotionalHook",
+          "functionInFantasy",
+        ],
+        properties: {
+          id: { type: "string" },
+          role: {
+            type: "string",
+            enum: [
+              "primary_counterpart",
+              "secondary_counterpart",
+              "rival",
+              "authority_figure",
+              "spouse",
+              "observer",
+              "protector",
+              "threat",
+              "supporting",
+            ],
+          },
+          archetype: { type: "string" },
+          persona: { type: "string" },
+          dominanceStyle: { type: "string" },
+          emotionalHook: { type: "string" },
+          functionInFantasy: { type: "string" },
+        },
+      },
+    },
+    relationshipDynamics: {
+      type: "array",
+      minItems: 1,
+      maxItems: 12,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["type", "charactersInvolved", "description"],
+        properties: {
+          type: { type: "string" },
+          charactersInvolved: {
+            type: "array",
+            minItems: 1,
+            maxItems: 6,
+            items: { type: "string" },
+          },
+          description: { type: "string" },
+        },
+      },
+    },
+    recurringElements: {
+      type: "object",
+      additionalProperties: false,
+      required: ["characters", "locations", "factions", "storyEvents"],
+      properties: {
+        characters: {
+          type: "array",
+          items: { type: "string" },
+        },
+        locations: {
+          type: "array",
+          items: { type: "string" },
+        },
+        factions: {
+          type: "array",
+          items: { type: "string" },
+        },
+        storyEvents: {
+          type: "array",
+          minItems: 3,
+          maxItems: 6,
+          items: { type: "string" },
         },
       },
     },

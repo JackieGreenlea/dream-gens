@@ -128,7 +128,6 @@ async function generateAndPersistSessionTurn(params: {
     playerAction: params.playerAction,
     turnNumber: bundle.session.turnCount + 1,
     output: engineResult.output,
-    background: bundle.playableStory.background,
     mode: params.mode ?? "turn",
   });
   const nextPreviousResponseId = engineResult.responseId || bundle.session.previousResponseId || "";

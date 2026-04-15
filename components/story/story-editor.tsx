@@ -11,7 +11,13 @@ import {
   isAllowedStoryCoverType,
   MAX_STORY_COVER_BYTES,
 } from "@/lib/supabase/storage";
-import { PlayerCharacter, Story, StoryCard, StoryCardType } from "@/lib/types";
+import {
+  PlayerCharacter,
+  Story,
+  StoryCard,
+  StoryCardType,
+  StoryIntensityLevel,
+} from "@/lib/types";
 import { createId, formatLineList } from "@/lib/utils";
 
 const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
@@ -20,6 +26,13 @@ const STORY_CARD_TYPE_LABELS: Record<StoryCardType, string> = {
   faction: "Factions",
   story_event: "Story Events",
 };
+
+const INTENSITY_LEVEL_OPTIONS: Array<{ value: StoryIntensityLevel; label: string }> = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "explicit", label: "Explicit" },
+];
 
 type StoryEditorProps = {
   initialStory: Story | null;
@@ -626,6 +639,44 @@ export function StoryEditor({
               />
             </Field>
             <Field
+              label="Opening Scene"
+              hint="The exact moment or beat where play should begin."
+            >
+              <Textarea
+                value={story.openingScene}
+                onChange={(event) => updateField("openingScene", event.target.value)}
+                className="min-h-28"
+              />
+            </Field>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field
+                label="Relationship Structure"
+                hint="A short label for the central romantic or erotic setup."
+              >
+                <Input
+                  value={story.relationshipStructure}
+                  onChange={(event) =>
+                    updateField("relationshipStructure", event.target.value)
+                  }
+                  placeholder="One primary counterpart with a jealous rival"
+                />
+              </Field>
+              <Field label="Intensity Level">
+                <Select
+                  value={story.intensityLevel}
+                  onChange={(event) =>
+                    updateField("intensityLevel", event.target.value as StoryIntensityLevel)
+                  }
+                >
+                  {INTENSITY_LEVEL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field
               label="Tags"
               hint="Add simple genre/discovery tags. These drive Explore tabs and home rows."
             >
@@ -912,50 +963,6 @@ export function StoryEditor({
                     }
                   />
                 </Field>
-              </div>
-
-              <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">Victory Conditions</p>
-                    <p className="text-sm text-secondary">Control whether the victory condition is active.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => updateField("victoryEnabled", !story.victoryEnabled)}
-                    className="rounded-lg border border-line px-3 py-1.5 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
-                  >
-                    {story.victoryEnabled ? "Enabled" : "Disabled"}
-                  </button>
-                </div>
-                <Textarea
-                  value={story.victoryCondition}
-                  onChange={(event) => updateField("victoryCondition", event.target.value)}
-                  disabled={!story.victoryEnabled}
-                  className="mt-4"
-                />
-              </div>
-
-              <div className="rounded-xl border border-line/70 bg-transparent p-4 sm:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">Defeat Conditions</p>
-                    <p className="text-sm text-secondary">Control whether the defeat condition is active.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => updateField("defeatEnabled", !story.defeatEnabled)}
-                    className="rounded-lg border border-line px-3 py-1.5 text-sm text-foreground transition hover:border-fieldBorder hover:bg-surface"
-                  >
-                    {story.defeatEnabled ? "Enabled" : "Disabled"}
-                  </button>
-                </div>
-                <Textarea
-                  value={story.defeatCondition}
-                  onChange={(event) => updateField("defeatCondition", event.target.value)}
-                  disabled={!story.defeatEnabled}
-                  className="mt-4"
-                />
               </div>
 
               <div className="flex flex-wrap justify-end gap-3">

@@ -44,7 +44,10 @@ Rules:
 - Never write dialogue, thoughts, or actions for the user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
-- Keep track of body positioning.
+- Begin inside the opening scene instead of summarizing setup.
+- Keep the central fantasy, chemistry, and immediate pressure active on the page.
+- Maintain continuity of body positioning, touch, gaze, and proximity.
+- Avoid generic filler, lore-dump openings, and vague anticipation.
 - Start in motion around the user-controlled character.
 - Make something happen immediately.`;
 
@@ -57,7 +60,9 @@ Rules:
 - Never write dialogue, thoughts, or actions for the user-controlled character.
 - Ensure each character has a distinct voice, personality, and mannerisms.
 - Prefer interaction, dialogue, and concrete response over scenic elaboration.
-- Keep track of body positioning.`;
+- Preserve the core fantasy, current scene pressure, and relationship dynamic.
+- Maintain continuity of body positioning, touch, gaze, and proximity unless the scene clearly changes them.
+- Avoid generic filler, vague "wait and see" endings, and detached narrator voice.`;
 
 const RUNTIME_SUGGESTED_ACTIONS_SYSTEM_PROMPT = `Return only valid JSON.
 
@@ -67,6 +72,8 @@ Required keys:
 Rules:
 - suggestedActions: 2 to 3 short next moves.
 - Start each suggested action with a clear verb when possible.
+- Make them specific to the current pressure, counterpart dynamic, and scene temperature.
+- Favor emotionally charged or erotically charged options when the story supports them.
 - Do not include commentary, labels, or recap text outside the JSON object.`;
 
 type MistralChatResponse = {
@@ -153,9 +160,24 @@ function buildOpeningContextPacket(context: ReturnType<typeof buildRuntimeContex
     `- Title: ${context.title}`,
     `- POV: ${context.pov.replace("_", " ")}`,
     `- Tone / Style: ${context.toneStyle}`,
-    `- Story Background: ${context.background}`,
+    `- Runtime Background: ${context.runtimeBackground}`,
+    `- Opening Scene Anchor: ${context.openingScene}`,
+    `- Relationship Structure: ${context.relationshipStructure}`,
+    `- Intensity Level: ${context.intensityLevel}`,
     `- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`,
   ];
+
+  if (context.sceneState.focalCharacterNames.length > 0) {
+    lines.push(`- Foregrounded counterparts: ${context.sceneState.focalCharacterNames.join(", ")}`);
+  }
+
+  if (context.sceneState.currentLocation) {
+    lines.push(`- Current location: ${context.sceneState.currentLocation}`);
+  }
+
+  if (context.sceneState.activePressure) {
+    lines.push(`- Active pressure: ${context.sceneState.activePressure}`);
+  }
 
   const activeStoryCardLines = buildActiveStoryCardLines(context);
 
@@ -177,8 +199,26 @@ function buildContinuityContextPacket(context: ReturnType<typeof buildRuntimeCon
     lines.push(`- POV: ${context.pov.replace("_", " ")}`);
   }
 
+  lines.push(`- Relationship Structure: ${context.relationshipStructure}`);
+  lines.push(`- Intensity Level: ${context.intensityLevel}`);
   lines.push(`- User-controlled character: ${context.character.name} — ${compactText(context.character.description, 180)}`);
   lines.push(`- Rolling Story Summary: ${context.continuitySummary}`);
+
+  if (context.sceneState.focalCharacterNames.length > 0) {
+    lines.push(`- Foregrounded counterparts: ${context.sceneState.focalCharacterNames.join(", ")}`);
+  }
+
+  if (context.sceneState.currentLocation) {
+    lines.push(`- Current location: ${context.sceneState.currentLocation}`);
+  }
+
+  if (context.sceneState.activePressure) {
+    lines.push(`- Active pressure: ${context.sceneState.activePressure}`);
+  }
+
+  if (context.sceneState.latestBeat) {
+    lines.push(`- Latest beat: ${context.sceneState.latestBeat}`);
+  }
 
   const activeStoryCardLines = buildActiveStoryCardLines(context);
 
@@ -288,6 +328,8 @@ function buildOpeningRequestMessage(): MistralMessage {
     role: "user",
     content: [
       "# Opening Request",
+      "Begin inside the opening scene anchor you were given.",
+      "Write a live opening beat, not a synopsis.",
     ].join("\n\n"),
   };
 }
@@ -339,11 +381,15 @@ function buildMistralFinalizationMessages(params: {
               "# Suggested Actions",
               "Return JSON only with key suggestedActions.",
               "The assistant message above is the opening scene.",
+              `Relationship structure: ${params.context.relationshipStructure}`,
+              `Intensity level: ${params.context.intensityLevel}`,
             ].join("\n\n")
           : [
               "# Suggested Actions",
               "Return JSON only with key suggestedActions.",
               `The user action that led to the assistant message above was:\n${params.playerAction.trim()}`,
+              `Relationship structure: ${params.context.relationshipStructure}`,
+              `Intensity level: ${params.context.intensityLevel}`,
             ].join("\n\n"),
     },
   ];

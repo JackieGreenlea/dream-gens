@@ -43,15 +43,14 @@ model Story {
   summary           String
   background        String
   runtimeBackground String           @default("")
+  openingScene      String           @default("")
   pov               StoryPov         @default(second_person)
   instructions      String
   toneStyle         String           @default("")
   authorStyle       String
+  relationshipStructure String       @default("")
+  intensityLevel    String           @default("medium")
   storyCards        Json             @default("[]")
-  victoryCondition  String
-  victoryEnabled    Boolean          @default(true)
-  defeatCondition   String
-  defeatEnabled     Boolean          @default(true)
   user              User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
   playerCharacters  StoryCharacter[]
   sessions          Session[]
@@ -85,13 +84,12 @@ model Session {
   storySummary       String?
   storyBackground    String?
   storyRuntimeBackground String?
+  storyOpeningScene  String?
+  storyRelationshipStructure String?
+  storyIntensityLevel String?
   storyInstructions  String?
   storyAuthorStyle   String?
   storyPov           StoryPov?
-  victoryCondition   String?
-  victoryEnabled     Boolean?
-  defeatCondition    String?
-  defeatEnabled      Boolean?
   characterName      String?
   characterDescription String?
   turnCount          Int             @default(0)

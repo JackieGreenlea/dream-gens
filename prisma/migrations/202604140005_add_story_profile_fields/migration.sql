@@ -1,0 +1,9 @@
+ALTER TABLE "Story"
+ADD COLUMN IF NOT EXISTS "openingScene" TEXT NOT NULL DEFAULT '',
+ADD COLUMN IF NOT EXISTS "relationshipStructure" TEXT NOT NULL DEFAULT '',
+ADD COLUMN IF NOT EXISTS "intensityLevel" TEXT NOT NULL DEFAULT 'medium';
+
+ALTER TABLE "Session"
+ADD COLUMN IF NOT EXISTS "storyOpeningScene" TEXT,
+ADD COLUMN IF NOT EXISTS "storyRelationshipStructure" TEXT,
+ADD COLUMN IF NOT EXISTS "storyIntensityLevel" TEXT;
